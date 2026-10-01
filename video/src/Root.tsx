@@ -1,23 +1,29 @@
 import "./index.css";
 import { Composition, Folder } from "remotion";
 import { ShadowGuessPromo } from "./ShadowGuessPromo";
-import { Open } from "./scenes/Open";
-import { Reveal } from "./scenes/Reveal";
-import { Play } from "./scenes/Play";
-import { Gallery } from "./scenes/Gallery";
-import { EndCard } from "./scenes/EndCard";
+import { Hook } from "./scenes/Hook";
+import { Title } from "./scenes/Title";
+import { Round } from "./scenes/Round";
+import { Lineup } from "./scenes/Lineup";
+import { Angles } from "./scenes/Angles";
+import { Daily } from "./scenes/Daily";
+import { Speed } from "./scenes/Speed";
+import { Finale } from "./scenes/Finale";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* 150 + 180 + 300 + 180 + 180 − 4 × 20 crossfade overlap */}
-      <Composition id="ShadowGuessPromo" component={ShadowGuessPromo} durationInFrames={910} fps={30} width={1920} height={1080} />
+      {/* 120 + 120 + 240 + 120 + 120 + 120 + 240 + 270 = 1350 frames = 45 s */}
+      <Composition id="ShadowGuessPromo" component={ShadowGuessPromo} durationInFrames={1350} fps={30} width={1920} height={1080} />
       <Folder name="ShadowGuessPromo-Scenes">
-        <Composition id="Open" component={Open} durationInFrames={150} fps={30} width={1920} height={1080} />
-        <Composition id="Reveal" component={Reveal} durationInFrames={180} fps={30} width={1920} height={1080} />
-        <Composition id="Play" component={Play} durationInFrames={300} fps={30} width={1920} height={1080} />
-        <Composition id="Gallery" component={Gallery} durationInFrames={180} fps={30} width={1920} height={1080} />
-        <Composition id="EndCard" component={EndCard} durationInFrames={180} fps={30} width={1920} height={1080} />
+        <Composition id="Hook" component={Hook} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="Title" component={Title} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="Round" component={Round} durationInFrames={240} fps={30} width={1920} height={1080} />
+        <Composition id="Lineup" component={Lineup} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="Angles" component={Angles} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="Daily" component={Daily} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="Speed" component={Speed} durationInFrames={240} fps={30} width={1920} height={1080} />
+        <Composition id="Finale" component={Finale} durationInFrames={270} fps={30} width={1920} height={1080} />
       </Folder>
     </>
   );

@@ -17,7 +17,7 @@ export function ShadowHistory({ step, maxSteps, thumbnails, viewing, onView, int
       <div className="flex items-baseline justify-between text-xs font-medium tracking-wide text-stone-400 uppercase">
         <span>Light angles</span>
         {viewing !== null ? (
-          <button onClick={() => onView(null)} className="normal-case tracking-normal text-cyan-300 hover:underline">
+          <button onClick={() => onView(null)} className="normal-case tracking-normal text-moss-300 hover:underline">
             Back to current →
           </button>
         ) : (
@@ -40,7 +40,7 @@ export function ShadowHistory({ step, maxSteps, thumbnails, viewing, onView, int
                 aria-pressed={active}
                 className={`group relative block aspect-[4/3] w-full overflow-hidden rounded-lg transition duration-200 md:rounded-xl ${
                   revealed
-                    ? `bg-wall ${active ? "ring-2 ring-pink-400 ring-offset-2 ring-offset-stone-950 shadow-[0_0_20px_-4px_rgba(236,72,153,0.8)]" : "ring-1 ring-white/10 hover:ring-white/30"} ${interactive ? "hover:-translate-y-0.5" : ""}`
+                    ? `bg-wall ${active ? "ring-2 ring-lamp-400 ring-offset-2 ring-offset-stone-950 shadow-[0_0_20px_-4px_rgba(233,160,58,0.8)]" : "ring-1 ring-white/10 hover:ring-white/30"} ${interactive ? "hover:-translate-y-0.5" : ""}`
                     : "bg-white/[0.03] ring-1 ring-white/5 ring-inset"
                 }`}
               >

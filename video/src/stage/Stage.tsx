@@ -156,7 +156,7 @@ export function Cyclorama() {
 
 /** Low violet fill so shadows read as deep ink rather than pure black. */
 export function Fill({ intensity = 1 }: { intensity?: number }) {
-  return <hemisphereLight args={["#8b7cf0", "#1a1433", 0.22 * intensity]} />;
+  return <hemisphereLight args={["#8fa882", "#16201b", 0.22 * intensity]} />;
 }
 
 /**
@@ -184,6 +184,7 @@ export function KeyLight({
       <spotLight
         position={position}
         target={aim}
+        color="#fff0d4"
         intensity={3.4 * intensity}
         angle={angle}
         penumbra={penumbra}
@@ -255,7 +256,7 @@ export function ShadowObject({
       m.castShadow = true;
     }
 
-    const clayMaterial = new MeshStandardMaterial({ color: "#ece8f8", roughness: 0.8, transparent: true });
+    const clayMaterial = new MeshStandardMaterial({ color: "#efe6d2", roughness: 0.8, transparent: true });
     const clayModel = normalize(scene.clone(true));
     for (const m of meshes(clayModel)) {
       m.material = clayMaterial;
@@ -295,5 +296,25 @@ export function ShadowObject({
       {clay > 0 && reveal < 1 && <primitive object={layers.clayModel} />}
       {reveal > 0 && <primitive object={layers.colorModel} />}
     </group>
+  );
+}
+
+/**
+ * Even, parallel light across a long stretch of wall (for line-ups of several objects),
+ * like the game's own directional light.
+ */
+export function SunLight({ intensity = 1, halfWidth = 26 }: { intensity?: number; halfWidth?: number }) {
+  return (
+    <directionalLight
+      position={[0, 1.5, 12]}
+      color="#fff4e0"
+      intensity={2.4 * intensity}
+      castShadow
+      shadow-mapSize={[4096, 2048]}
+      shadow-bias={-0.0003}
+      shadow-normalBias={0.02}
+    >
+      <orthographicCamera attach="shadow-camera" args={[-halfWidth, halfWidth, 8, -8, 0.5, 40]} />
+    </directionalLight>
   );
 }

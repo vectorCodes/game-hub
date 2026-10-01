@@ -24,10 +24,10 @@ function ShadowArt({ puzzleNumber }: { puzzleNumber?: number }) {
     <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-2xl bg-wall md:aspect-auto md:h-full md:min-h-80">
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_50%_45%,#ffffff,transparent_70%),radial-gradient(ellipse_90%_90%_at_50%_50%,transparent_55%,rgba(26,20,51,0.35))]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_50%_45%,#fffaf0,transparent_70%),radial-gradient(ellipse_90%_90%_at_50%_50%,transparent_55%,rgba(22,32,27,0.35))]"
       />
       <svg viewBox="0 0 100 100" className="relative h-36 w-36 origin-bottom animate-sway sm:h-44 sm:w-44" aria-hidden="true">
-        <g fill="#1a1433" opacity="0.92">
+        <g fill="#16201b" opacity="0.92">
           <rect x="30" y="10" width="7" height="85" rx="1.5" />
           <rect x="30" y="52" width="42" height="7" rx="1.5" />
           <rect x="65" y="52" width="7" height="43" rx="1.5" />
@@ -60,7 +60,7 @@ export function ShadowGuessHubCard() {
         <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/[0.08] text-sm">
           <div className="bg-stone-950/80 p-4">
             <dt className="text-stone-500">Status</dt>
-            <dd className={`mt-1 font-medium ${done ? "text-cyan-300" : "text-stone-100"}`}>
+            <dd className={`mt-1 font-medium ${done ? "text-moss-300" : "text-stone-100"}`}>
               {info ? statusLine(info) : <span className="inline-block h-4 w-28 animate-pulse rounded bg-white/10" />}
             </dd>
           </div>

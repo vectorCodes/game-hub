@@ -36,7 +36,7 @@ function Podium({ entries, period }: { entries: LeaderboardEntry[]; period: Lead
         return (
           <div key={i} className="flex animate-rise flex-col items-center" style={{ animationDelay: `${pos * 90}ms` }}>
             <Avatar src={e.avatarUrl} name={e.name} size="lg" className={`ring-4 ${m.ring}`} />
-            <div className={`mt-2 max-w-full truncate text-sm font-medium ${e.isMe ? "text-cyan-300" : "text-white"}`}>
+            <div className={`mt-2 max-w-full truncate text-sm font-medium ${e.isMe ? "text-moss-300" : "text-white"}`}>
               {e.name}
               {e.isMe && " (you)"}
             </div>
@@ -58,14 +58,14 @@ function Row({ entry, period, delay }: { entry: LeaderboardEntry; period: Leader
   return (
     <li
       className={`grid animate-rise grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl px-2.5 py-2.5 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 ${
-        entry.isMe ? "bg-violet-500/15 ring-1 ring-violet-400/40" : "bg-white/[0.02] ring-1 ring-white/5"
+        entry.isMe ? "bg-lamp-500/15 ring-1 ring-lamp-400/40" : "bg-white/[0.02] ring-1 ring-white/5"
       }`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <span className="text-center font-display font-semibold text-stone-400 tabular-nums">{entry.rank}</span>
       <span className="flex min-w-0 items-center gap-3">
         <Avatar src={entry.avatarUrl} name={entry.name} />
-        <span className={`truncate ${entry.isMe ? "font-medium text-cyan-200" : "text-stone-200"}`}>
+        <span className={`truncate ${entry.isMe ? "font-medium text-moss-200" : "text-stone-200"}`}>
           {entry.name}
           {entry.isMe && <span className="ml-1.5 text-xs text-stone-400">(you)</span>}
         </span>

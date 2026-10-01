@@ -56,7 +56,7 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06]">
+    <footer className="border-t border-white/[0.06] bg-stone-950/85 backdrop-blur-xl">
       <div className="container-page flex flex-col items-center justify-between gap-4 py-8 text-sm text-stone-500 sm:flex-row">
         <Link to="/" className="flex items-center gap-2.5 font-display font-semibold text-stone-300">
           <Logo />
@@ -81,7 +81,7 @@ function Footer() {
 function PageLoader() {
   return (
     <div className="grid min-h-[50vh] place-items-center">
-      <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-pink-400" />
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-lamp-400" />
     </div>
   );
 }
@@ -99,7 +99,7 @@ export default function App() {
     <div className="relative flex min-h-dvh flex-col">
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[42rem] bg-[radial-gradient(ellipse_45%_55%_at_15%_-5%,rgba(139,92,246,0.32),transparent),radial-gradient(ellipse_40%_45%_at_90%_0%,rgba(236,72,153,0.2),transparent)]"
+        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[42rem] bg-[radial-gradient(ellipse_45%_55%_at_15%_-5%,rgba(244,185,78,0.16),transparent),radial-gradient(ellipse_40%_45%_at_90%_0%,rgba(109,173,75,0.14),transparent)]"
       />
       <div
         aria-hidden

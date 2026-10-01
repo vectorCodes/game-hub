@@ -131,7 +131,7 @@ export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
             ))}
           </ul>
         )}
-        <div className="flex items-center gap-2 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 transition focus-within:bg-white/[0.06] focus-within:ring-violet-400/70 focus-within:shadow-[0_0_30px_-10px_rgba(139,92,246,0.9)]">
+        <div className="flex items-center gap-2 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 transition focus-within:bg-white/[0.06] focus-within:ring-lamp-400/70 focus-within:shadow-[0_0_30px_-10px_rgba(244,185,78,0.9)]">
           <input
             value={text}
             onChange={(e) => {
@@ -169,7 +169,7 @@ export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
         <p
           key={feedback?.text}
           aria-live="polite"
-          className={`animate-fade truncate ${feedback?.tone === "miss" ? "text-rose-300" : "text-stone-400"}`}
+          className={`animate-fade truncate ${feedback?.tone === "miss" ? "text-ember-300" : "text-stone-400"}`}
         >
           {feedback?.text}
         </p>

@@ -23,7 +23,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
     >
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 shadow-[0_0_18px_-4px_rgba(217,70,239,0.8)] transition-transform duration-300 ease-out"
+        className="absolute inset-y-1 left-1 rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(244,185,78,0.7)] transition-transform duration-300 ease-out"
         style={{
           width: `calc((100% - 0.5rem) / ${options.length})`,
           transform: `translateX(${index * 100}%)`,
@@ -36,7 +36,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
           aria-selected={o.value === value}
           onClick={() => o.value !== value && onChange(o.value)}
           className={`relative z-10 rounded-full px-4 py-1.5 font-medium whitespace-nowrap transition-colors ${
-            o.value === value ? "text-white" : "text-stone-400 hover:text-stone-200"
+            o.value === value ? "text-ink" : "text-stone-400 hover:text-stone-200"
           }`}
         >
           {o.label}

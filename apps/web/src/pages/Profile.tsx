@@ -11,7 +11,7 @@ function StatTile({ label, value, accent = false, delay }: { label: string; valu
       className="animate-rise rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/10 sm:p-5"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`font-display text-3xl font-bold tabular-nums sm:text-4xl ${accent ? "text-cyan-300 text-glow" : "text-white"}`}>{value}</div>
+      <div className={`font-display text-3xl font-bold tabular-nums sm:text-4xl ${accent ? "text-moss-300 text-glow" : "text-white"}`}>{value}</div>
       <div className="mt-1 text-xs font-medium tracking-wide text-stone-400 uppercase">{label}</div>
     </div>
   );
@@ -40,7 +40,7 @@ function Distribution({ stats }: { stats: StatsView }) {
             <div className="h-7 flex-1 rounded-lg bg-white/[0.03]">
               <div
                 className={`flex h-full items-center justify-end rounded-lg px-2 transition-[width] duration-700 ease-out ${
-                  count && i === best ? "bg-gradient-to-r from-violet-500 to-pink-500 shadow-[0_0_18px_-4px_rgba(236,72,153,0.8)]" : count ? "bg-stone-600" : ""
+                  count && i === best ? "bg-gradient-to-r from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(233,160,58,0.7)]" : count ? "bg-stone-600" : ""
                 }`}
                 style={{
                   width: grown ? `${count ? Math.max(8, (count / max) * 100) : 0}%` : "0%",
@@ -103,13 +103,13 @@ export default function Profile() {
   return (
     <div className="space-y-6">
       <div className="relative flex animate-rise items-center gap-4 overflow-hidden rounded-3xl bg-white/[0.03] p-5 ring-1 ring-white/10 sm:gap-5 sm:p-6">
-        <div aria-hidden className="absolute -top-20 -right-10 h-56 w-56 rounded-full bg-violet-500/30 blur-3xl" />
-        <Avatar src={profile.avatarUrl} name={name} size="lg" className="ring-4 ring-violet-500/60" />
+        <div aria-hidden className="absolute -top-20 -right-10 h-56 w-56 rounded-full bg-lamp-500/20 blur-3xl" />
+        <Avatar src={profile.avatarUrl} name={name} size="lg" className="ring-4 ring-lamp-500/60" />
         <div className="relative min-w-0">
           <h1 className="font-display text-2xl font-bold tracking-tight break-words sm:text-3xl">{name}</h1>
           <p className="text-sm text-stone-400">
             Shadow Guess ·{" "}
-            <Link to="/leaderboard" className="text-cyan-300 hover:underline">
+            <Link to="/leaderboard" className="text-moss-300 hover:underline">
               see the leaderboard
             </Link>
           </p>
@@ -128,7 +128,7 @@ export default function Profile() {
       ) : (
         <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center text-sm text-stone-400">
           Win a round and your solve pattern shows up here.{" "}
-          <Link to="/games/shadow-guess" className="text-cyan-300 hover:underline">
+          <Link to="/games/shadow-guess" className="text-moss-300 hover:underline">
             Play now →
           </Link>
         </div>

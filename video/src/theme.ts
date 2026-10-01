@@ -11,21 +11,22 @@ export const { fontFamily: bodyFont } = loadInter("normal", {
   subsets: ["latin"],
 });
 
-// A restrained cut of the site's "Neon Night" palette: near-black, soft lavender
-// whites, and the violet → pink gradient reserved for accents.
+// "Lamplight Forest", matching apps/web/src/index.css: a night forest lit by one warm
+// lamp. Lamp amber is the primary accent, moss green the secondary.
 export const colors = {
-  night: "#08061a",
-  cyc: "#d9d4ec",
-  text: "#f5f3ff",
-  muted: "#a5a0c8",
-  faint: "rgba(245,243,255,0.5)",
+  night: "#0e1411",
+  cyc: "#e6dcc4",
+  ink: "#16201b",
+  text: "#f6f3ea",
+  muted: "#9ea596",
+  faint: "rgba(246,243,234,0.5)",
   hairline: "rgba(255,255,255,0.12)",
-  violet: "#8b5cf6",
-  pink: "#ec4899",
-  cyan: "#67e8f9",
-  miss: "#fb7185",
+  lamp: "#f4b94e",
+  lampDeep: "#e9a03a",
+  moss: "#b3d993",
+  miss: "#ec7a5f",
 };
 
-export const accentGradient = "linear-gradient(100deg, #8b5cf6, #d946ef 55%, #ec4899)";
+export const accentGradient = "linear-gradient(180deg, #f8cf72, #e9a03a)";
 export const ease = [0.16, 1, 0.3, 1] as const; // expo-out, for entrances
 export const glide = [0.65, 0, 0.35, 1] as const; // in-out, for camera moves

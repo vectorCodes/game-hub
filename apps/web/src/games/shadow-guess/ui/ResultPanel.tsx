@@ -76,13 +76,13 @@ export function ResultPanel({ session, stats, onNext }: Props) {
       <div>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
-            won ? "bg-emerald-400/10 text-emerald-300 ring-emerald-400/20" : "bg-rose-400/10 text-rose-300 ring-rose-400/20"
+            won ? "bg-moss-400/10 text-moss-300 ring-moss-400/20" : "bg-ember-400/10 text-ember-300 ring-ember-400/20"
           }`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${won ? "bg-emerald-400" : "bg-rose-400"}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${won ? "bg-moss-400" : "bg-ember-400"}`} />
           {won ? `Solved on angle ${misses + 1}` : "Out of angles"}
         </span>
-        <h2 className="mt-2 bg-gradient-to-br from-white via-violet-200 to-pink-400 bg-clip-text font-display text-3xl font-bold tracking-tight break-words text-transparent sm:text-4xl">
+        <h2 className="mt-2 bg-gradient-to-br from-white via-lamp-200 to-lamp-400 bg-clip-text font-display text-3xl font-bold tracking-tight break-words text-transparent sm:text-4xl">
           {session.answer}
         </h2>
         <p className="mt-1 text-sm text-stone-400">
@@ -107,7 +107,7 @@ export function ResultPanel({ session, stats, onNext }: Props) {
 
       <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/10">
         <span className="text-base tracking-[0.15em] sm:text-lg sm:tracking-[0.2em]">{text.split("\n")[1]}</span>
-        <button onClick={share} className="text-sm font-medium text-cyan-300 transition hover:text-cyan-200">
+        <button onClick={share} className="text-sm font-medium text-moss-300 transition hover:text-moss-200">
           {copied ? "Copied ✓" : "Share"}
         </button>
       </div>

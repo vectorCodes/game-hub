@@ -11,6 +11,7 @@
     "@remotion/cli": "4.0.530",
     "@remotion/effects": "4.0.530",
     "@remotion/google-fonts": "4.0.530",
+    "@remotion/media": "4.0.530",
     "@remotion/tailwind-v4": "4.0.530",
     "@remotion/three": "4.0.530",
     "@remotion/transitions": "4.0.530",
@@ -33,7 +34,8 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "music": "node scripts/make-music.mjs"
   },
   "sideEffects": [
     "*.css"

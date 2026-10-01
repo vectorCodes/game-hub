@@ -73,7 +73,7 @@ export function Vignette({ strength = 0.5 }: { strength?: number }) {
     <AbsoluteFill
       style={{
         pointerEvents: "none",
-        background: `radial-gradient(ellipse 80% 75% at 50% 45%, transparent 55%, rgba(8,6,26,${strength}))`,
+        background: `radial-gradient(ellipse 80% 75% at 50% 45%, transparent 55%, rgba(14,20,17,${strength}))`,
       }}
     />
   );
@@ -89,4 +89,36 @@ export function FadeBlack({ from, to, reverse = false }: { from: number; to: num
 /** Small uppercase label above a headline. */
 export function Eyebrow({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", ...style }}>{children}</div>;
+}
+
+/** Text that lands on a beat: scales down from slightly large and sharpens in a few frames. */
+export function Slam({
+  at,
+  until,
+  children,
+  style,
+  from = 1.35,
+}: {
+  at: number;
+  /** Frame it disappears (a hard cut out), if before the scene ends. */
+  until?: number;
+  children: ReactNode;
+  style?: CSSProperties;
+  from?: number;
+}) {
+  const frame = useCurrentFrame();
+  if (frame < at || (until !== undefined && frame >= until)) return null;
+  const t = interpolate(frame, [at, at + 7], [0, 1], { ...clamp, easing: Easing.out(Easing.exp) });
+  return (
+    <div
+      style={{
+        ...style,
+        opacity: interpolate(t, [0, 0.5], [0, 1], clamp),
+        scale: String(from + (1 - from) * t),
+        filter: t < 1 ? `blur(${(1 - t) * 10}px)` : undefined,
+      }}
+    >
+      {children}
+    </div>
+  );
 }

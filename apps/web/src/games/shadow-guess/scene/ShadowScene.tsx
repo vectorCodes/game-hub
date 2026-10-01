@@ -40,7 +40,7 @@ export function ShadowScene({ sessionKey, orbit, revealed, onError, ...model }: 
 
       <mesh position={[0, 0, WALL_Z]} receiveShadow>
         <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#f1eeff" roughness={1} />
+        <meshStandardMaterial color="#f4ecd8" roughness={1} />
       </mesh>
 
       <ModelErrorBoundary key={model.modelUrl} onError={onError}>

@@ -36,7 +36,7 @@ function ScoreBar({ session, onHint }: { session: SessionView; onHint: () => voi
     <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-3.5 py-2.5 ring-1 ring-white/10 sm:px-4 sm:py-3">
       <div>
         <div className="text-[11px] font-medium tracking-wide text-stone-400 uppercase">Worth</div>
-        <div key={session.potentialScore} className="animate-pop font-display text-2xl leading-none font-bold text-cyan-300 sm:text-3xl text-glow tabular-nums">
+        <div key={session.potentialScore} className="animate-pop font-display text-2xl leading-none font-bold text-moss-300 sm:text-3xl text-glow tabular-nums">
           {session.potentialScore}
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function ShadowGuessPage() {
   return (
     <div className="mx-auto grid min-h-[calc(100dvh-3.5rem)] max-w-7xl grid-rows-[minmax(min(20rem,45dvh),1fr)_auto] gap-3 p-3 sm:gap-4 sm:p-4 md:h-[calc(100dvh-3.5rem)] md:grid-cols-[minmax(0,1fr)_19rem] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_23rem] lg:p-5">
       {/* Stage: the lit wall and the shadow. */}
-      <section className="relative min-h-0 overflow-hidden rounded-2xl bg-wall sm:rounded-3xl ring-1 ring-violet-300/20 shadow-[0_0_90px_-25px_rgba(139,92,246,0.7)]">
+      <section className="relative min-h-0 overflow-hidden rounded-2xl bg-wall sm:rounded-3xl ring-1 ring-lamp-300/20 shadow-[0_0_90px_-30px_rgba(244,185,78,0.45)]">
         {session && (
           <ShadowScene
             sessionKey={session.sessionId}
@@ -140,7 +140,7 @@ export default function ShadowGuessPage() {
         {/* Spotlight falloff at the edges of the wall. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_45%,transparent_55%,rgba(26,20,51,0.32))]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_45%,transparent_55%,rgba(22,32,27,0.32))]"
         />
         {/* A band of light crosses the wall each time the angle changes. */}
         {session && playing && ready === sessionId && (
@@ -154,7 +154,7 @@ export default function ShadowGuessPage() {
           <div
             key={`won-${sessionId}`}
             aria-hidden
-            className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(236,72,153,0.5),rgba(139,92,246,0.25)_40%,transparent_65%)]"
+            className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(233,160,58,0.5),rgba(244,185,78,0.25)_40%,transparent_65%)]"
           />
         )}
 
@@ -185,7 +185,7 @@ export default function ShadowGuessPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3 text-sm text-stone-300">
-                <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-pink-400" />
+                <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-lamp-400" />
                 Casting a shadow…
               </div>
             )}
@@ -220,7 +220,7 @@ export default function ShadowGuessPage() {
                     className={`shrink-0 animate-pop rounded-full px-3 py-1 text-sm ring-1 ${
                       g === SKIPPED
                         ? "bg-white/5 text-stone-400 ring-white/10"
-                        : "bg-rose-500/10 text-rose-300 line-through decoration-rose-400/60 ring-rose-500/20"
+                        : "bg-ember-500/10 text-ember-300 line-through decoration-ember-400/60 ring-ember-500/20"
                     }`}
                   >
                     {g === SKIPPED ? "skipped" : g}
