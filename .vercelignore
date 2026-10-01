@@ -1,0 +1,20 @@
+# What `vercel` (CLI) uploads. Only the frontend is built on Vercel; it needs apps/web,
+# packages/shared and the workspace package.json files (for pnpm install).
+
+# Secrets: never upload
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Model pipeline sources and outputs (the game loads models from Supabase Storage)
+assets/
+
+# The Remotion video project (the rendered trailer already lives in apps/web/public)
+video/
+
+# Local-only data and build output
+apps/api/.pglite/
+**/dist/
+**/node_modules/
+.git/

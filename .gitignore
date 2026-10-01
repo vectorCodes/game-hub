@@ -5,3 +5,5 @@ dist
 .DS_Store
 assets/raw
 apps/api/.pglite
+.vercel
+.env*
