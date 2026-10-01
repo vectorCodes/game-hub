@@ -1,0 +1,274 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Neon Night. Neutrals are tinted toward violet so every stone-* class follows the theme. */
+  --color-stone-50: #f7f5ff;
+  --color-stone-100: #f5f3ff;
+  --color-stone-200: #e4e0f7;
+  --color-stone-300: #c9c3ea;
+  --color-stone-400: #a5a0c8;
+  --color-stone-500: #7e78a6;
+  --color-stone-600: #5a5483;
+  --color-stone-700: #3b3563;
+  --color-stone-800: #251f47;
+  --color-stone-900: #16112e;
+  --color-stone-950: #0b0720;
+
+  /* The lit wall the shadows fall on (matches the 3D scene). */
+  --color-wall: #f1eeff;
+  --color-ink: #1a1433;
+
+  --animate-shake: shake 0.4s ease-in-out;
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  --animate-sweep: sweep 1.2s ease-out both;
+  --animate-glow: glow 1.8s ease-out both;
+  --animate-float: float 14s ease-in-out infinite;
+  --animate-sway: sway 7s ease-in-out infinite;
+  --animate-fade: fade 0.3s ease-out both;
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  /* A band of light passing over the wall when the angle changes. */
+  @keyframes sweep {
+    0% { opacity: 0; transform: translateX(-60%); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(60%); }
+  }
+  @keyframes glow {
+    0% { opacity: 0; transform: scale(0.6); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.5); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    50% { transform: translate(-42%, 24px) scale(1.12); }
+  }
+  /* A shadow leaning as if its light were circling. */
+  @keyframes sway {
+    0%, 100% { transform: skewX(-14deg) scaleY(0.96); }
+    50% { transform: skewX(14deg) scaleY(1.04); }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Landing page motion: slow, looping, and all stopped by prefers-reduced-motion below. */
+  --animate-drift: drift 7s ease-in-out infinite;
+  --animate-lamp-bob: lamp-bob 5s ease-in-out infinite;
+  --animate-blink: blink 4.5s ease-in-out infinite;
+  --animate-beam: beam 5s ease-in-out infinite;
+  --animate-caret: caret 1s steps(1) infinite;
+  --animate-type: type 3.6s ease-out infinite;
+  --animate-miss: miss 3.6s ease-out infinite;
+  --animate-twinkle: twinkle 2.4s ease-in-out infinite;
+  --animate-flicker: flicker 1.6s ease-in-out infinite;
+  --animate-grow: grow 3s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  --animate-tick: tick 6s linear infinite;
+  --animate-ping-soft: ping-soft 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes drift {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes lamp-bob {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(7deg); }
+  }
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    94% { transform: scaleY(0.1); }
+  }
+  @keyframes beam {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 0.9; }
+  }
+  @keyframes caret {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0; }
+  }
+  /* A word types in, holds, then clears. */
+  @keyframes type {
+    0% { transform: scaleX(0); }
+    35%, 80% { transform: scaleX(1); }
+    92%, 100% { transform: scaleX(0); }
+  }
+  @keyframes miss {
+    0%, 38% { opacity: 0; transform: scale(0.4); }
+    46%, 80% { opacity: 1; transform: scale(1); }
+    92%, 100% { opacity: 0; transform: scale(1); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(0.6); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1, 1) rotate(-2deg); }
+    33% { transform: scale(0.94, 1.06) rotate(2deg); }
+    66% { transform: scale(1.04, 0.95) rotate(-1deg); }
+  }
+  @keyframes grow {
+    0% { transform: scaleY(0.15); }
+    40%, 85% { transform: scaleY(1); }
+    100% { transform: scaleY(0.15); }
+  }
+  @keyframes tick {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes ping-soft {
+    75%, 100% { transform: scale(2.2); opacity: 0; }
+  }
+}
+
+/* ---------- Design system ---------- */
+
+/* Page column shared by every landing section, header and footer. */
+@utility container-page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* Type scale. */
+@utility text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  font-size: clamp(2.5rem, 1.6rem + 4.2vw, 5.25rem);
+  text-wrap: balance;
+}
+@utility text-section {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  font-size: clamp(1.875rem, 1.4rem + 1.8vw, 3rem);
+  text-wrap: balance;
+}
+@utility text-lead {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--color-stone-400);
+  text-wrap: pretty;
+}
+@utility eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-violet-300);
+}
+
+/* Buttons: one height and radius; primary is the gradient pill defined above. */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: filter 0.2s, transform 0.15s, background-color 0.2s, box-shadow 0.2s;
+  &:active {
+    transform: scale(0.98);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-violet-300);
+    outline-offset: 3px;
+  }
+}
+@utility btn-secondary {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--color-stone-100);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  &:hover {
+    background: rgb(255 255 255 / 0.1);
+  }
+}
+
+/* Card surface: one fill, one hairline, one radius. */
+@utility surface {
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 0.03);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+@utility glass {
+  background: rgb(22 17 46 / 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    0 20px 50px -20px rgb(0 0 0 / 0.7);
+  backdrop-filter: blur(16px);
+}
+
+/* Scroll reveal: sections rise in once they enter the viewport (see useReveal). */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal[data-visible] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Primary action: violet → pink gradient pill with a glow. */
+@utility btn-primary {
+  background-image: linear-gradient(100deg, #8b5cf6, #d946ef 55%, #ec4899);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 0 28px -8px rgb(236 72 153 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+  &:hover:not(:disabled) {
+    filter: brightness(1.1) saturate(1.1);
+    box-shadow: 0 0 40px -6px rgb(236 72 153 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  }
+}
+
+@utility text-glow {
+  text-shadow: 0 0 20px rgb(34 211 238 / 0.55);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+::selection {
+  background: rgb(236 72 153 / 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

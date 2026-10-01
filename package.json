@@ -1,0 +1,20 @@
+{
+  "name": "shadow-guess",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter web --filter api dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "pnpm -r typecheck",
+    "models:fetch": "pnpm --filter @shadow/models fetch",
+    "models:build": "pnpm --filter @shadow/models build",
+    "models:upload": "pnpm --filter @shadow/models upload",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}

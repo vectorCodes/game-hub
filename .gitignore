@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+assets/raw
+apps/api/.pglite
