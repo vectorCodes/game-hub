@@ -46,9 +46,12 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   signIn: async () => {
+    // Return to the same page, minus any #fragment: a leftover "#" (e.g. from an earlier
+    // sign-in) would otherwise come back as "##…" and the callback couldn't be read.
+    const { origin, pathname, search } = window.location;
     await supabase?.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.href },
+      options: { redirectTo: `${origin}${pathname}${search}` },
     });
   },
 
