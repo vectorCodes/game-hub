@@ -8,6 +8,9 @@ import { useAuth } from "./auth/store";
 import { Logo } from "./components/Logo";
 import { games } from "./games/registry";
 
+// Lazy: the album draws 3D models, so it brings three.js with it.
+const Album = lazy(() => import("./games/shadow-guess/album/AlbumPage"));
+
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;
 
@@ -41,6 +44,7 @@ function Header() {
               <span className="hidden sm:inline">{g.title}</span>
             </NavItem>
           ))}
+          <NavItem to="/album">Album</NavItem>
           <NavItem to="/leaderboard">
             <span className="sm:hidden">Ranks</span>
             <span className="hidden sm:inline">Leaderboard</span>
@@ -68,6 +72,9 @@ function Footer() {
               {g.title}
             </Link>
           ))}
+          <Link to="/album" className="transition-colors hover:text-stone-200">
+            Album
+          </Link>
           <Link to="/leaderboard" className="transition-colors hover:text-stone-200">
             Leaderboard
           </Link>
@@ -115,6 +122,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/album" element={<Album />} />
             {games.map((g) => (
               <Route key={g.id} path={g.path} element={<g.Component />} />
             ))}

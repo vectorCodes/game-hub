@@ -145,3 +145,31 @@ export interface DailyInfo {
   /** When the next daily puzzle unlocks (midnight UTC). */
   nextAt: string;
 }
+
+/** Album: guest wins from this browser, merged with the signed-in player's own. */
+export const AlbumBody = z.object({ sessionIds: z.array(z.uuid()).max(500).default([]) });
+
+export interface AlbumEntry {
+  id: string;
+  name: string;
+  modelUrl: string;
+  /** Times this object was solved. */
+  solves: number;
+  /** Fewest angles it took (1-based). */
+  bestAngle: number;
+  firstSolvedAt: string;
+}
+
+export interface AlbumCategory {
+  name: string;
+  /** Objects in the category, found or not. */
+  total: number;
+  /** Only the solved ones: the rest stay secret. */
+  found: AlbumEntry[];
+}
+
+export interface AlbumView {
+  total: number;
+  found: number;
+  categories: AlbumCategory[];
+}

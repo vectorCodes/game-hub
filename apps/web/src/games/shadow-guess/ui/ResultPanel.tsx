@@ -103,6 +103,11 @@ export function ResultPanel({ session, stats, runBest, onNext }: Props) {
               ? "Nicely spotted. Drag the object to look around it."
               : "It was hiding in plain sight. Drag to look around it."}
         </p>
+        {won && (
+          <Link to="/album" className="mt-1 inline-block text-sm font-medium text-lamp-300 transition hover:text-lamp-200">
+            ✦ Added to your album →
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-2">

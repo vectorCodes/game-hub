@@ -37,6 +37,29 @@ export function savedDailySessionId(): string | null {
   return saved && saved.date === today() ? saved.id : null;
 }
 
+const SOLVED_KEY = "shadow-guess:solved";
+/** Enough for the whole catalog several times over; the API takes up to 500. */
+const MAX_SOLVED = 500;
+
+/** Rounds this browser has won, so a guest's album survives (newest last). */
+export function solvedSessionIds(): string[] {
+  try {
+    const ids = JSON.parse(localStorage.getItem(SOLVED_KEY) ?? "[]");
+    return Array.isArray(ids) ? ids : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberSolved(id: string) {
+  try {
+    const ids = solvedSessionIds().filter((x) => x !== id);
+    localStorage.setItem(SOLVED_KEY, JSON.stringify([...ids, id].slice(-MAX_SOLVED)));
+  } catch {
+    // Storage unavailable: the album only keeps signed-in wins.
+  }
+}
+
 /** Session ids this browser has played, for claiming them after sign-in. */
 export function savedSessionIds(): string[] {
   return (["daily", "free"] as const).flatMap((mode) => recall(mode)?.id ?? []);
@@ -124,6 +147,7 @@ export const useShadowGame = create<GameState>((set, get) => {
           body: { text },
         });
         set({ session: res.session, error: null });
+        if (res.result === "correct") rememberSolved(res.session.sessionId);
         return res.close ? "close" : res.result;
       } catch (e) {
         set({ error: e instanceof ApiError ? e.code : "network_error" });

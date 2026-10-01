@@ -8,3 +8,6 @@ export function angleToQuaternion({ azimuth, elevation }: LightAngle): Quaternio
     new Euler(MathUtils.degToRad(elevation), MathUtils.degToRad(azimuth), 0, "XYZ"),
   );
 }
+
+/** Where the object turns to once it's revealed: a three-quarter view. */
+export const REVEAL_ANGLE: LightAngle = { azimuth: 35, elevation: 20 };

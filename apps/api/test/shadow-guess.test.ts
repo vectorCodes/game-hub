@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { DEFAULT_ANGLES, MAX_STEPS, type GuessResponse, type SessionView } from "@shadow/shared";
+import { DEFAULT_ANGLES, MAX_STEPS, type AlbumView, type GuessResponse, type SessionView } from "@shadow/shared";
 import { buildApp } from "../src/app";
 import { createDb, type DbHandle } from "../src/db/client";
 import { gameObjects, gameSessions } from "../src/db/schema";
@@ -148,6 +148,24 @@ describe("shadow guess API", () => {
     ).body;
     expect(third.run).toMatchObject({ solved: 0, score: 0 });
     expect(third.run!.id).not.toBe(first.run!.id);
+  });
+
+  it("builds a guest album from this browser's won sessions only", async () => {
+    const s = await start();
+    const object = await answerOf(s.sessionId);
+    const empty = (await post<AlbumView>("/api/shadow-guess/album", { sessionIds: [s.sessionId] })).body;
+    expect(empty.found).toBe(0);
+    expect(empty.total).toBeGreaterThan(0);
+    expect(empty.categories.every((c) => c.found.length === 0)).toBe(true);
+
+    await post(`/api/shadow-guess/sessions/${s.sessionId}/guess`, { text: object.name });
+    const album = (await post<AlbumView>("/api/shadow-guess/album", { sessionIds: [s.sessionId] })).body;
+    expect(album.found).toBe(1);
+    const category = album.categories.find((c) => c.name === object.category)!;
+    expect(category.found).toMatchObject([{ id: object.id, name: object.name, solves: 1, bestAngle: 1 }]);
+
+    // Without the session ids, a guest sees nothing.
+    expect((await post<AlbumView>("/api/shadow-guess/album")).body.found).toBe(0);
   });
 
   it("keeps daily puzzles out of runs", async () => {

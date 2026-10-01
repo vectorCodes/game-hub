@@ -6,12 +6,11 @@ import { Segmented } from "../../components/Segmented";
 import { play, useSound } from "../../lib/sound";
 import { useShadowGame } from "./store";
 import { ShadowScene } from "./scene/ShadowScene";
+import { REVEAL_ANGLE } from "./scene/angles";
 import { ShadowHistory } from "./ui/ShadowHistory";
 import { GuessInput } from "./ui/GuessInput";
 import { ResultPanel } from "./ui/ResultPanel";
 import { useRunBest } from "./useRunBest";
-
-const REVEAL_ANGLE: LightAngle = { azimuth: 35, elevation: 20 };
 
 const ERROR_MESSAGES: Record<string, string> = {
   api_unreachable: "Can't reach the game server. Is the API running? Start everything with `pnpm dev` from the repo root.",

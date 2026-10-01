@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, gt, isNull, ne, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import {
   DEFAULT_ANGLES,
   MAX_STEPS,
@@ -8,6 +8,8 @@ import {
   isCloseGuess,
   isCorrectGuess,
   normalizeGuess,
+  type AlbumCategory,
+  type AlbumView,
   type DailyInfo,
   type GameMode,
   type GuessResponse,
@@ -208,6 +210,63 @@ export class ShadowGuessService {
       });
     }
     return claimed;
+  }
+
+  /**
+   * Objects this player has solved, by category. Counts the account's wins plus guest wins
+   * from this browser that haven't been claimed by anyone.
+   */
+  async album(userId: string | null, guestSessionIds: string[]): Promise<AlbumView> {
+    const guest = guestSessionIds.length
+      ? and(inArray(gameSessions.id, guestSessionIds), isNull(gameSessions.userId))
+      : undefined;
+    const mine = userId ? or(eq(gameSessions.userId, userId), guest) : guest;
+
+    const solved = mine
+      ? await this.db
+          .select({
+            id: gameObjects.id,
+            name: gameObjects.name,
+            category: gameObjects.category,
+            modelKey: gameObjects.modelKey,
+            solves: sql<number>`count(*)`.mapWith(Number),
+            bestStep: sql<number>`min(${gameSessions.step})`.mapWith(Number),
+            firstSolvedAt: sql<string>`min(${gameSessions.endedAt})`.mapWith(String),
+          })
+          .from(gameSessions)
+          .innerJoin(gameObjects, eq(gameObjects.id, gameSessions.objectId))
+          .where(and(eq(gameSessions.gameType, GAME_TYPE), eq(gameSessions.status, "won"), mine))
+          .groupBy(gameObjects.id)
+          .orderBy(asc(gameObjects.name))
+      : [];
+
+    const totals = await this.db
+      .select({ name: gameObjects.category, total: sql<number>`count(*)`.mapWith(Number) })
+      .from(gameObjects)
+      .where(eq(gameObjects.active, true))
+      .groupBy(gameObjects.category)
+      .orderBy(asc(gameObjects.category));
+
+    const categories: AlbumCategory[] = totals.map((c) => ({ ...c, found: [] }));
+    for (const o of solved) {
+      let category = categories.find((c) => c.name === o.category);
+      // A retired object stays in the album; its category may have no active objects left.
+      if (!category) categories.push((category = { name: o.category, total: 0, found: [] }));
+      category.found.push({
+        id: o.id,
+        name: o.name,
+        modelUrl: modelUrl(this.modelsBaseUrl, o.modelKey),
+        solves: o.solves,
+        bestAngle: o.bestStep + 1,
+        firstSolvedAt: new Date(o.firstSolvedAt).toISOString(),
+      });
+      category.total = Math.max(category.total, category.found.length);
+    }
+    return {
+      total: categories.reduce((n, c) => n + c.total, 0),
+      found: solved.length,
+      categories,
+    };
   }
 
   /** Every possible answer, for autocomplete. Doesn't narrow down the current object. */

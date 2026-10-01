@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { GuessBody, SessionParams, StartSessionBody } from "@shadow/shared";
+import { AlbumBody, GuessBody, SessionParams, StartSessionBody } from "@shadow/shared";
 import { z } from "zod";
 import type { ShadowGuessService } from "./service";
 
@@ -30,6 +30,11 @@ export function shadowGuessRoutes(app: FastifyInstance, service: ShadowGuessServ
   app.post(`${prefix}/sessions/:id/hint`, async (req) => {
     const { id } = SessionParams.parse(req.params);
     return service.hint(id, req.userId);
+  });
+
+  app.post(`${prefix}/album`, async (req) => {
+    const { sessionIds } = AlbumBody.parse(req.body ?? {});
+    return service.album(req.userId, sessionIds);
   });
 
   app.get(`${prefix}/objects/names`, async () => service.listNames());

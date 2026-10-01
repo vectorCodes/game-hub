@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { SignJWT } from "jose";
 import { eq } from "drizzle-orm";
-import type { DailyInfo, LeaderboardView, SessionView } from "@shadow/shared";
+import type { AlbumView, DailyInfo, LeaderboardView, SessionView } from "@shadow/shared";
 import { buildApp } from "../src/app";
 import { createDb, type DbHandle } from "../src/db/client";
 import { gameObjects, gameSessions } from "../src/db/schema";
@@ -83,6 +83,26 @@ describe("free play runs", () => {
     // Run 2 sees run 1 as the best to beat.
     const d = await begin(c.sessionId);
     expect(d.run).toMatchObject({ solved: 0, score: 0, best: 2 });
+  });
+});
+
+describe("album", () => {
+  it("shows a player's own solves, not other players'", async () => {
+    const dee = await token("dddddddd-dddd-4ddd-8ddd-dddddddddddd", "Dee Album");
+    const eve = await token("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", "Eve Other");
+    const s = await call<SessionView>("POST", "/api/shadow-guess/sessions", dee, { mode: "free" });
+    const [row] = await handle.db.select().from(gameSessions).where(eq(gameSessions.id, s.sessionId));
+    const [object] = await handle.db.select().from(gameObjects).where(eq(gameObjects.id, row.objectId));
+    await call("POST", `/api/shadow-guess/sessions/${s.sessionId}/skip`, dee);
+    await call("POST", `/api/shadow-guess/sessions/${s.sessionId}/guess`, dee, { text: object.name });
+
+    const mine = await call<AlbumView>("POST", "/api/shadow-guess/album", dee);
+    expect(mine.found).toBe(1);
+    expect(mine.categories.flatMap((c) => c.found)).toMatchObject([{ id: object.id, bestAngle: 2 }]);
+
+    // Another player can't pull someone else's session into their album.
+    const theirs = await call<AlbumView>("POST", "/api/shadow-guess/album", eve, { sessionIds: [s.sessionId] });
+    expect(theirs.found).toBe(0);
   });
 });
 
