@@ -89,13 +89,18 @@ export const useShadowGame = create<GameState>((set, get) => {
       set({ mode, loading: true, error: null, session: null });
       try {
         let session: SessionView | null = null;
+        let previous: string | undefined;
         const saved = recall(mode);
-        // Yesterday's daily is replaced by today's; a finished free round moves on.
+        // Yesterday's daily is replaced by today's; a finished free round moves on (a
+        // solved one keeps its run going).
         if (saved && (mode === "free" || saved.date === today())) {
           session = await api<SessionView>(`${BASE}/sessions/${saved.id}`).catch(() => null);
-          if (session && mode === "free" && session.status !== "playing") session = null;
+          if (session && mode === "free" && session.status !== "playing") {
+            previous = session.sessionId;
+            session = null;
+          }
         }
-        session ??= await startNew(mode);
+        session ??= await startNew(mode, previous);
         if (get().mode === mode) set({ session });
       } catch (e) {
         set({ error: e instanceof ApiError ? e.code : "network_error" });

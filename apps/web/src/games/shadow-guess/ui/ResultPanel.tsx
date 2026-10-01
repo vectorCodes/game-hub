@@ -9,6 +9,8 @@ interface Props {
   session: SessionView;
   /** Signed-in player's stats, or null for guests. */
   stats: StatsView | null;
+  /** Free play: the best earlier run to beat. */
+  runBest: number;
   onNext: () => void;
 }
 
@@ -18,7 +20,8 @@ export function shareText(session: SessionView): string {
   const grid = "🟥".repeat(misses) + (won ? "🟩" : "") + "⬛".repeat(session.maxSteps - misses - (won ? 1 : 0));
   const title = session.puzzleNumber ? `Shadow Guess #${session.puzzleNumber}` : "Shadow Guess";
   const result = won ? `${misses + 1}/${session.maxSteps}` : `X/${session.maxSteps}`;
-  return `${title} ${result}\n${grid}\n${location.origin}/games/shadow-guess`;
+  const run = session.run ? `Run: ${session.run.solved} in a row 🔥 · ${session.run.score} pts\n` : "";
+  return `${title} ${result}\n${grid}\n${run}${location.origin}/games/shadow-guess`;
 }
 
 function Stat({ label, value, to }: { label: string; value: string | number; to?: string }) {
@@ -38,13 +41,16 @@ function Stat({ label, value, to }: { label: string; value: string | number; to?
   );
 }
 
-export function ResultPanel({ session, stats, onNext }: Props) {
+export function ResultPanel({ session, stats, runBest, onNext }: Props) {
   const { enabled, user, signIn } = useAuth();
   const [copied, setCopied] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
   const won = session.status === "won";
   const misses = session.wrongGuesses.length;
   const text = shareText(session);
+  const run = session.run;
+  // A won round celebrates the moment the old best is passed; a lost one, any record.
+  const newBest = run && (won ? runBest > 0 && run.solved === runBest + 1 : run.solved > runBest);
 
   // Signed-in daily players see where today's result ranks.
   const rankable = session.mode === "daily" && stats !== null;
@@ -80,19 +86,33 @@ export function ResultPanel({ session, stats, onNext }: Props) {
           }`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${won ? "bg-moss-400" : "bg-ember-400"}`} />
-          {won ? `Solved on angle ${misses + 1}` : "Out of angles"}
+          {won ? `Solved on angle ${misses + 1}` : run ? "Run over" : "Out of angles"}
         </span>
+        {newBest && (
+          <span className="ml-2 inline-flex animate-pop items-center rounded-full bg-lamp-400/15 px-2.5 py-1 text-xs font-semibold text-lamp-300 ring-1 ring-lamp-400/30">
+            ★ New best
+          </span>
+        )}
         <h2 className="mt-2 bg-gradient-to-br from-white via-lamp-200 to-lamp-400 bg-clip-text font-display text-3xl font-bold tracking-tight break-words text-transparent sm:text-4xl">
           {session.answer}
         </h2>
         <p className="mt-1 text-sm text-stone-400">
-          {won ? "Nicely spotted. Drag the object to look around it." : "It was hiding in plain sight. Drag to look around it."}
+          {run && !won
+            ? `You solved ${run.solved} in a row for ${run.score} points. Drag to look around it.`
+            : won
+              ? "Nicely spotted. Drag the object to look around it."
+              : "It was hiding in plain sight. Drag to look around it."}
         </p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Score" value={session.score ?? 0} />
-        {stats ? (
+        {run ? (
+          <>
+            <Stat label="In a row" value={`${run.solved}${run.solved ? "🔥" : ""}`} />
+            <Stat label="Best" value={Math.max(runBest, run.solved)} />
+          </>
+        ) : stats ? (
           <>
             <Stat label="Streak" value={`${stats.currentStreak}🔥`} to="/profile" />
             <Stat label={rank ? "Today" : "Won"} value={rank ? `#${rank}` : stats.won} to={rank ? "/leaderboard" : "/profile"} />
@@ -116,7 +136,13 @@ export function ResultPanel({ session, stats, onNext }: Props) {
         onClick={onNext}
         className="rounded-2xl btn-primary py-3 font-semibold  active:scale-[0.98]"
       >
-        {session.mode === "daily" ? "Keep playing: free mode →" : "Next shadow →"}
+        {session.mode === "daily"
+          ? "Keep playing: free mode →"
+          : !run
+            ? "Next shadow →"
+            : won
+              ? "Keep the run going →"
+              : "Start a new run →"}
       </button>
 
       {enabled && !user && (

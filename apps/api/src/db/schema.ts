@@ -69,10 +69,12 @@ export const gameSessions = pgTable(
     status: text().$type<SessionStatus>().notNull().default("playing"),
     score: integer(),
     hintUsed: boolean().notNull().default(false),
+    /** Free play: rounds in a row share a run, which goes on while each one is solved. */
+    runId: uuid(),
     startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp({ withTimezone: true }),
   },
-  (t) => [index().on(t.userId, t.gameType)],
+  (t) => [index().on(t.userId, t.gameType), index().on(t.runId)],
 ).enableRLS();
 
 export const guesses = pgTable(

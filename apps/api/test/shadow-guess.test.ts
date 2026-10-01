@@ -120,6 +120,40 @@ describe("shadow guess API", () => {
     expect(view.answer).toBe((await answerOf(s.sessionId)).name);
   });
 
+  it("chains solved free rounds into a run and ends it on a loss", async () => {
+    const solve = async (id: string) =>
+      (await post<GuessResponse>(`/api/shadow-guess/sessions/${id}/guess`, { text: (await answerOf(id)).name })).body
+        .session;
+
+    const first = await start();
+    expect(first.run).toMatchObject({ solved: 0, score: 0, best: null });
+    const won = await solve(first.sessionId);
+    expect(won.run).toMatchObject({ solved: 1, score: 100 });
+
+    const second = (
+      await post<SessionView>("/api/shadow-guess/sessions", { mode: "free", previousSessionId: first.sessionId })
+    ).body;
+    expect(second.run).toMatchObject({ id: first.run!.id, solved: 1, score: 100 });
+    expect((await answerOf(second.sessionId)).id).not.toBe((await answerOf(first.sessionId)).id);
+
+    let lost = second;
+    for (let i = 0; i < MAX_STEPS; i++) {
+      lost = (await post<SessionView>(`/api/shadow-guess/sessions/${second.sessionId}/skip`)).body;
+    }
+    expect(lost.run).toMatchObject({ solved: 1, score: 100 });
+
+    // After a loss, the next round starts a fresh run.
+    const third = (
+      await post<SessionView>("/api/shadow-guess/sessions", { mode: "free", previousSessionId: second.sessionId })
+    ).body;
+    expect(third.run).toMatchObject({ solved: 0, score: 0 });
+    expect(third.run!.id).not.toBe(first.run!.id);
+  });
+
+  it("keeps daily puzzles out of runs", async () => {
+    expect((await start("daily")).run).toBeNull();
+  });
+
   it("serves the same daily object to everyone", async () => {
     const a = await start("daily");
     const b = await start("daily");

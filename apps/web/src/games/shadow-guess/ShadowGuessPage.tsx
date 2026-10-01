@@ -9,6 +9,7 @@ import { ShadowScene } from "./scene/ShadowScene";
 import { ShadowHistory } from "./ui/ShadowHistory";
 import { GuessInput } from "./ui/GuessInput";
 import { ResultPanel } from "./ui/ResultPanel";
+import { useRunBest } from "./useRunBest";
 
 const REVEAL_ANGLE: LightAngle = { azimuth: 35, elevation: 20 };
 
@@ -88,6 +89,33 @@ function useRoundSounds(session: SessionView | null) {
   }, [session]);
 }
 
+/** Free play: shadows solved in a row, the run's score, and the best run to beat. */
+function RunBar({ solved, score, best }: { solved: number; score: number; best: number }) {
+  const cell = "flex-1 text-center";
+  const label = "text-[11px] font-medium tracking-wide text-stone-400 uppercase";
+  return (
+    <div className="flex items-center divide-x divide-white/10 rounded-2xl bg-lamp-400/[0.06] py-2 ring-1 ring-lamp-400/20">
+      <div className={cell}>
+        <div key={solved} className="animate-pop font-display text-xl font-bold tabular-nums">
+          {solved}
+          {solved > 0 && "🔥"}
+        </div>
+        <div className={label}>In a row</div>
+      </div>
+      <div className={cell}>
+        <div key={score} className="animate-pop font-display text-xl font-bold tabular-nums">{score}</div>
+        <div className={label}>Run score</div>
+      </div>
+      <div className={cell}>
+        <div className={`font-display text-xl font-bold tabular-nums ${solved > best && best > 0 ? "text-lamp-300" : ""}`}>
+          {Math.max(best, solved)}
+        </div>
+        <div className={label}>{solved > best && best > 0 ? "New best" : "Best"}</div>
+      </div>
+    </div>
+  );
+}
+
 /** Worth-so-far and the category hint. */
 function ScoreBar({ session, onHint }: { session: SessionView; onHint: () => void }) {
   return (
@@ -164,6 +192,7 @@ export default function ShadowGuessPage() {
 
   const playing = session?.status === "playing";
   useRoundSounds(session);
+  const runBest = useRunBest(session?.run ?? null);
 
   // Pull fresh stats (streak, totals) when a round ends.
   const finished = session && !playing ? session.sessionId : null;
@@ -221,7 +250,13 @@ export default function ShadowGuessPage() {
 
         {session && (
           <div className="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
-            <StageChip>{session.puzzleNumber ? `Daily #${session.puzzleNumber}` : "Free play"}</StageChip>
+            <StageChip>
+              {session.puzzleNumber
+                ? `Daily #${session.puzzleNumber}`
+                : session.run
+                  ? `Run · shadow ${session.run.solved + (session.status === "won" ? 0 : 1)}`
+                  : "Free play"}
+            </StageChip>
             <StageChip>
               {playing
                 ? viewing !== null
@@ -271,6 +306,7 @@ export default function ShadowGuessPage() {
 
         {session && playing && (
           <>
+            {session.run && <RunBar solved={session.run.solved} score={session.run.score} best={runBest} />}
             <ScoreBar session={session} onHint={() => void useHint()} />
             <ShadowHistory
               step={session.step}
@@ -309,7 +345,7 @@ export default function ShadowGuessPage() {
 
         {session && !playing && !loading && (
           <>
-            <ResultPanel session={session} stats={me?.stats ?? null} onNext={() => void next()} />
+            <ResultPanel session={session} stats={me?.stats ?? null} runBest={runBest} onNext={() => void next()} />
             <div className="hidden md:mt-auto md:block">
               <ShadowHistory
                 step={session.step}

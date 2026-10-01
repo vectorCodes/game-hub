@@ -8,7 +8,10 @@ export type SessionStatus = "playing" | "won" | "lost";
 
 export const StartSessionBody = z.object({
   mode: GameMode,
-  /** Free play: avoid serving the same object twice in a row. */
+  /**
+   * Free play: the round just finished. A solved one continues its run (and its objects
+   * aren't served again); otherwise a new run starts.
+   */
   previousSessionId: z.uuid().optional(),
 });
 export type StartSessionBody = z.infer<typeof StartSessionBody>;
@@ -38,6 +41,19 @@ export interface SessionView {
   potentialScore: number;
   score: number | null;
   answer: string | null;
+  /** Free play only: the run this round belongs to. */
+  run: RunView | null;
+}
+
+/** Free play rounds solved in a row. A failed round ends the run. */
+export interface RunView {
+  id: string;
+  /** Rounds solved in this run so far (including this one, once won). */
+  solved: number;
+  /** Sum of the run's round scores. */
+  score: number;
+  /** Most rounds solved in any earlier run; null for guests, who keep it in the browser. */
+  best: number | null;
 }
 
 export type GuessResult = "correct" | "wrong" | "duplicate" | "over";

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, asc, eq, gt, isNull, ne, notInArray, sql } from "drizzle-orm";
 import {
   DEFAULT_ANGLES,
@@ -11,6 +12,7 @@ import {
   type GameMode,
   type GuessResponse,
   type LightAngle,
+  type RunView,
   type SessionView,
 } from "@shadow/shared";
 import type { Db, Executor } from "../../db/client";
@@ -57,6 +59,7 @@ export class ShadowGuessService {
   ): Promise<SessionView> {
     let objectId: string;
     let puzzleDate: string | null = null;
+    let runId: string | null = null;
     if (mode === "daily") {
       puzzleDate = todayUtc();
       // One daily per signed-in player: asking again resumes (or shows) today's session.
@@ -66,19 +69,21 @@ export class ShadowGuessService {
       }
       objectId = await this.ensureDailyPuzzle(puzzleDate);
     } else {
-      objectId = await this.pickFreeObject(previousSessionId);
+      const run = await this.continuedRun(userId, previousSessionId);
+      runId = run?.runId ?? randomUUID();
+      objectId = await this.pickFreeObject(run?.seen ?? (await this.objectOf(previousSessionId)));
     }
     const [session] = await this.db
       .insert(gameSessions)
-      .values({ userId, gameType: GAME_TYPE, mode, puzzleDate, objectId })
+      .values({ userId, gameType: GAME_TYPE, mode, puzzleDate, objectId, runId })
       .returning();
-    return this.view(session, await this.getObject(objectId), []);
+    return this.view(this.db, session, await this.getObject(objectId), []);
   }
 
   async getSession(id: string, userId: string | null): Promise<SessionView> {
     const session = await this.findSession(this.db, id, userId);
     const wrong = await this.wrongGuesses(this.db, id);
-    return this.view(session, await this.getObject(session.objectId), wrong);
+    return this.view(this.db, session, await this.getObject(session.objectId), wrong);
   }
 
   async guess(id: string, userId: string | null, text: string): Promise<GuessResponse> {
@@ -87,7 +92,7 @@ export class ShadowGuessService {
       const object = await this.getObject(session.objectId, tx);
       const wrong = await this.wrongGuesses(tx, id);
       if (session.status !== "playing") {
-        return { result: "over", session: this.view(session, object, wrong) };
+        return { result: "over", session: await this.view(tx, session, object, wrong) };
       }
 
       const answers = [object.name, ...object.aliases];
@@ -99,18 +104,18 @@ export class ShadowGuessService {
           .where(eq(gameSessions.id, id))
           .returning();
         await recordResult(tx, updated);
-        return { result: "correct", session: this.view(updated, object, wrong) };
+        return { result: "correct", session: await this.view(tx, updated, object, wrong) };
       }
 
       const normalized = normalizeGuess(text);
       if (wrong.some((g) => g !== SKIPPED && normalizeGuess(g) === normalized)) {
-        return { result: "duplicate", session: this.view(session, object, wrong) };
+        return { result: "duplicate", session: await this.view(tx, session, object, wrong) };
       }
       const updated = await this.recordMiss(tx, session, text);
       return {
         result: "wrong",
         close: isCloseGuess(text, answers),
-        session: this.view(updated, object, [...wrong, text]),
+        session: await this.view(tx, updated, object, [...wrong, text]),
       };
     });
   }
@@ -120,9 +125,9 @@ export class ShadowGuessService {
       const session = await this.findSession(tx, id, userId, true);
       const object = await this.getObject(session.objectId, tx);
       const wrong = await this.wrongGuesses(tx, id);
-      if (session.status !== "playing") return this.view(session, object, wrong);
+      if (session.status !== "playing") return this.view(tx, session, object, wrong);
       const updated = await this.recordMiss(tx, session, SKIPPED);
-      return this.view(updated, object, [...wrong, SKIPPED]);
+      return this.view(tx, updated, object, [...wrong, SKIPPED]);
     });
   }
 
@@ -137,7 +142,7 @@ export class ShadowGuessService {
         .returning();
     }
     const wrong = await this.wrongGuesses(this.db, id);
-    return this.view(updated, await this.getObject(session.objectId), wrong);
+    return this.view(this.db, updated, await this.getObject(session.objectId), wrong);
   }
 
   /**
@@ -273,21 +278,43 @@ export class ShadowGuessService {
     return rows.map((r) => r.text);
   }
 
-  private async pickFreeObject(previousSessionId?: string): Promise<string> {
-    let exclude: string | undefined;
-    if (previousSessionId) {
-      const [prev] = await this.db
-        .select({ objectId: gameSessions.objectId })
-        .from(gameSessions)
-        .where(eq(gameSessions.id, previousSessionId));
-      exclude = prev?.objectId;
-    }
-    const [row] = await this.db
-      .select({ id: gameObjects.id })
-      .from(gameObjects)
-      .where(and(eq(gameObjects.active, true), exclude ? ne(gameObjects.id, exclude) : undefined))
-      .orderBy(sql`random()`)
-      .limit(1);
+  /** The object of a previous session, so free play doesn't serve it twice in a row. */
+  private async objectOf(sessionId?: string): Promise<string[]> {
+    if (!sessionId) return [];
+    const [prev] = await this.db
+      .select({ objectId: gameSessions.objectId })
+      .from(gameSessions)
+      .where(eq(gameSessions.id, sessionId));
+    return prev ? [prev.objectId] : [];
+  }
+
+  /**
+   * The run a new free round joins: the previous round's, if that round was solved by the
+   * same player. Also returns the objects the run has already shown.
+   */
+  private async continuedRun(userId: string | null, previousSessionId?: string) {
+    if (!previousSessionId) return null;
+    const [prev] = await this.db.select().from(gameSessions).where(eq(gameSessions.id, previousSessionId));
+    // A guest run carries over on sign-in (its sessions get claimed); otherwise owners must match.
+    if (!prev?.runId || prev.status !== "won" || (prev.userId && prev.userId !== userId)) return null;
+    const rows = await this.db
+      .select({ objectId: gameSessions.objectId })
+      .from(gameSessions)
+      .where(eq(gameSessions.runId, prev.runId));
+    return { runId: prev.runId, seen: rows.map((r) => r.objectId) };
+  }
+
+  private async pickFreeObject(exclude: string[] = []): Promise<string> {
+    const pick = (avoid: string[]) =>
+      this.db
+        .select({ id: gameObjects.id })
+        .from(gameObjects)
+        .where(and(eq(gameObjects.active, true), avoid.length ? notInArray(gameObjects.id, avoid) : undefined))
+        .orderBy(sql`random()`)
+        .limit(1);
+    let [row] = await pick(exclude);
+    // A run longer than the catalog starts repeating objects.
+    if (!row && exclude.length) [row] = await pick([]);
     if (!row) throw new Error("No active objects. Run `pnpm --filter api db:seed`.");
     return row.id;
   }
@@ -327,7 +354,36 @@ export class ShadowGuessService {
     return created.objectId;
   }
 
-  private view(session: SessionRow, object: ObjectRow, wrongGuesses: string[]): SessionView {
+  private async runView(db: Executor, session: SessionRow): Promise<RunView | null> {
+    if (!session.runId) return null;
+    const [run] = await db
+      .select({
+        solved: sql<number>`count(*) filter (where ${gameSessions.status} = 'won')`.mapWith(Number),
+        score: sql<number>`coalesce(sum(${gameSessions.score}), 0)`.mapWith(Number),
+      })
+      .from(gameSessions)
+      .where(eq(gameSessions.runId, session.runId));
+    let best: number | null = null;
+    if (session.userId) {
+      const runs = db
+        .select({ solved: sql<number>`count(*) filter (where ${gameSessions.status} = 'won')`.as("solved") })
+        .from(gameSessions)
+        .where(
+          and(
+            eq(gameSessions.userId, session.userId),
+            eq(gameSessions.gameType, GAME_TYPE),
+            ne(gameSessions.runId, session.runId),
+          ),
+        )
+        .groupBy(gameSessions.runId)
+        .as("runs");
+      const [row] = await db.select({ best: sql<number>`coalesce(max(${runs.solved}), 0)`.mapWith(Number) }).from(runs);
+      best = row.best;
+    }
+    return { id: session.runId, ...run, best };
+  }
+
+  private async view(db: Executor, session: SessionRow, object: ObjectRow, wrongGuesses: string[]): Promise<SessionView> {
     const over = session.status !== "playing";
     const angles = objectAngles(object);
     return {
@@ -346,6 +402,7 @@ export class ShadowGuessService {
       potentialScore: computeScore(session.step, session.hintUsed),
       score: session.score,
       answer: over ? object.name : null,
+      run: await this.runView(db, session),
     };
   }
 }

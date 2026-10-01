@@ -60,6 +60,32 @@ async function playDaily(t: string, misses: number) {
   await call("POST", `/api/shadow-guess/sessions/${s.sessionId}/guess`, t, { text: object.name });
 }
 
+describe("free play runs", () => {
+  it("reports a signed-in player's best earlier run", async () => {
+    const t = await token("cccccccc-cccc-4ccc-8ccc-cccccccccccc", "Cy Run");
+    const begin = (previousSessionId?: string) =>
+      call<SessionView>("POST", "/api/shadow-guess/sessions", t, { mode: "free", previousSessionId });
+    const solve = async (id: string) => {
+      const [row] = await handle.db.select().from(gameSessions).where(eq(gameSessions.id, id));
+      const [object] = await handle.db.select().from(gameObjects).where(eq(gameObjects.id, row.objectId));
+      await call("POST", `/api/shadow-guess/sessions/${id}/guess`, t, { text: object.name });
+    };
+
+    // Run 1: two solved, then a loss.
+    const a = await begin();
+    expect(a.run?.best).toBe(0);
+    await solve(a.sessionId);
+    const b = await begin(a.sessionId);
+    await solve(b.sessionId);
+    const c = await begin(b.sessionId);
+    for (let i = 0; i < 6; i++) await call("POST", `/api/shadow-guess/sessions/${c.sessionId}/skip`, t);
+
+    // Run 2 sees run 1 as the best to beat.
+    const d = await begin(c.sessionId);
+    expect(d.run).toMatchObject({ solved: 0, score: 0, best: 2 });
+  });
+});
+
 describe("leaderboard", () => {
   it("shortens names", () => {
     expect(shortName("Ada Lovelace")).toBe("Ada L.");
