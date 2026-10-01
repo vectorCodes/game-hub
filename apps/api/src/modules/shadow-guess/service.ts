@@ -4,6 +4,7 @@ import {
   MAX_STEPS,
   SKIPPED,
   computeScore,
+  isCloseGuess,
   isCorrectGuess,
   normalizeGuess,
   type DailyInfo,
@@ -89,7 +90,8 @@ export class ShadowGuessService {
         return { result: "over", session: this.view(session, object, wrong) };
       }
 
-      if (isCorrectGuess(text, [object.name, ...object.aliases])) {
+      const answers = [object.name, ...object.aliases];
+      if (isCorrectGuess(text, answers)) {
         await tx.insert(guesses).values({ sessionId: id, text, correct: true, step: session.step });
         const [updated] = await tx
           .update(gameSessions)
@@ -105,7 +107,11 @@ export class ShadowGuessService {
         return { result: "duplicate", session: this.view(session, object, wrong) };
       }
       const updated = await this.recordMiss(tx, session, text);
-      return { result: "wrong", session: this.view(updated, object, [...wrong, text]) };
+      return {
+        result: "wrong",
+        close: isCloseGuess(text, answers),
+        session: this.view(updated, object, [...wrong, text]),
+      };
     });
   }
 

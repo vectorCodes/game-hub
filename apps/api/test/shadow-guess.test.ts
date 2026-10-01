@@ -81,6 +81,18 @@ describe("shadow guess API", () => {
     expect(dup.body.session.step).toBe(1);
   });
 
+  it("flags a wrong guess that's near the answer", async () => {
+    const s = await start();
+    const object = await answerOf(s.sessionId);
+    const word = object.name.split(" ").reduce((a, b) => (b.length > a.length ? b : a));
+
+    const warm = await post<GuessResponse>(`/api/shadow-guess/sessions/${s.sessionId}/guess`, {
+      text: `${word} contraption`,
+    });
+    expect(warm.body.result).toBe("wrong");
+    expect(warm.body.close).toBe(true);
+  });
+
   it("scores a correct guess server-side and reveals the answer", async () => {
     const s = await start();
     const object = await answerOf(s.sessionId);

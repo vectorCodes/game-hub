@@ -45,3 +45,21 @@ export function isCorrectGuess(guess: string, answers: string[]): boolean {
     return g === a || levenshtein(g, a) <= allowedTypos(a.length);
   });
 }
+
+const FILLER_WORDS = new Set(["and", "with", "for", "of"]);
+
+/**
+ * A wrong guess that's warm: it shares a word with an answer ("office chair" for
+ * "Armchair"'s alias "chair") or is one typo past the tolerance. Gives nothing else away.
+ */
+export function isCloseGuess(guess: string, answers: string[]): boolean {
+  const g = singular(normalizeGuess(guess));
+  if (!g) return false;
+  const words = (s: string) => s.split(" ").map(singular).filter((w) => w.length >= 3 && !FILLER_WORDS.has(w));
+  const guessWords = new Set(words(g));
+  return answers.some((answer) => {
+    const a = singular(normalizeGuess(answer));
+    if (words(a).some((w) => guessWords.has(w))) return true;
+    return a.length >= 4 && levenshtein(g, a) <= allowedTypos(a.length) + 1;
+  });
+}

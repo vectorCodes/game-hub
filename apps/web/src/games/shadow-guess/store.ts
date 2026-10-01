@@ -42,7 +42,8 @@ export function savedSessionIds(): string[] {
   return (["daily", "free"] as const).flatMap((mode) => recall(mode)?.id ?? []);
 }
 
-export type SubmitResult = GuessResult | "error";
+/** "close" is a wrong guess that was near the answer. */
+export type SubmitResult = GuessResult | "close" | "error";
 
 interface GameState {
   mode: GameMode;
@@ -118,7 +119,7 @@ export const useShadowGame = create<GameState>((set, get) => {
           body: { text },
         });
         set({ session: res.session, error: null });
-        return res.result;
+        return res.close ? "close" : res.result;
       } catch (e) {
         set({ error: e instanceof ApiError ? e.code : "network_error" });
         return "error";

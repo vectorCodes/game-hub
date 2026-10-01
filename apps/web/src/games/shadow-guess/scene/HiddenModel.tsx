@@ -17,6 +17,9 @@ import { useShadowSnapshots, type SnapshotHandler } from "./useShadowSnapshots";
 /** Every object is scaled so its largest dimension is this long; size gives nothing away. */
 const TARGET_SIZE = 4.2;
 const FADE_SECONDS = 0.9;
+/** On reveal the object spins once and lifts off the wall toward the viewer. */
+const FLOURISH_SECONDS = 1.6;
+const LIFT = 0.8;
 
 interface Props {
   modelUrl: string;
@@ -48,6 +51,8 @@ export function HiddenModel({
   onReady,
 }: Props) {
   const pivot = useRef<Group>(null);
+  const flourishGroup = useRef<Group>(null);
+  const flourish = useRef<number | null>(null);
   const { scene } = useGLTF(modelUrl);
 
   const { model, parts } = useMemo(() => {
@@ -94,6 +99,7 @@ export function HiddenModel({
       part.mesh.material = Array.isArray(part.original) ? part.original.map(clone) : clone(part.original);
     }
     fade.current = { progress: 0, materials };
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) flourish.current = 0;
   }, [parts, revealed, hidden]);
 
   useEffect(() => () => fade.current?.materials.forEach((m) => m.dispose()), []);
@@ -127,6 +133,15 @@ export function HiddenModel({
   useFrame((_, delta) => {
     pivot.current!.quaternion.slerp(target, 1 - Math.exp(-delta * 4));
 
+    if (flourish.current !== null) {
+      const p = (flourish.current = Math.min(1, flourish.current + delta / FLOURISH_SECONDS));
+      const g = flourishGroup.current!;
+      g.rotation.y = -Math.PI * 2 * (1 - p) ** 3; // ease-out spin, settling on the reveal angle
+      g.position.z = LIFT * Math.sin(Math.PI * p);
+      g.scale.setScalar(1 + 0.08 * Math.sin(Math.PI * p));
+      if (p === 1) flourish.current = null;
+    }
+
     const f = fade.current;
     if (!f) return;
     f.progress = Math.min(1, f.progress + delta / FADE_SECONDS);
@@ -140,8 +155,11 @@ export function HiddenModel({
   });
 
   return (
-    <group ref={pivot}>
-      <primitive object={model} />
+    // The flourish sits outside the pivot so its spin and lift are in world space.
+    <group ref={flourishGroup}>
+      <group ref={pivot}>
+        <primitive object={model} />
+      </group>
     </group>
   );
 }

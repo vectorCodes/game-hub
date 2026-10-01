@@ -1,13 +1,20 @@
 import { useId, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
 import { normalizeGuess } from "@shadow/shared";
+import { play, type Sound } from "../../../lib/sound";
 import type { SubmitResult } from "../store";
 
 const FEEDBACK: Partial<Record<SubmitResult, string>> = {
   wrong: "Not quite. The light moves…",
+  close: "Ooh, close! You're on the right track…",
   duplicate: "You already tried that one.",
   error: "Couldn't reach the server. Try again.",
 };
 const MAX_SUGGESTIONS = 6;
+
+type Tone = "miss" | "warm" | "info";
+const TONES: Record<Tone, string> = { miss: "text-ember-300", warm: "text-lamp-300", info: "text-stone-400" };
+const TONE_OF: Partial<Record<SubmitResult, Tone>> = { wrong: "miss", close: "warm" };
+const SOUND_OF: Partial<Record<SubmitResult, Sound>> = { wrong: "miss", close: "close", duplicate: "duplicate" };
 
 interface Props {
   names: string[];
@@ -44,7 +51,7 @@ function Highlight({ name, query }: { name: string; query: string }) {
 
 export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
   const [text, setText] = useState("");
-  const [feedback, setFeedback] = useState<{ text: string; tone: "miss" | "info" } | null>(null);
+  const [feedback, setFeedback] = useState<{ text: string; tone: Tone } | null>(null);
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(0);
   const [open, setOpen] = useState(false);
@@ -71,9 +78,12 @@ export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
     void run(async () => {
       const result = await onGuess(value);
       const message = FEEDBACK[result];
-      setFeedback(message ? { text: message, tone: result === "wrong" ? "miss" : "info" } : null);
-      if (result === "wrong" || result === "duplicate") setShake((n) => n + 1);
-      if (result === "wrong" || result === "correct") setText("");
+      setFeedback(message ? { text: message, tone: TONE_OF[result] ?? "info" } : null);
+      const sound = SOUND_OF[result];
+      if (sound) play(sound);
+      const missed = result === "wrong" || result === "close";
+      if (missed || result === "duplicate") setShake((n) => n + 1);
+      if (missed || result === "correct") setText("");
     });
   }
 
@@ -169,7 +179,7 @@ export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
         <p
           key={feedback?.text}
           aria-live="polite"
-          className={`animate-fade truncate ${feedback?.tone === "miss" ? "text-ember-300" : "text-stone-400"}`}
+          className={`animate-fade truncate ${TONES[feedback?.tone ?? "info"]}`}
         >
           {feedback?.text}
         </p>

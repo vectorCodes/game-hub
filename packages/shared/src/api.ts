@@ -44,6 +44,8 @@ export type GuessResult = "correct" | "wrong" | "duplicate" | "over";
 
 export interface GuessResponse {
   result: GuessResult;
+  /** A wrong guess that was near the answer (shares a word, or almost spelled right). */
+  close?: boolean;
   session: SessionView;
 }
 

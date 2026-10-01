@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import { HINT_PENALTY, SKIPPED, type GameMode, type LightAngle, type SessionView } from "@shadow/shared";
 import { useAuth } from "../../auth/store";
 import { Segmented } from "../../components/Segmented";
+import { play, useSound } from "../../lib/sound";
 import { useShadowGame } from "./store";
 import { ShadowScene } from "./scene/ShadowScene";
 import { ShadowHistory } from "./ui/ShadowHistory";
@@ -28,6 +29,63 @@ function StageChip({ children }: { children: ReactNode }) {
       {children}
     </span>
   );
+}
+
+const SPARKS = Array.from({ length: 22 }, (_, i) => {
+  const turn = (i / 22) * Math.PI * 2;
+  const reach = i % 2 ? 34 : 24; // % of the stage, alternating for a ragged burst
+  return {
+    "--dx": `${Math.cos(turn) * reach}cqw`,
+    "--dy": `${Math.sin(turn) * reach}cqh`,
+    animationDelay: `${(i % 3) * 60}ms`,
+    size: i % 3 ? 6 : 10,
+  };
+});
+
+/** A burst of light from the object when the player wins. */
+function Sparks() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 [container-type:size]">
+      {SPARKS.map(({ size, ...style }, i) => (
+        <span
+          key={i}
+          className="absolute top-1/2 left-1/2 animate-spark rounded-full bg-lamp-300 shadow-[0_0_12px_3px_rgba(248,207,114,0.8)]"
+          style={{ ...style, width: size, height: size } as CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MuteButton() {
+  const { muted, toggle } = useSound();
+  return (
+    <button
+      onClick={toggle}
+      aria-label={muted ? "Turn sound on" : "Mute sound"}
+      aria-pressed={!muted}
+      className="pointer-events-auto grid h-8 w-8 place-items-center rounded-full bg-stone-950/75 text-stone-100 ring-1 ring-white/10 backdrop-blur-md transition hover:bg-stone-900"
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor" />
+        {muted ? <path d="m22 9-6 6m0-6 6 6" /> : <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />}
+      </svg>
+    </button>
+  );
+}
+
+/** Plays the sound for what just changed in the round: the light turning, a hint, the end. */
+function useRoundSounds(session: SessionView | null) {
+  const prev = useRef(session);
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = session;
+    // Only changes within one round: loading or switching rounds is silent.
+    if (!session || !before || before.sessionId !== session.sessionId) return;
+    if (session.status !== before.status) play(session.status === "won" ? "win" : "lose");
+    else if (session.step > before.step) play("turn");
+    if (session.hintUsed && !before.hintUsed) play("hint");
+  }, [session]);
 }
 
 /** Worth-so-far and the category hint. */
@@ -105,6 +163,7 @@ export default function ShadowGuessPage() {
   const onModelError = useCallback(() => setModelFailed(sessionId ?? null), [sessionId]);
 
   const playing = session?.status === "playing";
+  useRoundSounds(session);
 
   // Pull fresh stats (streak, totals) when a round ends.
   const finished = session && !playing ? session.sessionId : null;
@@ -151,11 +210,13 @@ export default function ShadowGuessPage() {
           />
         )}
         {session?.status === "won" && (
-          <div
-            key={`won-${sessionId}`}
-            aria-hidden
-            className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(233,160,58,0.5),rgba(244,185,78,0.25)_40%,transparent_65%)]"
-          />
+          <div key={`won-${sessionId}`}>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(233,160,58,0.5),rgba(244,185,78,0.25)_40%,transparent_65%)]"
+            />
+            <Sparks />
+          </div>
         )}
 
         {session && (
@@ -168,6 +229,12 @@ export default function ShadowGuessPage() {
                   : `Angle ${session.step + 1} of ${session.maxSteps}`
                 : "Drag to rotate"}
             </StageChip>
+          </div>
+        )}
+
+        {session && (
+          <div className="absolute right-2.5 bottom-2.5 sm:right-4 sm:bottom-4">
+            <MuteButton />
           </div>
         )}
 

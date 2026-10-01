@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeScore, isCorrectGuess } from ".";
+import { computeScore, isCloseGuess, isCorrectGuess } from ".";
 
 describe("isCorrectGuess", () => {
   it.each([
@@ -15,6 +15,21 @@ describe("isCorrectGuess", () => {
     ["cat", ["car"]],
     ["", ["chair"]],
   ])("rejects %s", (guess, answers) => expect(isCorrectGuess(guess, answers)).toBe(false));
+});
+
+describe("isCloseGuess", () => {
+  it.each([
+    ["chair", ["Office chair"]],
+    ["wine bottle", ["Wine glass"]],
+    ["hamr", ["Hammer"]],
+  ])("warms %s", (guess, answers) => expect(isCloseGuess(guess, answers)).toBe(true));
+
+  it.each([
+    ["cat", ["car"]],
+    ["toaster", ["Canoe"]],
+    ["cup of tea", ["Bag of chips"]],
+    ["", ["chair"]],
+  ])("stays cold for %s", (guess, answers) => expect(isCloseGuess(guess, answers)).toBe(false));
 });
 
 describe("computeScore", () => {
