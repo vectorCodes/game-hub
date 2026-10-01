@@ -11,6 +11,17 @@ export interface CatalogSource {
   id: string;
   /** "<kenney-kit>/<file name without .glb>" */
   source: string;
+  category?: string;
+  /** Subdivision passes: 0 keeps the low-poly facets, 1 softens, 2 rounds. */
+  smooth?: number;
+}
+
+/** Organic shapes read better rounded; man-made, boxy ones keep their crisp edges. */
+const ROUNDED_CATEGORIES = new Set(["Food", "Nature", "Animals"]);
+
+export function smoothLevel({ smooth, category }: CatalogSource): number {
+  if (smooth !== undefined) return smooth;
+  return category && ROUNDED_CATEGORIES.has(category) ? 2 : 0;
 }
 
 export function readCatalog(): CatalogSource[] {

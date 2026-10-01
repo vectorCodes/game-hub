@@ -37,6 +37,11 @@ pnpm --filter api db:seed   # sync catalog.json + manifest into game_objects
 ```
 
 To add an object, add an entry to `assets/catalog.json`, then run build and seed.
+
+`models:build` rounds off low-poly facets with Loop subdivision so round things cast smooth
+shadows. Food, Nature and Animals are smoothed by default (2 passes); everything else stays
+crisp. Override per object with `"smooth": 0 | 1 | 2` in the catalog: smoothing melts boxy
+shapes and can speckle parts that mix several palette colours, so check the revealed model.
 Pick its 6 angles in `/dev/angles`: **Save** writes them to `catalog.json` and the DB.
 
 ## Supabase

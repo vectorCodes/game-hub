@@ -349,7 +349,8 @@
           "elevation": 0
         }
       ],
-      "active": false
+      "active": false,
+      "smooth": 2
     },
     {
       "id": "washing-machine",
@@ -470,7 +471,8 @@
       ],
       "category": "Food",
       "difficulty": 1,
-      "source": "food-kit/burger"
+      "source": "food-kit/burger",
+      "smooth": 0
     },
     {
       "id": "carrot",
@@ -486,7 +488,8 @@
       "aliases": [],
       "category": "Food",
       "difficulty": 1,
-      "source": "food-kit/pineapple"
+      "source": "food-kit/pineapple",
+      "smooth": 0
     },
     {
       "id": "pear",
@@ -613,7 +616,8 @@
           "azimuth": 0,
           "elevation": 90
         }
-      ]
+      ],
+      "smooth": 2
     },
     {
       "id": "wine-glass",
@@ -625,7 +629,8 @@
       ],
       "category": "Kitchen",
       "difficulty": 1,
-      "source": "food-kit/glass-wine"
+      "source": "food-kit/glass-wine",
+      "smooth": 2
     },
     {
       "id": "mug",
@@ -637,7 +642,8 @@
       ],
       "category": "Kitchen",
       "difficulty": 1,
-      "source": "food-kit/mug"
+      "source": "food-kit/mug",
+      "smooth": 1
     },
     {
       "id": "corn",
@@ -649,7 +655,8 @@
       ],
       "category": "Food",
       "difficulty": 2,
-      "source": "food-kit/corn"
+      "source": "food-kit/corn",
+      "smooth": 0
     },
     {
       "id": "cherries",
@@ -742,7 +749,8 @@
       ],
       "category": "Food",
       "difficulty": 1,
-      "source": "food-kit/cake-birthday"
+      "source": "food-kit/cake-birthday",
+      "smooth": 0
     },
     {
       "id": "fork",
@@ -955,7 +963,8 @@
       ],
       "category": "Seasonal",
       "difficulty": 1,
-      "source": "holiday-kit/snowman"
+      "source": "holiday-kit/snowman",
+      "smooth": 2
     },
     {
       "id": "reindeer",
@@ -1027,7 +1036,8 @@
           "azimuth": 0,
           "elevation": 0
         }
-      ]
+      ],
+      "smooth": 2
     },
     {
       "id": "candy-cane",
@@ -1061,7 +1071,8 @@
           "azimuth": 0,
           "elevation": 0
         }
-      ]
+      ],
+      "smooth": 2
     },
     {
       "id": "lantern",
@@ -1160,7 +1171,8 @@
           "azimuth": 0,
           "elevation": 0
         }
-      ]
+      ],
+      "smooth": 2
     },
     {
       "id": "axe",
@@ -1316,7 +1328,8 @@
       ],
       "category": "Tools",
       "difficulty": 2,
-      "source": "survival-kit/bucket"
+      "source": "survival-kit/bucket",
+      "smooth": 0
     },
     {
       "id": "treasure-chest",
@@ -1383,7 +1396,8 @@
       ],
       "category": "Objects",
       "difficulty": 2,
-      "source": "survival-kit/barrel"
+      "source": "survival-kit/barrel",
+      "smooth": 0
     },
     {
       "id": "tractor",
@@ -1425,7 +1439,8 @@
       "category": "Space",
       "difficulty": 2,
       "source": "space-kit/alien",
-      "active": false
+      "active": false,
+      "smooth": 0
     },
     {
       "id": "astronaut",
@@ -1541,6 +1556,1210 @@
       "category": "Nature",
       "difficulty": 1,
       "source": "nature-kit/tree_pineDefaultA"
+    },
+    {
+      "id": "bench",
+      "name": "Bench",
+      "aliases": [
+        "park bench"
+      ],
+      "category": "Furniture",
+      "difficulty": 1,
+      "source": "furniture-kit/bench"
+    },
+    {
+      "id": "office-chair",
+      "name": "Office chair",
+      "aliases": [
+        "desk chair",
+        "swivel chair",
+        "chair"
+      ],
+      "category": "Furniture",
+      "difficulty": 2,
+      "source": "furniture-kit/chairDesk"
+    },
+    {
+      "id": "armchair",
+      "name": "Armchair",
+      "aliases": [
+        "lounge chair",
+        "recliner",
+        "easy chair"
+      ],
+      "category": "Furniture",
+      "difficulty": 2,
+      "source": "furniture-kit/loungeChairRelax"
+    },
+    {
+      "id": "coffee-table",
+      "name": "Coffee table",
+      "aliases": [
+        "table",
+        "side table"
+      ],
+      "category": "Furniture",
+      "difficulty": 3,
+      "source": "furniture-kit/tableCoffee"
+    },
+    {
+      "id": "bunk-bed",
+      "name": "Bunk bed",
+      "aliases": [
+        "bunkbed",
+        "bunk"
+      ],
+      "category": "Furniture",
+      "difficulty": 2,
+      "source": "furniture-kit/bedBunk"
+    },
+    {
+      "id": "table-lamp",
+      "name": "Table lamp",
+      "aliases": [
+        "desk lamp",
+        "lamp",
+        "bedside lamp"
+      ],
+      "category": "Home",
+      "difficulty": 2,
+      "source": "furniture-kit/lampSquareTable"
+    },
+    {
+      "id": "trash-can",
+      "name": "Trash can",
+      "aliases": [
+        "bin",
+        "garbage can",
+        "dustbin",
+        "rubbish bin",
+        "wastebasket"
+      ],
+      "category": "Home",
+      "difficulty": 2,
+      "source": "furniture-kit/trashcan"
+    },
+    {
+      "id": "sink",
+      "name": "Sink",
+      "aliases": [
+        "washbasin",
+        "basin",
+        "bathroom sink"
+      ],
+      "category": "Bathroom",
+      "difficulty": 3,
+      "source": "furniture-kit/bathroomSink",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "computer-monitor",
+      "name": "Computer monitor",
+      "aliases": [
+        "monitor",
+        "screen",
+        "computer screen",
+        "display"
+      ],
+      "category": "Electronics",
+      "difficulty": 2,
+      "source": "furniture-kit/computerScreen",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "fries",
+      "name": "Fries",
+      "aliases": [
+        "french fries",
+        "chips",
+        "frites"
+      ],
+      "category": "Food",
+      "difficulty": 1,
+      "source": "food-kit/fries",
+      "smooth": 0
+    },
+    {
+      "id": "sandwich",
+      "name": "Sandwich",
+      "aliases": [
+        "sarnie",
+        "sub"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/sandwich",
+      "smooth": 0
+    },
+    {
+      "id": "avocado",
+      "name": "Avocado",
+      "aliases": [
+        "avo"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/avocado"
+    },
+    {
+      "id": "egg",
+      "name": "Egg",
+      "aliases": [
+        "chicken egg"
+      ],
+      "category": "Food",
+      "difficulty": 1,
+      "source": "food-kit/egg"
+    },
+    {
+      "id": "lemon",
+      "name": "Lemon",
+      "aliases": [
+        "lime"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/lemon"
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "aliases": [
+        "mandarin",
+        "tangerine"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/orange"
+    },
+    {
+      "id": "tomato",
+      "name": "Tomato",
+      "aliases": [],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/tomato"
+    },
+    {
+      "id": "onion",
+      "name": "Onion",
+      "aliases": [],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/onion"
+    },
+    {
+      "id": "eggplant",
+      "name": "Eggplant",
+      "aliases": [
+        "aubergine",
+        "brinjal"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/eggplant"
+    },
+    {
+      "id": "pumpkin",
+      "name": "Pumpkin",
+      "aliases": [
+        "squash",
+        "jack o lantern"
+      ],
+      "category": "Food",
+      "difficulty": 1,
+      "source": "food-kit/pumpkin"
+    },
+    {
+      "id": "baguette",
+      "name": "Baguette",
+      "aliases": [
+        "french bread",
+        "bread",
+        "loaf"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/loaf-baguette",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "sushi",
+      "name": "Sushi",
+      "aliases": [
+        "nigiri",
+        "salmon sushi"
+      ],
+      "category": "Food",
+      "difficulty": 3,
+      "source": "food-kit/sushi-salmon"
+    },
+    {
+      "id": "popsicle",
+      "name": "Popsicle",
+      "aliases": [
+        "ice lolly",
+        "ice pop",
+        "lolly"
+      ],
+      "category": "Food",
+      "difficulty": 1,
+      "source": "food-kit/popsicle"
+    },
+    {
+      "id": "lollipop",
+      "name": "Lollipop",
+      "aliases": [
+        "lolly",
+        "sucker",
+        "candy"
+      ],
+      "category": "Food",
+      "difficulty": 1,
+      "source": "food-kit/lollypop"
+    },
+    {
+      "id": "soda-can",
+      "name": "Soda can",
+      "aliases": [
+        "can",
+        "drink can",
+        "coke can",
+        "pop can"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/soda-can"
+    },
+    {
+      "id": "ketchup",
+      "name": "Ketchup",
+      "aliases": [
+        "ketchup bottle",
+        "sauce bottle",
+        "tomato sauce"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/bottle-ketchup"
+    },
+    {
+      "id": "teacup",
+      "name": "Teacup",
+      "aliases": [
+        "tea cup",
+        "cup of tea"
+      ],
+      "category": "Kitchen",
+      "difficulty": 2,
+      "source": "food-kit/cup-tea",
+      "smooth": 2
+    },
+    {
+      "id": "cooking-pot",
+      "name": "Cooking pot",
+      "aliases": [
+        "pot",
+        "saucepan",
+        "stockpot"
+      ],
+      "category": "Kitchen",
+      "difficulty": 2,
+      "source": "food-kit/pot",
+      "smooth": 0
+    },
+    {
+      "id": "knife",
+      "name": "Knife",
+      "aliases": [
+        "chef knife",
+        "kitchen knife",
+        "cooking knife"
+      ],
+      "category": "Kitchen",
+      "difficulty": 1,
+      "source": "food-kit/cooking-knife",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "present",
+      "name": "Present",
+      "aliases": [
+        "gift",
+        "gift box",
+        "christmas present"
+      ],
+      "category": "Seasonal",
+      "difficulty": 1,
+      "source": "holiday-kit/present-a-cube"
+    },
+    {
+      "id": "wreath",
+      "name": "Wreath",
+      "aliases": [
+        "christmas wreath"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "holiday-kit/wreath",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ],
+      "smooth": 2
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake",
+      "aliases": [
+        "snow flake"
+      ],
+      "category": "Seasonal",
+      "difficulty": 1,
+      "source": "holiday-kit/snowflake-a",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "menorah",
+      "name": "Menorah",
+      "aliases": [
+        "hanukkah menorah",
+        "candelabra",
+        "hanukiah"
+      ],
+      "category": "Seasonal",
+      "difficulty": 3,
+      "source": "holiday-kit/hanukkah-menorah",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "dreidel",
+      "name": "Dreidel",
+      "aliases": [
+        "spinning top",
+        "top"
+      ],
+      "category": "Seasonal",
+      "difficulty": 3,
+      "source": "holiday-kit/hanukkah-dreidel"
+    },
+    {
+      "id": "hoe",
+      "name": "Hoe",
+      "aliases": [
+        "garden hoe"
+      ],
+      "category": "Tools",
+      "difficulty": 3,
+      "source": "survival-kit/tool-hoe"
+    },
+    {
+      "id": "anvil",
+      "name": "Anvil",
+      "aliases": [],
+      "category": "Tools",
+      "difficulty": 2,
+      "source": "survival-kit/workbench-anvil"
+    },
+    {
+      "id": "bottle",
+      "name": "Bottle",
+      "aliases": [
+        "flask"
+      ],
+      "category": "Objects",
+      "difficulty": 1,
+      "source": "survival-kit/bottle",
+      "smooth": 2
+    },
+    {
+      "id": "ambulance",
+      "name": "Ambulance",
+      "aliases": [],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/ambulance"
+    },
+    {
+      "id": "police-car",
+      "name": "Police car",
+      "aliases": [
+        "cop car",
+        "squad car",
+        "police"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/police"
+    },
+    {
+      "id": "taxi",
+      "name": "Taxi",
+      "aliases": [
+        "cab",
+        "taxicab"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/taxi"
+    },
+    {
+      "id": "garbage-truck",
+      "name": "Garbage truck",
+      "aliases": [
+        "bin lorry",
+        "dump truck",
+        "rubbish truck",
+        "trash truck"
+      ],
+      "category": "Vehicles",
+      "difficulty": 3,
+      "source": "car-kit/garbage-truck"
+    },
+    {
+      "id": "race-car",
+      "name": "Race car",
+      "aliases": [
+        "racecar",
+        "racing car",
+        "formula one",
+        "f1 car"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/race"
+    },
+    {
+      "id": "truck",
+      "name": "Truck",
+      "aliases": [
+        "lorry",
+        "pickup truck"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/truck"
+    },
+    {
+      "id": "van",
+      "name": "Van",
+      "aliases": [
+        "minivan",
+        "delivery van"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/van"
+    },
+    {
+      "id": "go-kart",
+      "name": "Go-kart",
+      "aliases": [
+        "kart",
+        "go kart",
+        "gokart"
+      ],
+      "category": "Vehicles",
+      "difficulty": 3,
+      "source": "car-kit/kart-oobi"
+    },
+    {
+      "id": "traffic-cone",
+      "name": "Traffic cone",
+      "aliases": [
+        "cone",
+        "road cone",
+        "pylon"
+      ],
+      "category": "Outdoors",
+      "difficulty": 1,
+      "source": "car-kit/cone",
+      "smooth": 0
+    },
+    {
+      "id": "rover",
+      "name": "Rover",
+      "aliases": [
+        "mars rover",
+        "moon rover",
+        "lunar rover"
+      ],
+      "category": "Space",
+      "difficulty": 3,
+      "source": "space-kit/rover"
+    },
+    {
+      "id": "flower",
+      "name": "Flower",
+      "aliases": [
+        "tulip",
+        "rose"
+      ],
+      "category": "Nature",
+      "difficulty": 1,
+      "source": "nature-kit/flower_redA",
+      "smooth": 0
+    },
+    {
+      "id": "oak-tree",
+      "name": "Oak tree",
+      "aliases": [
+        "oak",
+        "tree"
+      ],
+      "category": "Nature",
+      "difficulty": 1,
+      "source": "nature-kit/tree_oak"
+    },
+    {
+      "id": "lily-pad",
+      "name": "Lily pad",
+      "aliases": [
+        "lilypad",
+        "water lily",
+        "lily"
+      ],
+      "category": "Nature",
+      "difficulty": 3,
+      "source": "nature-kit/lily_large",
+      "angles": [
+        {
+          "azimuth": 90,
+          "elevation": 0
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 15
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 0,
+          "elevation": 90
+        }
+      ],
+      "smooth": 0
+    },
+    {
+      "id": "stone-head",
+      "name": "Stone head",
+      "aliases": [
+        "moai",
+        "easter island head",
+        "statue",
+        "head statue"
+      ],
+      "category": "Outdoors",
+      "difficulty": 3,
+      "source": "nature-kit/statue_head"
+    },
+    {
+      "id": "bridge",
+      "name": "Bridge",
+      "aliases": [
+        "wooden bridge",
+        "footbridge"
+      ],
+      "category": "Outdoors",
+      "difficulty": 2,
+      "source": "nature-kit/bridge_wood"
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "aliases": [
+        "fence gate",
+        "garden gate"
+      ],
+      "category": "Outdoors",
+      "difficulty": 2,
+      "source": "nature-kit/fence_gate",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "wine-bottle",
+      "name": "Wine bottle",
+      "aliases": [
+        "bottle of wine",
+        "wine",
+        "bottle"
+      ],
+      "category": "Kitchen",
+      "difficulty": 1,
+      "source": "food-kit/wine-red",
+      "smooth": 2
+    },
+    {
+      "id": "cocktail",
+      "name": "Cocktail",
+      "aliases": [
+        "martini",
+        "cocktail glass",
+        "drink"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/cocktail"
+    },
+    {
+      "id": "sundae",
+      "name": "Sundae",
+      "aliases": [
+        "ice cream sundae",
+        "ice cream",
+        "dessert"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/sundae"
+    },
+    {
+      "id": "spatula",
+      "name": "Spatula",
+      "aliases": [
+        "turner",
+        "flipper",
+        "fish slice"
+      ],
+      "category": "Kitchen",
+      "difficulty": 2,
+      "source": "food-kit/cooking-spatula",
+      "angles": [
+        {
+          "azimuth": 90,
+          "elevation": 0
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 15
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 0,
+          "elevation": 90
+        }
+      ]
+    },
+    {
+      "id": "kebab",
+      "name": "Kebab",
+      "aliases": [
+        "skewer",
+        "shish kebab",
+        "kabob"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/skewer",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "corn-dog",
+      "name": "Corn dog",
+      "aliases": [
+        "corndog"
+      ],
+      "category": "Food",
+      "difficulty": 3,
+      "source": "food-kit/corn-dog",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "pepper-grinder",
+      "name": "Pepper grinder",
+      "aliases": [
+        "pepper mill",
+        "peppermill",
+        "grinder"
+      ],
+      "category": "Kitchen",
+      "difficulty": 3,
+      "source": "food-kit/pepper-mill",
+      "smooth": 2
+    },
+    {
+      "id": "takeout-box",
+      "name": "Takeout box",
+      "aliases": [
+        "chinese takeout",
+        "takeaway box",
+        "noodle box",
+        "takeout"
+      ],
+      "category": "Food",
+      "difficulty": 3,
+      "source": "food-kit/chinese",
+      "smooth": 0
+    },
+    {
+      "id": "salt-shaker",
+      "name": "Salt shaker",
+      "aliases": [
+        "salt",
+        "shaker",
+        "salt cellar"
+      ],
+      "category": "Kitchen",
+      "difficulty": 2,
+      "source": "food-kit/shaker-salt",
+      "smooth": 0
+    },
+    {
+      "id": "honey-jar",
+      "name": "Honey jar",
+      "aliases": [
+        "honey",
+        "honeypot",
+        "honey pot",
+        "jar"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/honey"
+    },
+    {
+      "id": "digger",
+      "name": "Digger",
+      "aliases": [
+        "excavator",
+        "bulldozer",
+        "front loader",
+        "loader",
+        "tractor"
+      ],
+      "category": "Vehicles",
+      "difficulty": 2,
+      "source": "car-kit/tractor-shovel"
+    },
+    {
+      "id": "obelisk",
+      "name": "Obelisk",
+      "aliases": [
+        "monument",
+        "pillar"
+      ],
+      "category": "Outdoors",
+      "difficulty": 3,
+      "source": "nature-kit/statue_obelisk"
+    },
+    {
+      "id": "column",
+      "name": "Column",
+      "aliases": [
+        "pillar",
+        "greek column",
+        "roman column"
+      ],
+      "category": "Outdoors",
+      "difficulty": 2,
+      "source": "nature-kit/statue_column"
+    },
+    {
+      "id": "paddle",
+      "name": "Paddle",
+      "aliases": [
+        "oar",
+        "canoe paddle"
+      ],
+      "category": "Outdoors",
+      "difficulty": 2,
+      "source": "nature-kit/canoe_paddle"
+    },
+    {
+      "id": "ray-gun",
+      "name": "Ray gun",
+      "aliases": [
+        "laser gun",
+        "blaster",
+        "space gun",
+        "gun",
+        "pistol"
+      ],
+      "category": "Space",
+      "difficulty": 2,
+      "source": "space-kit/weapon_gun"
+    },
+    {
+      "id": "fence",
+      "name": "Fence",
+      "aliases": [
+        "picket fence",
+        "wooden fence"
+      ],
+      "category": "Outdoors",
+      "difficulty": 2,
+      "source": "survival-kit/fence",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ]
+    },
+    {
+      "id": "milk-carton",
+      "name": "Milk carton",
+      "aliases": [
+        "carton",
+        "milk",
+        "juice carton"
+      ],
+      "category": "Food",
+      "difficulty": 2,
+      "source": "food-kit/carton",
+      "angles": [
+        {
+          "azimuth": 0,
+          "elevation": 90
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 90,
+          "elevation": 15
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 0
+        }
+      ],
+      "smooth": 0
+    },
+    {
+      "id": "fish-bones",
+      "name": "Fish bones",
+      "aliases": [
+        "fish skeleton",
+        "skeleton",
+        "bones"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "food-kit/fish-bones",
+      "angles": [
+        {
+          "azimuth": 90,
+          "elevation": 0
+        },
+        {
+          "azimuth": 55,
+          "elevation": 10
+        },
+        {
+          "azimuth": 0,
+          "elevation": 15
+        },
+        {
+          "azimuth": 160,
+          "elevation": 40
+        },
+        {
+          "azimuth": 35,
+          "elevation": 65
+        },
+        {
+          "azimuth": 0,
+          "elevation": 90
+        }
+      ]
     }
   ]
 }

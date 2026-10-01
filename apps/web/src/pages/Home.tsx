@@ -18,7 +18,7 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "80+", label: "hand-picked objects" },
+  { value: "150+", label: "hand-picked objects" },
   { value: "6", label: "light angles per puzzle" },
   { value: "1", label: "new puzzle every day" },
   { value: "100", label: "points for a first-angle solve" },
@@ -291,7 +291,7 @@ function GladeChapter() {
           <ChapterLabel n="04" center>
             Collect
           </ChapterLabel>
-          <h2 className="mt-5 text-section text-legible">Eighty objects. One a day.</h2>
+          <h2 className="mt-5 text-section text-legible">150+ objects. One a day.</h2>
           <p className="mt-4 text-lead text-legible text-stone-300!">Chairs, cacti, snowmen, spaceships. Every one hand-picked to cast a tricky shadow.</p>
         </Reveal>
         <Reveal delay={120}>

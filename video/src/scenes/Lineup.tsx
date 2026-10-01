@@ -36,7 +36,7 @@ export const Lineup = () => {
       <AbsoluteFill style={{ justifyContent: "flex-end", paddingLeft: 140, paddingBottom: 110 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 28 }}>
           <Slam at={0} style={{ fontFamily: displayFont, fontSize: 210, fontWeight: 700, lineHeight: 0.9, letterSpacing: "-0.05em", color: colors.text }}>
-            80+
+            150+
           </Slam>
           <Slam at={BEAT} style={{ fontFamily: displayFont, fontSize: 96, fontWeight: 600, letterSpacing: "-0.04em", color: colors.text }}>
             objects.
