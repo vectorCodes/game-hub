@@ -251,7 +251,7 @@ export default function ShadowGuessPage() {
           <div className="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
             <StageChip>
               {session.puzzleNumber
-                ? `Daily #${session.puzzleNumber}`
+                ? `Daily #${session.puzzleNumber}${session.theme ? ` · ${session.theme.emoji} ${session.theme.name}` : ""}`
                 : session.run
                   ? `Run · shadow ${session.run.solved + (session.status === "won" ? 0 : 1)}`
                   : "Free play"}

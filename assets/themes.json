@@ -1,0 +1,47 @@
+{
+  "themes": [
+    {
+      "id": "space-week",
+      "name": "Space Week",
+      "emoji": "🚀",
+      "start": "2026-10-01",
+      "end": "2026-10-10",
+      "categories": ["Space"]
+    },
+    {
+      "id": "animal-week",
+      "name": "Animal Week",
+      "emoji": "🐾",
+      "start": "2026-10-12",
+      "end": "2026-10-18",
+      "categories": ["Animals"]
+    },
+    {
+      "id": "spooky-week",
+      "name": "Spooky Week",
+      "emoji": "🎃",
+      "start": "2026-10-25",
+      "end": "2026-10-31",
+      "objects": ["jack-o-lantern", "coffin", "gravestone", "ghost", "skeleton", "candle", "lantern", "fish-bones", "pumpkin"]
+    },
+    {
+      "id": "harvest-week",
+      "name": "Harvest Week",
+      "emoji": "🌽",
+      "start": "2026-11-20",
+      "end": "2026-11-26",
+      "objects": ["turkey", "pumpkin", "corn", "apple", "pear", "grapes", "carrot", "onion", "tractor", "hoe"]
+    },
+    {
+      "id": "holiday-week",
+      "name": "Holiday Week",
+      "emoji": "🎄",
+      "start": "2026-12-19",
+      "end": "2026-12-25",
+      "objects": [
+        "snowman", "sled", "nutcracker", "gingerbread-man", "candy-cane", "christmas-tree",
+        "stocking", "present", "wreath", "snowflake", "menorah", "dreidel", "reindeer"
+      ]
+    }
+  ]
+}

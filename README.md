@@ -26,6 +26,7 @@ just restart the API after editing the catalog. PGlite is single-process, so don
 | `packages/shared` | Guess matcher, scoring, angles, Zod API contract (used by web + api) |
 | `tools/models` | Model pipeline: fetch Kenney kits → normalize → upload to Supabase Storage |
 | `assets/catalog.json` | Hand-edited object list (names, aliases, category, source model, angles) |
+| `assets/themes.json` | Themed weeks: date range plus the categories/objects their dailies draw from |
 | `assets/models/` | Built GLBs named by content hash + `manifest.json` (id → key) |
 
 ## Model pipeline
@@ -43,6 +44,16 @@ shadows. Food, Nature and Animals are smoothed by default (2 passes); everything
 crisp. Override per object with `"smooth": 0 | 1 | 2` in the catalog: smoothing melts boxy
 shapes and can speckle parts that mix several palette colours, so check the revealed model.
 Pick its 6 angles in `/dev/angles`: **Save** writes them to `catalog.json` and the DB.
+
+## Themed weeks
+
+`assets/themes.json` schedules themed stretches of dailies ("🚀 Space Week"). Each theme has
+inclusive UTC `start`/`end` dates and draws its puzzles from `categories` and/or `objects`.
+Themes may not overlap. On themed days the daily stays on theme (avoiding repeats while it
+can); ordinary days skip the objects of any theme starting within the next 30 days, so they
+are still fresh when it comes. The theme shows on the homepage, the stage, and the share text.
+Seeding fails if a theme names an unknown object or category. Restart the API after editing
+the file. Puzzles already created (today's and tomorrow's) don't change.
 
 ## Supabase
 

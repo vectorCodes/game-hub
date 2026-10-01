@@ -64,10 +64,15 @@ Status: ✅ done · ⏳ next · ⬜ planned
 - Share a link that serves the same object; results shown side by side
   ("You got it on angle 2, Sam on angle 4").
 
-### 10. Themed weeks and more content ⬜
-- The catalog leans on Food (43) and Kitchen (18). Add models in thin categories
-  (Animals 3, Toys 1, Bathroom 3).
-- Themed days/weeks (e.g. "Space Week") so the game feels alive.
+### 10. Themed weeks and more content ✅
+- 32 new objects from five new Kenney kits: Animals 3 → 19 (Cube Pets), Toys 0 → 6 active
+  (toy brick, monster truck, arcade games), Bathroom 3 → 6, Seasonal +6 spooky objects
+  (Graveyard Kit), Space +1 (meteor). They use the default angles until picked in `/dev/angles`.
+- `assets/themes.json` schedules themed weeks: Space (Oct 1–10), Animal (Oct 12–18),
+  Spooky (Oct 25–31), Harvest (Nov 20–26), Holiday (Dec 19–25). A themed day's daily is
+  drawn from the theme; ordinary days save an upcoming theme's objects for it.
+- The theme shows on the homepage pill, the hub card, the stage chip and the share text.
+- Later: themes in free play; a page listing upcoming themes.
 
 ### 11. Hard mode ⬜
 - No category hint, and only 4 angles.

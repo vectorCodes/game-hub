@@ -19,7 +19,7 @@ function statusLine(info: DailyInfo): string {
 }
 
 /** A chair's shadow on the lit wall, leaning as if its light were circling. */
-function ShadowArt({ puzzleNumber }: { puzzleNumber?: number }) {
+function ShadowArt({ info }: { info: DailyInfo | null }) {
   return (
     <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-2xl bg-wall md:aspect-auto md:h-full md:min-h-80">
       <div
@@ -35,8 +35,13 @@ function ShadowArt({ puzzleNumber }: { puzzleNumber?: number }) {
         </g>
       </svg>
       <span className="absolute top-4 left-4 rounded-full bg-stone-950/80 px-3 py-1 text-xs font-medium text-stone-100 ring-1 ring-white/10 backdrop-blur">
-        {puzzleNumber ? `Daily #${puzzleNumber}` : "Daily"}
+        {info ? `Daily #${info.puzzleNumber}` : "Daily"}
       </span>
+      {info?.theme && (
+        <span className="absolute bottom-4 left-4 rounded-full bg-lamp-300/90 px-3 py-1 text-xs font-semibold text-ink">
+          {info.theme.emoji} {info.theme.name}
+        </span>
+      )}
       <span className="absolute top-4 right-4 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-ink">3D</span>
     </div>
   );
@@ -49,7 +54,7 @@ export function ShadowGuessHubCard() {
 
   return (
     <div className="grid gap-6 md:grid-cols-[1.05fr_1fr] md:gap-10">
-      <ShadowArt puzzleNumber={info?.puzzleNumber} />
+      <ShadowArt info={info} />
       <div className="flex flex-col py-1 md:py-4">
         <p className="eyebrow">Today&rsquo;s puzzle</p>
         <h3 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Shadow Guess</h3>

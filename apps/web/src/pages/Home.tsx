@@ -175,6 +175,11 @@ function Hero() {
           </span>
           {info ? (
             <span>
+              {info.theme && (
+                <span className="font-medium text-lamp-200">
+                  {info.theme.emoji} {info.theme.name} ·{" "}
+                </span>
+              )}
               Daily #{info.puzzleNumber} is live <span className="text-stone-400">· next in {formatCountdown(info.nextAt, now)}</span>
             </span>
           ) : (

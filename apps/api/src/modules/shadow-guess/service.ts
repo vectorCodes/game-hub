@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, gt, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import {
   DEFAULT_ANGLES,
   MAX_STEPS,
@@ -19,6 +19,7 @@ import {
 } from "@shadow/shared";
 import type { Db, Executor } from "../../db/client";
 import { dailyPuzzles, gameObjects, gameSessions, guesses } from "../../db/schema";
+import { fitsTheme, readThemes, themeOn, themeView, type Theme } from "../../themes";
 import { recordResult } from "../stats/service";
 
 export const GAME_TYPE = "shadow-guess";
@@ -26,6 +27,8 @@ export const GAME_TYPE = "shadow-guess";
 const LAUNCH_DATE = Date.UTC(2026, 8, 29);
 /** A daily object isn't repeated within this many days. */
 const DAILY_REPEAT_WINDOW = 60;
+/** Ordinary dailies leave alone the objects of a theme starting within this many days. */
+const THEME_RESERVE_DAYS = 30;
 
 type SessionRow = typeof gameSessions.$inferSelect;
 type ObjectRow = typeof gameObjects.$inferSelect;
@@ -40,6 +43,18 @@ function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function addDays(date: string, days: number): string {
+  return new Date(Date.parse(date) + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Objects that fit a theme. */
+function inTheme(theme: Theme): SQL {
+  return or(
+    theme.categories.length ? inArray(gameObjects.category, theme.categories) : undefined,
+    theme.objects.length ? inArray(gameObjects.id, theme.objects) : undefined,
+  )!;
+}
+
 function puzzleNumber(date: string): number {
   return Math.round((Date.parse(date) - LAUNCH_DATE) / 86_400_000) + 1;
 }
@@ -52,6 +67,7 @@ export class ShadowGuessService {
   constructor(
     private db: Db,
     private modelsBaseUrl: string,
+    private themes: Theme[] = readThemes(),
   ) {}
 
   async startSession(
@@ -179,6 +195,7 @@ export class ShadowGuessService {
       score: session?.score ?? null,
       step: session ? session.step : null,
       nextAt: next.toISOString(),
+      theme: this.dailyTheme(date, await this.getObject(await this.ensureDailyPuzzle(date))),
     };
   }
 
@@ -389,20 +406,23 @@ export class ShadowGuessService {
     const [existing] = await find();
     if (existing) return existing.objectId;
 
-    const cutoff = new Date(Date.parse(date) - DAILY_REPEAT_WINDOW * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
     const recent = this.db
       .select({ id: dailyPuzzles.objectId })
       .from(dailyPuzzles)
-      .where(and(eq(dailyPuzzles.gameType, GAME_TYPE), gt(dailyPuzzles.date, cutoff)));
-    const [fresh] = await this.db
-      .select({ id: gameObjects.id })
-      .from(gameObjects)
-      .where(and(eq(gameObjects.active, true), notInArray(gameObjects.id, recent)))
-      .orderBy(sql`random()`)
-      .limit(1);
-    const objectId = fresh?.id ?? (await this.pickFreeObject());
+      .where(and(eq(dailyPuzzles.gameType, GAME_TYPE), gt(dailyPuzzles.date, addDays(date, -DAILY_REPEAT_WINDOW))));
+    const fresh = notInArray(gameObjects.id, recent);
+    const theme = themeOn(this.themes, date);
+    // Most wanted first. A themed day stays on theme even if that means a repeat; an
+    // ordinary day saves upcoming themes' objects for them while it has other fresh ones.
+    const choices = theme
+      ? [and(inTheme(theme), fresh), inTheme(theme)]
+      : [and(fresh, ...this.upcomingThemes(date).map((t) => sql`not ${inTheme(t)}`)), fresh];
+    let objectId: string | undefined;
+    for (const where of choices) {
+      objectId = await this.randomObject(where);
+      if (objectId) break;
+    }
+    objectId ??= await this.pickFreeObject();
 
     // Concurrent first requests race here; the primary key keeps exactly one winner.
     await this.db
@@ -411,6 +431,30 @@ export class ShadowGuessService {
       .onConflictDoNothing();
     const [created] = await find();
     return created.objectId;
+  }
+
+  /**
+   * The theme a daily puzzle shows. Only an on-theme object gets the label: a puzzle picked
+   * before its theme was scheduled keeps its original object and goes unlabelled.
+   */
+  private dailyTheme(date: string, object: ObjectRow) {
+    const theme = themeOn(this.themes, date);
+    return themeView(theme && fitsTheme(theme, object) ? theme : undefined);
+  }
+
+  private upcomingThemes(date: string): Theme[] {
+    const until = addDays(date, THEME_RESERVE_DAYS);
+    return this.themes.filter((t) => t.start > date && t.start <= until);
+  }
+
+  private async randomObject(where: SQL | undefined): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ id: gameObjects.id })
+      .from(gameObjects)
+      .where(and(eq(gameObjects.active, true), where))
+      .orderBy(sql`random()`)
+      .limit(1);
+    return row?.id;
   }
 
   private async runView(db: Executor, session: SessionRow): Promise<RunView | null> {
@@ -462,6 +506,7 @@ export class ShadowGuessService {
       score: session.score,
       answer: over ? object.name : null,
       run: await this.runView(db, session),
+      theme: session.puzzleDate ? this.dailyTheme(session.puzzleDate, object) : null,
     };
   }
 }

@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { sql } from "drizzle-orm";
 import type { LightAngle } from "@shadow/shared";
 import { CATALOG_PATH, MANIFEST_PATH } from "../paths";
+import { checkThemes, readThemes } from "../themes";
 import type { Db } from "./client";
 import { gameObjects } from "./schema";
 
@@ -21,10 +22,15 @@ export function readCatalog(): CatalogEntry[] {
   return JSON.parse(readFileSync(CATALOG_PATH, "utf8")).objects;
 }
 
-/** Upserts assets/catalog.json joined with the model manifest into game_objects. */
+/**
+ * Upserts assets/catalog.json joined with the model manifest into game_objects. Also checks
+ * that assets/themes.json only names objects and categories that exist.
+ */
 export async function seedObjects(db: Db): Promise<number> {
   const manifest: Record<string, string> = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
-  const rows = readCatalog().map((o) => {
+  const catalog = readCatalog();
+  checkThemes(readThemes(), catalog);
+  const rows = catalog.map((o) => {
     const modelKey = manifest[o.id];
     if (!modelKey) throw new Error(`${o.id} has no built model. Run \`pnpm models:build\`.`);
     return {

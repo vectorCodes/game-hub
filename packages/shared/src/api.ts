@@ -43,6 +43,18 @@ export interface SessionView {
   answer: string | null;
   /** Free play only: the run this round belongs to. */
   run: RunView | null;
+  /** Daily only: the themed week this puzzle belongs to. */
+  theme: ThemeView | null;
+}
+
+/** A themed stretch of dailies ("Space Week"): every puzzle in it fits the theme. */
+export interface ThemeView {
+  id: string;
+  name: string;
+  emoji: string;
+  /** Inclusive UTC dates. */
+  start: string;
+  end: string;
 }
 
 /** Free play rounds solved in a row. A failed round ends the run. */
@@ -144,6 +156,7 @@ export interface DailyInfo {
   step: number | null;
   /** When the next daily puzzle unlocks (midnight UTC). */
   nextAt: string;
+  theme: ThemeView | null;
 }
 
 /** Album: guest wins from this browser, merged with the signed-in player's own. */

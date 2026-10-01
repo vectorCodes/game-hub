@@ -18,7 +18,9 @@ export function shareText(session: SessionView): string {
   const won = session.status === "won";
   const misses = session.wrongGuesses.length;
   const grid = "🟥".repeat(misses) + (won ? "🟩" : "") + "⬛".repeat(session.maxSteps - misses - (won ? 1 : 0));
-  const title = session.puzzleNumber ? `Shadow Guess #${session.puzzleNumber}` : "Shadow Guess";
+  const title =
+    (session.puzzleNumber ? `Shadow Guess #${session.puzzleNumber}` : "Shadow Guess") +
+    (session.theme ? ` · ${session.theme.emoji} ${session.theme.name}` : "");
   const result = won ? `${misses + 1}/${session.maxSteps}` : `X/${session.maxSteps}`;
   const run = session.run ? `Run: ${session.run.solved} in a row 🔥 · ${session.run.score} pts\n` : "";
   return `${title} ${result}\n${grid}\n${run}${location.origin}/games/shadow-guess`;

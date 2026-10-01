@@ -2760,6 +2760,379 @@
           "elevation": 90
         }
       ]
+    },
+    {
+      "id": "rabbit",
+      "name": "Rabbit",
+      "aliases": [
+        "bunny",
+        "hare"
+      ],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-bunny",
+      "smooth": 0
+    },
+    {
+      "id": "cat",
+      "name": "Cat",
+      "aliases": [
+        "kitten",
+        "kitty"
+      ],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-cat",
+      "smooth": 0
+    },
+    {
+      "id": "dog",
+      "name": "Dog",
+      "aliases": [
+        "puppy",
+        "pup",
+        "doggy"
+      ],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-dog",
+      "smooth": 0
+    },
+    {
+      "id": "cow",
+      "name": "Cow",
+      "aliases": [
+        "bull",
+        "cattle",
+        "calf",
+        "ox"
+      ],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-cow",
+      "smooth": 0
+    },
+    {
+      "id": "elephant",
+      "name": "Elephant",
+      "aliases": [],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-elephant",
+      "smooth": 0
+    },
+    {
+      "id": "giraffe",
+      "name": "Giraffe",
+      "aliases": [],
+      "category": "Animals",
+      "difficulty": 1,
+      "source": "cube-pets/animal-giraffe",
+      "smooth": 0
+    },
+    {
+      "id": "penguin",
+      "name": "Penguin",
+      "aliases": [],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-penguin",
+      "smooth": 0
+    },
+    {
+      "id": "pig",
+      "name": "Pig",
+      "aliases": [
+        "piglet",
+        "hog",
+        "swine",
+        "boar"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-pig",
+      "smooth": 0
+    },
+    {
+      "id": "crab",
+      "name": "Crab",
+      "aliases": [],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-crab",
+      "smooth": 0
+    },
+    {
+      "id": "chick",
+      "name": "Chick",
+      "aliases": [
+        "chicken",
+        "baby chicken",
+        "chicky"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-chick",
+      "smooth": 0
+    },
+    {
+      "id": "parrot",
+      "name": "Parrot",
+      "aliases": [
+        "macaw",
+        "parakeet"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-parrot",
+      "smooth": 0
+    },
+    {
+      "id": "lion",
+      "name": "Lion",
+      "aliases": [
+        "lioness"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-lion",
+      "smooth": 0
+    },
+    {
+      "id": "monkey",
+      "name": "Monkey",
+      "aliases": [
+        "ape",
+        "chimp",
+        "chimpanzee"
+      ],
+      "category": "Animals",
+      "difficulty": 2,
+      "source": "cube-pets/animal-monkey",
+      "smooth": 0
+    },
+    {
+      "id": "bee",
+      "name": "Bee",
+      "aliases": [
+        "bumblebee",
+        "honeybee",
+        "honey bee",
+        "bumble bee"
+      ],
+      "category": "Animals",
+      "difficulty": 3,
+      "source": "cube-pets/animal-bee",
+      "smooth": 0
+    },
+    {
+      "id": "panda",
+      "name": "Panda",
+      "aliases": [
+        "panda bear",
+        "giant panda"
+      ],
+      "category": "Animals",
+      "difficulty": 3,
+      "source": "cube-pets/animal-panda",
+      "smooth": 0
+    },
+    {
+      "id": "fox",
+      "name": "Fox",
+      "aliases": [],
+      "category": "Animals",
+      "difficulty": 3,
+      "source": "cube-pets/animal-fox",
+      "smooth": 0
+    },
+    {
+      "id": "shower",
+      "name": "Shower",
+      "aliases": [
+        "shower stall",
+        "shower cubicle",
+        "shower head"
+      ],
+      "category": "Bathroom",
+      "difficulty": 2,
+      "source": "furniture-kit/shower"
+    },
+    {
+      "id": "bathroom-mirror",
+      "name": "Mirror",
+      "aliases": [
+        "bathroom mirror",
+        "vanity mirror"
+      ],
+      "category": "Bathroom",
+      "difficulty": 3,
+      "source": "furniture-kit/bathroomMirror"
+    },
+    {
+      "id": "bathroom-cabinet",
+      "name": "Bathroom cabinet",
+      "aliases": [
+        "vanity",
+        "vanity unit",
+        "sink cabinet"
+      ],
+      "category": "Bathroom",
+      "difficulty": 3,
+      "source": "furniture-kit/bathroomCabinet"
+    },
+    {
+      "id": "toy-brick",
+      "name": "Toy brick",
+      "aliases": [
+        "lego",
+        "lego brick",
+        "building block",
+        "brick",
+        "block"
+      ],
+      "category": "Toys",
+      "difficulty": 2,
+      "source": "brick-kit/bevel-hq-brick-2x4"
+    },
+    {
+      "id": "monster-truck",
+      "name": "Monster truck",
+      "aliases": [
+        "toy truck",
+        "toy car"
+      ],
+      "category": "Toys",
+      "difficulty": 2,
+      "source": "toy-car-kit/vehicle-monster-truck"
+    },
+    {
+      "id": "arcade-machine",
+      "name": "Arcade machine",
+      "aliases": [
+        "arcade",
+        "arcade cabinet",
+        "arcade game",
+        "video game"
+      ],
+      "category": "Toys",
+      "difficulty": 2,
+      "source": "mini-arcade/arcade-machine"
+    },
+    {
+      "id": "claw-machine",
+      "name": "Claw machine",
+      "aliases": [
+        "claw game",
+        "crane game",
+        "crane machine",
+        "grabber machine"
+      ],
+      "category": "Toys",
+      "difficulty": 3,
+      "source": "mini-arcade/claw-machine"
+    },
+    {
+      "id": "pinball",
+      "name": "Pinball machine",
+      "aliases": [
+        "pinball",
+        "pinball table"
+      ],
+      "category": "Toys",
+      "difficulty": 3,
+      "source": "mini-arcade/pinball"
+    },
+    {
+      "id": "air-hockey",
+      "name": "Air hockey table",
+      "aliases": [
+        "air hockey",
+        "hockey table"
+      ],
+      "category": "Toys",
+      "difficulty": 3,
+      "source": "mini-arcade/air-hockey"
+    },
+    {
+      "id": "jack-o-lantern",
+      "name": "Jack-o'-lantern",
+      "aliases": [
+        "jack o lantern",
+        "jackolantern",
+        "carved pumpkin",
+        "pumpkin"
+      ],
+      "category": "Seasonal",
+      "difficulty": 1,
+      "source": "graveyard-kit/pumpkin-carved"
+    },
+    {
+      "id": "coffin",
+      "name": "Coffin",
+      "aliases": [
+        "casket"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "graveyard-kit/coffin"
+    },
+    {
+      "id": "gravestone",
+      "name": "Gravestone",
+      "aliases": [
+        "tombstone",
+        "headstone",
+        "grave"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "graveyard-kit/gravestone-round"
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "aliases": [
+        "spook",
+        "spirit",
+        "phantom"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "graveyard-kit/character-ghost"
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "aliases": [
+        "skelly",
+        "bones"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "graveyard-kit/character-skeleton"
+    },
+    {
+      "id": "candle",
+      "name": "Candle",
+      "aliases": [
+        "candlestick"
+      ],
+      "category": "Seasonal",
+      "difficulty": 2,
+      "source": "graveyard-kit/candle"
+    },
+    {
+      "id": "meteor",
+      "name": "Meteor",
+      "aliases": [
+        "asteroid",
+        "meteorite",
+        "space rock"
+      ],
+      "category": "Space",
+      "difficulty": 2,
+      "source": "space-kit/meteor_detailed"
     }
   ]
 }
