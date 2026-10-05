@@ -1,6 +1,6 @@
 // Sky, light and weather. All of it follows the climber's height: a bright morning in the
 // meadow, golden hour on the cliffs, sunset on the snow, a storm, then a starry summit.
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   AdditiveBlending,
@@ -16,6 +16,7 @@ import {
   type Points,
   IcosahedronGeometry,
   Matrix4,
+  Vector3,
   type PointsMaterial,
   type LineBasicMaterial,
 } from "three";
@@ -48,7 +49,15 @@ const SKY_FRAGMENT = /* glsl */ `
 const storm = { flash: 0, next: 4 };
 
 /** The sky dome, sun, ambient light and fog, all blended for the climber's height. */
-export function SkyAndLight({ weak }: { weak: boolean }) {
+const SHADOW_BOX = 12;
+const SUN_OFFSET = new Vector3(9, 16, 6);
+/** The sun's shadow camera axes (it looks along -SUN_OFFSET with +y up). */
+const SUN_Z = SUN_OFFSET.clone().normalize();
+const SUN_X = new Vector3(0, 1, 0).cross(SUN_Z).normalize();
+const SUN_Y = SUN_Z.clone().cross(SUN_X);
+const snapped = new Vector3();
+
+export function SkyAndLight({ shadowMap }: { shadowMap: number }) {
   const sim = useSim();
   const camera = useThree((s) => s.camera);
   const dome = useRef<Group>(null);
@@ -57,6 +66,14 @@ export function SkyAndLight({ weak }: { weak: boolean }) {
   const look = useMemo(newLook, []);
   const uniforms = useMemo(() => ({ top: { value: new Color() }, bottom: { value: new Color() }, flash: { value: 0 } }), []);
   const fog = useMemo(() => new Fog("#cde9fb", 22, 85), []);
+
+  // A new map size needs a new shadow map.
+  useEffect(() => {
+    const shadow = sun.current?.shadow;
+    if (!shadow?.map) return;
+    shadow.map.dispose();
+    shadow.map = null;
+  }, [shadowMap]);
 
   useFrame((_, dt) => {
     const pl = sim.player;
@@ -85,11 +102,17 @@ export function SkyAndLight({ weak }: { weak: boolean }) {
       hemi.current.intensity = (look.hemiIntensity as number) + flash * 2;
     }
     if (sun.current) {
-      // The sun's shadow box follows the climber.
+      // The sun's shadow box follows the climber, moved in whole shadow-map texels so
+      // shadow edges stay put instead of shimmering as you walk.
       sun.current.color.copy(look.sun as Color);
       sun.current.intensity = look.sunIntensity as number;
-      sun.current.position.set(pl.x + 9, pl.y + 16, pl.z + 6);
-      sun.current.target.position.set(pl.x, pl.y, pl.z);
+      const texel = (SHADOW_BOX * 2) / shadowMap;
+      snapped.set(pl.x, pl.y, pl.z);
+      const a = snapped.dot(SUN_X);
+      const b = snapped.dot(SUN_Y);
+      snapped.addScaledVector(SUN_X, Math.round(a / texel) * texel - a).addScaledVector(SUN_Y, Math.round(b / texel) * texel - b);
+      sun.current.position.copy(snapped).add(SUN_OFFSET);
+      sun.current.target.position.copy(snapped);
       sun.current.target.updateMatrixWorld();
     }
   });
@@ -114,11 +137,12 @@ export function SkyAndLight({ weak }: { weak: boolean }) {
       <directionalLight
         ref={sun}
         castShadow
-        shadow-mapSize={weak ? 1024 : 2048}
-        shadow-camera-left={-12}
-        shadow-camera-right={12}
-        shadow-camera-top={12}
-        shadow-camera-bottom={-12}
+        shadow-mapSize={shadowMap}
+        shadow-radius={2.5}
+        shadow-camera-left={-SHADOW_BOX}
+        shadow-camera-right={SHADOW_BOX}
+        shadow-camera-top={SHADOW_BOX}
+        shadow-camera-bottom={-SHADOW_BOX}
         shadow-camera-near={1}
         shadow-camera-far={60}
         shadow-bias={-0.0005}

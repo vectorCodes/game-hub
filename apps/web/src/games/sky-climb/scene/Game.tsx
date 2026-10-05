@@ -1,10 +1,10 @@
 // Sky Climb's 3D scene. Lazy-loaded with the play page so three.js stays off the hub.
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { PerformanceMonitor } from "@react-three/drei";
+import { Bloom, EffectComposer, SMAA, Vignette } from "@react-three/postprocessing";
 import { Vector3, type PerspectiveCamera } from "three";
 import { play } from "../../../lib/sound";
-import { detectWeakDevice } from "../../../pages/landing/world/quality";
 import { footstep, startAmbience, stopAmbience, surfaceOf, updateAmbience } from "../ambience";
 import { zoneIndexOf, ZONES } from "../config";
 import { frameOf, record, recordCheer } from "../ghosts";
@@ -152,25 +152,49 @@ function CameraRig() {
   return null;
 }
 
+/**
+ * Rendering quality, best first. Everyone starts sharp (phones one step down) and steps down
+ * only if the frame rate can't keep up. Anti-aliasing is always on.
+ */
+const LEVELS = [
+  { dpr: 2, post: true, shadowMap: 4096 },
+  { dpr: 1.5, post: true, shadowMap: 2048 },
+  { dpr: 1.25, post: false, shadowMap: 2048 },
+  { dpr: 1, post: false, shadowMap: 1024 },
+] as const;
+
+const isPhone = () => window.matchMedia("(max-width: 768px), (pointer: coarse)").matches;
+
 export default function Game() {
   const seed = useClimb((s) => s.seed);
   const attempt = useClimb((s) => s.attempt);
   const tower = useMemo(() => generateTower(seed), [seed]);
   // A fresh simulation per attempt: retrying the same tower starts from the bottom.
   const sim = useMemo(() => new Sim(tower), [tower, attempt]);
-  const weak = useMemo(detectWeakDevice, []);
+  const weak = useMemo(isPhone, []);
+  const [level, setLevel] = useState(weak ? 1 : 0);
+  const q = LEVELS[level];
+  // Never sharper than the screen itself.
+  const dpr = Math.min(q.dpr, Math.max(1, window.devicePixelRatio || 1));
 
   return (
     <div className="absolute inset-0">
       <Canvas
         shadows
-        dpr={weak ? 1 : [1, 1.75]}
+        dpr={dpr}
         camera={{ fov: 50, near: 0.1, far: 600, position: [12, 3, 0] }}
-        gl={{ antialias: !weak, powerPreference: "high-performance" }}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
       >
+        {/* Sustained low frame rates step quality down; it never steps back up, so it doesn't flicker. */}
+        <PerformanceMonitor
+          bounds={(refresh) => (refresh > 90 ? [50, 90] : [45, 60])}
+          flipflops={2}
+          onDecline={() => setLevel((l) => Math.min(LEVELS.length - 1, l + 1))}
+          onFallback={() => setLevel(LEVELS.length - 1)}
+        />
         <SimContext value={sim}>
           <Driver />
-          <SkyAndLight weak={weak} />
+          <SkyAndLight shadowMap={q.shadowMap} />
           <Stars />
           <Weather weak={weak} />
           <CameraRig />
@@ -189,10 +213,13 @@ export default function Game() {
           </Suspense>
           <Bursts />
           <Trail />
-          {!weak && (
-            <EffectComposer multisampling={4}>
+          {q.post && (
+            // The composer draws off-screen, so it needs its own anti-aliasing: MSAA for
+            // geometry edges, SMAA for what MSAA misses (alpha-tested leaves, thin lines).
+            <EffectComposer multisampling={8}>
               <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.85} luminanceSmoothing={0.2} />
               <Vignette offset={0.3} darkness={0.55} />
+              <SMAA />
             </EffectComposer>
           )}
         </SimContext>

@@ -113,8 +113,9 @@ function Rider({ id, name, avatar, kind, sample }: RiderProps) {
       <group ref={body} scale={CHARACTER_SCALE}>
         <primitive object={scene} />
       </group>
-      <Html position={[0, 1.3, 0]} center distanceFactor={9} zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow ${look.label}`}>
+      {/* Labels stay the same size on screen, so far-off climbers are still readable. */}
+      <Html position={[0, 1.3, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap shadow-lg ring-1 ring-black/10 backdrop-blur-sm ${look.label}`}>
           {kind === "live" ? "● " : kind === "challenge" ? "⚔ " : "👻 "}
           {name}
         </span>

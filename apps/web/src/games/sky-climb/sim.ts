@@ -2,8 +2,8 @@
 // hazards, the coins, and the player's platformer physics. The scene reads this state
 // every frame to draw it.
 //
-// Platforms are one-way: you jump up through them and land on top, the classic platformer
-// rule. That keeps collision to "did the feet cross the top surface this frame?".
+// Platforms are one-way from below: you jump up through them and land on top, the classic
+// platformer rule. Their sides are solid, though, so you can't walk into a block.
 import type { GhostPose } from "@shadow/shared";
 import { CHECKPOINTS, FLOORS, PHYS, TOWER, zoneOf } from "./config";
 import { floorAt, type Coin, type Hazard, type Platform, type Tower } from "./tower";
@@ -208,6 +208,8 @@ export class Sim {
 
     if (!pl.grounded) pl.vy = Math.max(pl.vy - PHYS.gravity * dt, -PHYS.maxFall);
     const prevFeet = pl.y;
+    const prevX = pl.x;
+    const prevZ = pl.z;
     const fallSpeed = -pl.vy;
     pl.x += pl.vx * dt;
     pl.y += pl.vy * dt;
@@ -221,6 +223,7 @@ export class Sim {
       pl.z *= minR / r;
     }
 
+    this.blockSides(prevX, prevZ);
     this.land(prevFeet, fallSpeed);
     this.touchHazards();
     this.collectCoins();
@@ -228,6 +231,59 @@ export class Sim {
     if (Math.hypot(pl.vx, pl.vz) > 0.4) pl.facing = Math.atan2(pl.vx, pl.vz);
     pl.height = floorAt(this.tower, pl.y);
     if (pl.y < this.tower.floorTops[pl.checkpoint] - PHYS.fallDepth) this.die();
+  }
+
+  /**
+   * Pushes the player back out of any platform they walked or fell into from the side.
+   * Only entries from outside the footprint count, so jumping up through from below
+   * still works.
+   */
+  private blockSides(prevX: number, prevZ: number) {
+    const pl = this.player;
+    for (const ps of this.platforms) {
+      if (!ps.solid || Math.abs(ps.top - pl.y) > 3) continue;
+      // Feet near the top are the landing's business; the body has to overlap the slab.
+      if (pl.y >= ps.top - 0.08 || pl.y + PHYS.height <= ps.top - ps.p.h) continue;
+      const c = Math.cos(ps.p.yaw);
+      const s = Math.sin(ps.p.yaw);
+      const hw = ps.p.w / 2 + PHYS.radius;
+      const hd = ps.p.d / 2 + PHYS.radius;
+      const rx = pl.x - ps.x;
+      const rz = pl.z - ps.z;
+      let lx = rx * c - rz * s;
+      let lz = rx * s + rz * c;
+      if (Math.abs(lx) >= hw || Math.abs(lz) >= hd) continue;
+      // Where we were last step, relative to where the platform was.
+      const px = prevX - (ps.x - ps.dx);
+      const pz = prevZ - (ps.z - ps.dz);
+      const plx = px * c - pz * s;
+      const plz = px * s + pz * c;
+      const outX = Math.abs(plx) >= hw;
+      const outZ = Math.abs(plz) >= hd;
+      if (!outX && !outZ) continue;
+      // Out through the face we came in by (the shallower one if we cut a corner).
+      const alongX = outX && (!outZ || hw - Math.abs(lx) < hd - Math.abs(lz));
+      let nx: number;
+      let nz: number;
+      if (alongX) {
+        lx = Math.sign(plx) * hw;
+        nx = c;
+        nz = -s;
+      } else {
+        lz = Math.sign(plz) * hd;
+        nx = s;
+        nz = c;
+      }
+      pl.x = ps.x + lx * c + lz * s;
+      pl.z = ps.z - lx * s + lz * c;
+      // Lose the velocity heading into the face.
+      const into = pl.vx * nx + pl.vz * nz;
+      const sign = alongX ? Math.sign(plx) : Math.sign(plz);
+      if (into * sign < 0) {
+        pl.vx -= into * nx;
+        pl.vz -= into * nz;
+      }
+    }
   }
 
   private land(prevFeet: number, fallSpeed: number) {
