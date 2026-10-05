@@ -1,21 +1,23 @@
 // Sky Climb's 3D scene. Lazy-loaded with the play page so three.js stays off the hub.
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { PerformanceMonitor } from "@react-three/drei";
+import { PerformanceMonitor, Preload } from "@react-three/drei";
 import { Bloom, EffectComposer, SMAA, Vignette } from "@react-three/postprocessing";
 import { Vector3, type PerspectiveCamera } from "three";
 import { play } from "../../../lib/sound";
 import { footstep, startAmbience, stopAmbience, surfaceOf, updateAmbience } from "../ambience";
-import { zoneIndexOf, ZONES } from "../config";
+import { POWERUPS, zoneIndexOf, ZONES } from "../config";
 import { frameOf, record, recordCheer } from "../ghosts";
 import { input } from "../input";
 import { LIVE_SEND_EVERY, sendLive } from "../live";
+import { liveEffects } from "../powerups";
 import { Sim } from "../sim";
 import { useClimb } from "../store";
 import { generateTower } from "../tower";
 import { Bursts, Climber, preloadCharacter, Trail } from "./Climber";
 import { Clouds, Island, SkyAndLight, Stars, Weather } from "./Environment";
 import { Ghosts } from "./Ghosts";
+import { PowerAuras, Pickups } from "./Powerups";
 import { emitSimEvent, preloadKit, SimContext, useSim } from "./shared";
 import { Coins, Core, Hazards, Platforms } from "./TowerView";
 
@@ -79,6 +81,21 @@ function Driver() {
         case "spring":
           play("spring");
           break;
+        case "airjump":
+          play("jump");
+          break;
+        case "powerup": {
+          const p = POWERUPS[e.kind];
+          play("powerup");
+          store.showToast({ title: `${p.emoji} ${p.name}`, subtitle: p.blurb, tone: "powerup" });
+          break;
+        }
+        case "expire":
+          play("powerdown");
+          break;
+        case "shield":
+          play("shield");
+          break;
         case "coin":
           play("coin");
           store.addCoin();
@@ -109,6 +126,7 @@ function Driver() {
       }
     }
     sim.events.length = 0;
+    Object.assign(liveEffects, sim.effects);
     const windy = sim.gust > 0.5;
     if (windy !== store.windy) useClimb.setState({ windy });
   });
@@ -205,12 +223,16 @@ export default function Game() {
             <Platforms />
             <Hazards />
             <Coins />
+            <Pickups />
+            {/* Compiles the hidden effects (shield bubble, rings) up front, so the first pickup doesn't hitch. */}
+            <Preload all />
           </Suspense>
           <Ghosts />
           {/* Its own boundary: switching climbers mustn't blank the tower while one loads. */}
           <Suspense fallback={null}>
             <Climber />
           </Suspense>
+          <PowerAuras />
           <Bursts />
           <Trail />
           {q.post && (

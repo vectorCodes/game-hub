@@ -222,7 +222,9 @@ function CoinView({ id, x, y, z, floor }: { id: number; x: number; y: number; z:
     if (!g.visible) return;
     // Collected: a quick pop upwards.
     const pop = since / 0.3;
-    g.position.set(x, y - 0.3 + Math.sin(sim.t * 2.4 + id) * 0.08 + pop * 0.8, z);
+    // The magnet may have set it flying.
+    const pulled = sim.pulled.get(id);
+    g.position.set(pulled?.x ?? x, (pulled?.y ?? y) - 0.3 + Math.sin(sim.t * 2.4 + id) * 0.08 + pop * 0.8, pulled?.z ?? z);
     g.rotation.y = sim.t * 2.6 + id + pop * 10;
     g.scale.setScalar(S * 1.15 * (1 - pop * 0.6));
   });

@@ -9,6 +9,7 @@ import { animateAccessories } from "../../../avatar/build";
 import { useAvatar } from "../../../avatar/store";
 import { preloadAvatar, useAvatarModel } from "../../../avatar/useAvatarModel";
 import type { GhostPose } from "@shadow/shared";
+import { POWERUPS } from "../config";
 import { angleDelta } from "../ghosts";
 import { poseOf } from "../sim";
 import { useClimb } from "../store";
@@ -65,7 +66,7 @@ export function Climber() {
     () =>
       onSimEvent((e) => {
         if (e.type === "land") fx.current.squash = Math.min(1, e.speed / 13);
-        if (e.type === "jump" || e.type === "spring") fx.current.stretch = 1;
+        if (e.type === "jump" || e.type === "airjump" || e.type === "spring") fx.current.stretch = 1;
         if (e.type === "checkpoint") fx.current.cheer = 1.1;
       }),
     [],
@@ -168,6 +169,9 @@ export function Bursts() {
         if (e.type === "land" && e.speed > 5) spawn(Math.min(10, Math.round(e.speed / 2)), "#f3eee2", { speed: 2.2, up: 0.6, gravity: 0, size: 0.13, life: 0.45 });
         if (e.type === "jump") spawn(4, "#f3eee2", { speed: 1.2, up: 0.4, gravity: 0, size: 0.1, life: 0.35 });
         if (e.type === "spring") spawn(8, "#f8cf72", { speed: 2.4, up: 1.5, gravity: 4, size: 0.1, life: 0.5 });
+        if (e.type === "airjump") spawn(8, "#d9b3ff", { speed: 2.2, up: 0.3, gravity: 0, size: 0.1, life: 0.4 });
+        if (e.type === "powerup") spawn(14, POWERUPS[e.kind].color, { y: 0.6, speed: 2.2, up: 3, gravity: 4, size: 0.09, life: 0.7 });
+        if (e.type === "shield") spawn(16, ["#9fd0ff", "#ffffff"], { y: 0.5, speed: 3.2, up: 1.5, gravity: 0, size: 0.12, life: 0.55 });
         if (e.type === "coin") spawn(8, "#ffd75e", { y: 0.6, speed: 1.8, up: 2.5, gravity: 6, size: 0.08, life: 0.5 });
         if (e.type === "checkpoint") spawn(16, CONFETTI, { y: 0.4, speed: 2.4, up: 5, gravity: 9, size: 0.09, life: 1.1 });
         if (e.type === "die") spawn(12, "#ffffff", { y: 0.4, speed: 2.6, up: 1.2, gravity: 0, size: 0.16, life: 0.6 });

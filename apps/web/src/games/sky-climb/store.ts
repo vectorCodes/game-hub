@@ -27,7 +27,7 @@ export interface Toast {
   id: number;
   title: string;
   subtitle?: string;
-  tone: "zone" | "checkpoint" | "best";
+  tone: "zone" | "checkpoint" | "best" | "powerup";
 }
 
 export const today = () => new Date().toISOString().slice(0, 10);

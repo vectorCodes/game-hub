@@ -2,9 +2,10 @@
 // (and where the ghosts and live climbers are), toasts (new zone, checkpoint, new best), the wind warning, and the touch controls.
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useSound } from "../../../lib/sound";
-import { CHECKPOINTS, FLOORS, ZONES } from "../config";
+import { CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES } from "../config";
 import { riderMarks, type RiderKind, type RiderMark } from "../ghosts";
 import { pressJump, setStick } from "../input";
+import { liveEffects } from "../powerups";
 import { nextCheckpointAfter } from "../sim";
 import { useClimb } from "../store";
 
@@ -100,9 +101,54 @@ function HeightBar({ floor, best }: { floor: number; best: number }) {
   );
 }
 
+/** Active power-ups: an icon in a ring that counts down, flickering for the last two seconds. */
+function PowerupChips() {
+  const [left, setLeft] = useState({ ...liveEffects });
+  useEffect(() => {
+    const t = setInterval(() => {
+      // Nothing running and nothing shown: no re-render.
+      setLeft((prev) => (POWERUP_KINDS.every((k) => prev[k] <= 0 && liveEffects[k] <= 0) ? prev : { ...liveEffects }));
+    }, 100);
+    return () => clearInterval(t);
+  }, []);
+  const active = POWERUP_KINDS.filter((k) => left[k] > 0);
+  if (!active.length) return null;
+  return (
+    <div className="mt-2 flex gap-2">
+      {active.map((k) => {
+        const p = POWERUPS[k];
+        return (
+          <span
+            key={k}
+            title={`${p.name}: ${p.blurb}`}
+            className={`grid h-11 w-11 place-items-center rounded-full shadow-lg ${left[k] < 2 ? "animate-pulse" : ""}`}
+            style={{ background: `conic-gradient(${p.color} ${(left[k] / p.duration) * 360}deg, rgba(12,10,9,0.7) 0)` }}
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-stone-950/90 text-lg">{p.emoji}</span>
+            <span className="sr-only">
+              {p.name}, {Math.ceil(left[k])} seconds left
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function Toasts() {
   const toast = useClimb((s) => s.toast);
   if (!toast) return null;
+  if (toast.tone === "powerup") {
+    // Quick and small: orbs turn up every few floors and shouldn't cover the climb.
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-[16%] flex justify-center px-4">
+        <div key={toast.id} className="animate-pop rounded-full bg-stone-950/90 px-5 py-2 text-center ring-1 ring-white/15">
+          <span className="font-display text-lg font-bold">{toast.title}</span>
+          {toast.subtitle && <span className="ml-2 text-sm text-stone-300">{toast.subtitle}</span>}
+        </div>
+      </div>
+    );
+  }
   const tone =
     toast.tone === "best"
       ? "from-lamp-300/95 to-lamp-500/95 text-ink"
@@ -219,6 +265,7 @@ export function Hud({ touch }: { touch: boolean }) {
           </Chip>
           {floor < FLOORS && <Chip className="text-stone-300">🚩 Next checkpoint: {next}</Chip>}
         </div>
+        <PowerupChips />
       </div>
 
       <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2 sm:top-4 sm:right-4">

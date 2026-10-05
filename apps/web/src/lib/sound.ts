@@ -15,7 +15,10 @@ export type Sound =
   | "coin"
   | "spring"
   | "checkpoint"
-  | "fall";
+  | "fall"
+  | "powerup"
+  | "powerdown"
+  | "shield";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -157,5 +160,13 @@ export function play(sound: Sound) {
       return;
     case "fall":
       return tone(ac, out, { freq: 520, to: 90, dur: 0.6, type: "triangle", gain: 0.14 });
+    case "powerup":
+      [E5, G5, C6].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.06, dur: 0.3, type: "triangle", gain: 0.09 }));
+      return tone(ac, out, { freq: C6 * 2, at: 0.18, dur: 0.35, gain: 0.04 });
+    case "powerdown":
+      return tone(ac, out, { freq: 620, to: 300, dur: 0.25, type: "triangle", gain: 0.06 });
+    case "shield":
+      tone(ac, out, { freq: 1000, to: 220, dur: 0.22, type: "square", gain: 0.06 });
+      return tone(ac, out, { freq: 1500, at: 0.04, dur: 0.3, gain: 0.07 });
   }
 }

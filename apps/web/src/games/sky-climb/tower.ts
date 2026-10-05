@@ -3,10 +3,14 @@
 import {
   FLOORS,
   PIECE_SIZE,
+  POWERUP_MIN_FLOOR,
+  POWERUP_SPACING,
   TOWER,
+  ZONE_POWERUPS,
   isCheckpoint,
   knobs,
   zoneOf,
+  type PowerupKind,
   type Special,
   type ZoneId,
 } from "./config";
@@ -71,11 +75,22 @@ export interface Coin {
   z: number;
 }
 
+/** An orb floating over a platform: touch it for a power-up. */
+export interface Powerup {
+  id: number;
+  floor: number;
+  kind: PowerupKind;
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface Tower {
   seed: string;
   platforms: Platform[];
   hazards: Hazard[];
   coins: Coin[];
+  powerups: Powerup[];
   /** Top surface height of each floor's platform, at rest (index = floor). */
   floorTops: number[];
 }
@@ -125,7 +140,9 @@ export function generateTower(seed: string): Tower {
   const floorTops: number[] = [];
 
   let theta = 0;
-  let dir = 1;
+  // Always the same way round: turning back at a zone border would wind the new floors
+  // right over the old ones, leaving no headroom to jump.
+  const dir = 1;
   let prev: Platform | null = null;
 
   for (let floor = 0; floor <= FLOORS; floor++) {
@@ -133,8 +150,6 @@ export function generateTower(seed: string): Tower {
     const k = knobs(floor);
     const checkpoint = isCheckpoint(floor);
     const summit = floor === FLOORS;
-    // Each new zone turns the spiral the other way round.
-    if (floor > 0 && zone.from === floor) dir = -dir;
 
     let size: Size = checkpoint ? "big" : (weighted(rng, k.sizes) ?? "normal");
     let kind: Kind = "static";
@@ -290,7 +305,48 @@ export function generateTower(seed: string): Tower {
     prev = p;
   }
 
-  return { seed, platforms, hazards, coins, floorTops };
+  return { seed, platforms, hazards, coins, powerups: placePowerups(seed, platforms, hazards), floorTops };
+}
+
+/** Platforms that ask for something: a hazard, or a platform that moves, crumbles or vanishes. */
+const RISKY: readonly Kind[] = ["moving", "lift", "vanish", "crumble", "conveyor"];
+
+/**
+ * Orbs go on a safe platform just before a risky one. They use their own random stream, so
+ * adding or tuning them never changes the platforms, hazards or coins of any seed.
+ */
+function placePowerups(seed: string, platforms: Platform[], hazards: Hazard[]): Powerup[] {
+  const rng = makeRng(`${seed}:powerups`);
+  const hazardous = new Set(hazards.map((h) => h.platform));
+  const out: Powerup[] = [];
+  let last = -Infinity;
+  for (const p of platforms) {
+    // Every floor draws the same numbers whether or not it's used, so tuning one rule
+    // doesn't reshuffle the rest of the tower.
+    const roll = rng();
+    const roll2 = rng();
+    if (p.floor < POWERUP_MIN_FLOOR || p.summit || p.floor - last < POWERUP_SPACING) continue;
+    if (!hazardous.has(p.id) && !RISKY.includes(p.kind)) continue;
+    if (roll >= 0.7 + 0.2 * Math.min(1, p.floor / (FLOORS - 1))) continue;
+    const kind = weighted(() => roll2, ZONE_POWERUPS[p.zone]);
+    if (!kind) continue;
+    // The nearest of the two platforms before it that is plain and hazard-free.
+    const host = [platforms[p.floor - 1], platforms[p.floor - 2]].find(
+      (h) => h && h.kind === "static" && !h.checkpoint && !hazardous.has(h.id) && h.floor > last,
+    );
+    if (!host) continue;
+    const along = Math.min(0.95, host.w / 2 - 0.2);
+    out.push({
+      id: out.length,
+      floor: host.floor,
+      kind,
+      x: host.x + Math.cos(host.yaw) * along,
+      y: host.top + 0.55,
+      z: host.z - Math.sin(host.yaw) * along,
+    });
+    last = p.floor;
+  }
+  return out;
 }
 
 /** The floor whose platform top is nearest below `y` (fractional between floors). */

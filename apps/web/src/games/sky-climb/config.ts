@@ -242,6 +242,48 @@ export function zoneIndexOf(floor: number): number {
 
 export const zoneOf = (floor: number) => ZONES[zoneIndexOf(floor)];
 
+export type PowerupKind = "feather" | "doubleJump" | "shield" | "magnet";
+
+export const POWERUP_KINDS: PowerupKind[] = ["feather", "doubleJump", "shield", "magnet"];
+
+/** The pickups: touch an orb and the effect starts. `duration` is in seconds. */
+export const POWERUPS: Record<PowerupKind, { name: string; emoji: string; color: string; duration: number; blurb: string }> = {
+  feather: { name: "Feather", emoji: "🪶", color: "#8ef0d0", duration: 8, blurb: "Hold jump while falling to float" },
+  doubleJump: { name: "Double Jump", emoji: "🌀", color: "#c78bff", duration: 12, blurb: "Press jump again in mid-air" },
+  shield: { name: "Shield", emoji: "🛡️", color: "#4da3ff", duration: 25, blurb: "Absorbs one saw or spike hit" },
+  magnet: { name: "Magnet", emoji: "🧲", color: "#ff6b6b", duration: 10, blurb: "Coins fly to you" },
+};
+
+/** Tuning for the effects themselves. */
+export const POWER = {
+  /** Distance at which an orb is picked up. */
+  pickupRadius: 0.8,
+  /** Feather: falling gravity multiplier and top fall speed while floating. */
+  featherGravity: 0.45,
+  featherMaxFall: 6,
+  /** Double jump: the mid-air jump's strength relative to a normal one. */
+  airJump: 0.92,
+  /** Shield: invulnerable for this long after it absorbs a hit. */
+  shieldGrace: 1,
+  /** Magnet: coins this close fly to the climber at this speed. */
+  magnetRadius: 3.5,
+  magnetSpeed: 10,
+} as const;
+
+/** Which power-ups each zone's orbs can be, with relative weights. The meadow has none: learn the basics first. */
+export const ZONE_POWERUPS: Record<ZoneId, Partial<Record<PowerupKind, number>>> = {
+  meadow: {},
+  treetops: { feather: 1, magnet: 1 },
+  cliffs: { doubleJump: 1 },
+  snow: { shield: 1, feather: 1 },
+  storm: { shield: 2, doubleJump: 1, feather: 1 },
+  summit: {},
+};
+
+/** Orbs never appear below this floor, and are at least this many floors apart. */
+export const POWERUP_MIN_FLOOR = 5;
+export const POWERUP_SPACING = 6;
+
 /** Respawn points: every 5 floors low down, every 10 higher up. */
 export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, FLOORS];
 
