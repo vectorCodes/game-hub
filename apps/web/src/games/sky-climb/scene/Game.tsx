@@ -175,9 +175,9 @@ function CameraRig() {
  * only if the frame rate can't keep up. Anti-aliasing is always on.
  */
 const LEVELS = [
-  { dpr: 2, post: true, shadowMap: 4096 },
   { dpr: 1.5, post: true, shadowMap: 2048 },
-  { dpr: 1.25, post: false, shadowMap: 2048 },
+  { dpr: 1.25, post: true, shadowMap: 2048 },
+  { dpr: 1, post: false, shadowMap: 2048 },
   { dpr: 1, post: false, shadowMap: 1024 },
 ] as const;
 
@@ -238,7 +238,7 @@ export default function Game() {
           {q.post && (
             // The composer draws off-screen, so it needs its own anti-aliasing: MSAA for
             // geometry edges, SMAA for what MSAA misses (alpha-tested leaves, thin lines).
-            <EffectComposer multisampling={8}>
+            <EffectComposer multisampling={4}>
               <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.85} luminanceSmoothing={0.2} />
               <Vignette offset={0.3} darkness={0.55} />
               <SMAA />

@@ -7,10 +7,7 @@ import type { Group, Mesh, MeshBasicMaterial } from "three";
 import { input } from "../input";
 import { POWER, POWERUPS, type PowerupKind } from "../config";
 import type { Powerup } from "../tower";
-import { onSimEvent, useSim } from "./shared";
-
-/** Floors drawn above and below the climber. */
-const VIEW_FLOORS = 16;
+import { onSimEvent, useFloorRange, useSim } from "./shared";
 
 /** Each kind's shape inside its glow, so they read apart at a glance. */
 function Shape({ kind, color }: { kind: PowerupKind; color: string }) {
@@ -67,7 +64,7 @@ function PickupView({ o }: { o: Powerup }) {
     if (!taken) takenAt.current = null;
     else if (takenAt.current === null) takenAt.current = sim.t;
     const since = takenAt.current === null ? 0 : sim.t - takenAt.current;
-    g.visible = Math.abs(o.floor - sim.player.height) < VIEW_FLOORS && since < 0.3;
+    g.visible = since < 0.3;
     if (!g.visible) return;
     const pop = since / 0.3;
     g.position.set(o.x, o.y + Math.sin(sim.t * 2.2 + o.id) * 0.1 + pop * 0.7, o.z);
@@ -88,9 +85,10 @@ function PickupView({ o }: { o: Powerup }) {
 
 export function Pickups() {
   const sim = useSim();
+  const [lo, hi] = useFloorRange();
   return (
     <>
-      {sim.powerups.map((o) => (
+      {sim.powerups.filter((o) => o.floor >= lo && o.floor <= hi).map((o) => (
         <PickupView key={o.id} o={o} />
       ))}
     </>

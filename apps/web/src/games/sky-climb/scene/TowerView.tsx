@@ -6,14 +6,11 @@ import type { Group } from "three";
 import { TOWER, ZONES, zoneOf } from "../config";
 import type { HazardState, PlatformState } from "../sim";
 import { floorAt, type Deco, type Tower } from "../tower";
-import { materialsOf, useKit, useSim } from "./shared";
+import { materialsOf, useFloorRange, useKit, useSim } from "./shared";
 
-/** Floors drawn above and below the climber. */
-const VIEW_FLOORS = 16;
 const S = TOWER.pieceScale;
 const zoneById = (id: string) => ZONES.find((z) => z.id === id)!;
 
-const near = (floor: number, height: number) => Math.abs(floor - height) < VIEW_FLOORS;
 /** A spring sits on its platform, so the platform is drawn this much lower: you land on the spring. */
 const SPRING_HEIGHT = 0.33 * S * 0.9;
 
@@ -22,30 +19,27 @@ export function Core({ tower }: { tower: Tower }) {
   const blocks = useMemo(() => {
     const step = 2 * 1.95;
     const top = tower.floorTops[tower.floorTops.length - 1] - 0.6;
-    const out: { y: number; floor: number }[] = [];
-    for (let y = -7.5; y < top; y += step) out.push({ y: Math.min(y, top - step), floor: floorAt(tower, y + step) });
+    const out: { y: number; from: number; to: number }[] = [];
+    for (let y = -7.5; y < top; y += step) {
+      const at = Math.min(y, top - step);
+      out.push({ y: at, from: floorAt(tower, at), to: floorAt(tower, at + step) });
+    }
     return out;
   }, [tower]);
+  // The column reaches further than the platforms: it's the backdrop.
+  const [lo, hi] = useFloorRange(12, 18, 14, 18);
   return (
     <>
-      {blocks.map((b, i) => (
-        <CoreBlock key={i} y={b.y} floor={b.floor} turn={i} />
-      ))}
+      {blocks.map((b, i) => (b.to >= lo && b.from <= hi ? <CoreBlock key={i} y={b.y} floor={b.to} turn={i} /> : null))}
     </>
   );
 }
 
 function CoreBlock({ y, floor, turn }: { y: number; floor: number; turn: number }) {
-  const sim = useSim();
   const zone = zoneOf(Math.floor(floor));
   const model = useKit(zone.core, zone.tint);
-  const group = useRef<Group>(null);
-  useFrame(() => {
-    // The column reaches further than the platforms: it's the backdrop.
-    if (group.current) group.current.visible = Math.abs(floor - sim.player.height) < VIEW_FLOORS + 8;
-  });
   return (
-    <group ref={group} position={[0, y, 0]} rotation-y={(turn * Math.PI) / 4} scale={1.95}>
+    <group position={[0, y, 0]} rotation-y={(turn * Math.PI) / 4} scale={1.95}>
       <primitive object={model} />
     </group>
   );
@@ -53,9 +47,10 @@ function CoreBlock({ y, floor, turn }: { y: number; floor: number; turn: number 
 
 export function Platforms() {
   const sim = useSim();
+  const [lo, hi] = useFloorRange();
   return (
     <>
-      {sim.platforms.map((ps) => (
+      {sim.platforms.slice(lo, hi + 1).map((ps) => (
         <PlatformView key={ps.p.id} ps={ps} />
       ))}
     </>
@@ -68,8 +63,11 @@ function Piece({ piece, tint, own, x = 0, onMaterials }: { piece: string; tint: 
   return <primitive object={model} position={[x, 0, 0]} />;
 }
 
+const SMALL_DECO = new Set(["flowers", "flowers-tall", "grass", "mushrooms", "plant", "stones"]);
+
 function DecoView({ d, tint, top }: { d: Deco; tint: string; top: number }) {
-  const model = useKit(d.piece, tint);
+  // Grass and flowers are too small for their shadows to be worth drawing.
+  const model = useKit(d.piece, tint, false, !SMALL_DECO.has(d.piece));
   return <primitive object={model} position={[d.x, top, d.z]} rotation-y={d.yaw} scale={d.scale} />;
 }
 
@@ -103,8 +101,6 @@ function PlatformView({ ps }: { ps: PlatformState }) {
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    g.visible = near(p.floor, sim.player.height);
-    if (!g.visible) return;
     let x = ps.x;
     let y = ps.top - p.h - (p.kind === "spring" ? SPRING_HEIGHT : 0);
     let opacity = 1;
@@ -150,9 +146,10 @@ function PlatformView({ ps }: { ps: PlatformState }) {
 
 export function Hazards() {
   const sim = useSim();
+  const [lo, hi] = useFloorRange();
   return (
     <>
-      {sim.hazards.map((hs) => (hs.h.type === "saw" ? <Saw key={hs.h.id} hs={hs} /> : <Spikes key={hs.h.id} hs={hs} />))}
+      {sim.hazards.filter((hs) => hs.h.floor >= lo && hs.h.floor <= hi).map((hs) => (hs.h.type === "saw" ? <Saw key={hs.h.id} hs={hs} /> : <Spikes key={hs.h.id} hs={hs} />))}
     </>
   );
 }
@@ -166,7 +163,6 @@ function Saw({ hs }: { hs: HazardState }) {
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    g.visible = near(hs.h.floor, sim.player.height);
     g.position.set(hs.x, hs.y, hs.z);
     if (blade.current) blade.current.rotation.z = -hs.spin;
   });
@@ -186,7 +182,6 @@ function Spikes({ hs }: { hs: HazardState }) {
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    g.visible = near(hs.h.floor, sim.player.height);
     // Sunk into the platform when retracted.
     g.position.set(hs.x, hs.y - 0.34 * (1 - hs.extend), hs.z);
   });
@@ -199,9 +194,10 @@ function Spikes({ hs }: { hs: HazardState }) {
 
 export function Coins() {
   const sim = useSim();
+  const [lo, hi] = useFloorRange();
   return (
     <>
-      {sim.coins.map((c) => (
+      {sim.coins.filter((c) => c.floor >= lo && c.floor <= hi).map((c) => (
         <CoinView key={c.id} id={c.id} x={c.x} y={c.y} z={c.z} floor={c.floor} />
       ))}
     </>
@@ -210,7 +206,7 @@ export function Coins() {
 
 function CoinView({ id, x, y, z, floor }: { id: number; x: number; y: number; z: number; floor: number }) {
   const sim = useSim();
-  const model = useKit("coin-gold");
+  const model = useKit("coin-gold", "#ffffff", false, false);
   const group = useRef<Group>(null);
   const takenAt = useRef<number | null>(null);
   useFrame(() => {
@@ -218,7 +214,7 @@ function CoinView({ id, x, y, z, floor }: { id: number; x: number; y: number; z:
     if (!g) return;
     if (sim.taken.has(id) && takenAt.current === null) takenAt.current = sim.t;
     const since = takenAt.current === null ? 0 : sim.t - takenAt.current;
-    g.visible = near(floor, sim.player.height) && since < 0.3;
+    g.visible = since < 0.3;
     if (!g.visible) return;
     // Collected: a quick pop upwards.
     const pop = since / 0.3;
