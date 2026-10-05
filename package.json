@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --parallel --filter web --filter api dev",
+    "dev": "pnpm --parallel --filter web --filter api --filter realtime dev",
     "build": "pnpm --filter web build",
     "typecheck": "pnpm -r typecheck",
     "models:fetch": "pnpm --filter @shadow/models fetch",

@@ -105,7 +105,7 @@ export function keepLocalGhost(g: LocalGhost) {
 
 // ---------- Where everyone else is, for the HUD's height bar ----------
 
-export type RiderKind = "me" | "ghost" | "challenge" | "live";
+export type RiderKind = "me" | "ghost" | "challenge" | "live" | "rival";
 
 export interface RiderMark {
   id: string;

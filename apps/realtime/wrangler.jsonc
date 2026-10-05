@@ -1,0 +1,16 @@
+// Sky Climb rooms (see Multiplayer.md). Config values (ALLOWED_ORIGINS, SUPABASE_URL…) are
+// secrets, set with `wrangler secret put`; locally they come from .dev.vars.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sky-climb-realtime",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "CLIMB_ROOM", "class_name": "ClimbRoom" }]
+  },
+  // SQLite-backed Durable Objects: the kind the Workers Free plan offers.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ClimbRoom"] }],
+  // Room creation: 10 a minute per IP.
+  "ratelimits": [{ "name": "ROOM_CREATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }]
+}

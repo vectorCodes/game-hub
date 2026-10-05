@@ -31,8 +31,25 @@ interface Who {
   avatar: AvatarConfig;
 }
 
-/** Packed position: x, y, z in cm, facing in 1/256 turns, pose index. */
-type Packet = { id: string; p: [number, number, number, number, number] };
+/** Packed position: x, y, z in cm, facing in 1/256 turns, pose index. Rooms send the same. */
+export type PackedFrame = [number, number, number, number, number];
+type Packet = { id: string; p: PackedFrame };
+
+export function packFrame(f: GhostFrame): PackedFrame {
+  const turn = f.facing / (Math.PI * 2);
+  return [Math.round(f.x * 100), Math.round(f.y * 100), Math.round(f.z * 100), Math.round((turn - Math.floor(turn)) * 256) & 255, GHOST_POSES.indexOf(f.pose)];
+}
+
+/** Adds a packed position, just received, to a rider's buffer. */
+export function pushPacked(rider: LiveRider, p: PackedFrame) {
+  const [x, y, z, facing, pose] = p ?? [];
+  if (!GHOST_POSES[pose]) return;
+  rider.buffer.push({
+    at: performance.now(),
+    frame: { x: x / 100, y: y / 100, z: z / 100, facing: (facing / 256) * Math.PI * 2, pose: GHOST_POSES[pose] },
+  });
+  if (rider.buffer.length > 12) rider.buffer.shift();
+}
 
 const riders = new Map<string, LiveRider>();
 let list: LiveRider[] = [];
@@ -73,13 +90,7 @@ export function joinLive(seed: string, who: Who) {
   });
   ch.on("broadcast", { event: "pos" }, ({ payload }: { payload: Packet }) => {
     const rider = riders.get(payload.id);
-    const [x, y, z, facing, pose] = payload.p ?? [];
-    if (!rider || !GHOST_POSES[pose]) return;
-    rider.buffer.push({
-      at: performance.now(),
-      frame: { x: x / 100, y: y / 100, z: z / 100, facing: (facing / 256) * Math.PI * 2, pose: GHOST_POSES[pose] },
-    });
-    if (rider.buffer.length > 12) rider.buffer.shift();
+    if (rider) pushPacked(rider, payload.p);
   });
   ch.subscribe((status) => {
     if (status === "SUBSCRIBED") void ch.track(who);
@@ -99,20 +110,19 @@ export function leaveLive() {
 /** Shares this climber's position with the others on the tower. */
 export function sendLive(f: GhostFrame) {
   if (!channel) return;
-  const turn = f.facing / (Math.PI * 2);
-  const packet: Packet = {
-    id: myId,
-    p: [Math.round(f.x * 100), Math.round(f.y * 100), Math.round(f.z * 100), Math.round((turn - Math.floor(turn)) * 256) & 255, GHOST_POSES.indexOf(f.pose)],
-  };
+  const packet: Packet = { id: myId, p: packFrame(f) };
   void channel.send({ type: "broadcast", event: "pos", payload: packet });
 }
 
-/** Where a live climber is now (a moment ago, really); false while they can't be shown. */
-export function sampleLive(rider: LiveRider, out: GhostFrame): boolean {
+/**
+ * Where a live climber is now (a moment ago, really); false while they can't be shown.
+ * `delayMs` should cover about two sends, so there are always two positions to blend.
+ */
+export function sampleLive(rider: LiveRider, out: GhostFrame, delayMs = DELAY_MS): boolean {
   const b = rider.buffer;
   const now = performance.now();
   if (!b.length || now - b[b.length - 1].at > STALE_MS) return false;
-  const at = now - DELAY_MS;
+  const at = now - delayMs;
   // Hold the newest position once it's older than the delay, the oldest until it's due.
   if (b[b.length - 1].at <= at) {
     Object.assign(out, b[b.length - 1].frame);

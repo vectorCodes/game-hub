@@ -1,0 +1,9 @@
+# Copy to .dev.vars for `pnpm --filter realtime dev`. In production set each with
+# `wrangler secret put <NAME>` (or in the dashboard): see Multiplayer.md.
+
+# Web origins allowed to open rooms; `*` matches within one label (Vercel previews).
+ALLOWED_ORIGINS=http://localhost:*
+# Supabase project, to verify signed-in players' tokens. Empty: everyone plays as a guest.
+SUPABASE_URL=
+# Only for legacy projects signing with the HS256 JWT secret.
+SUPABASE_JWT_SECRET=

@@ -7,3 +7,5 @@ assets/raw
 apps/api/.pglite
 .vercel
 .env*
+.dev.vars
+.wrangler

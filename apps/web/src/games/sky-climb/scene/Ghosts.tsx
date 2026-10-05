@@ -1,5 +1,5 @@
 // Other climbers on the tower: ghosts (replays of finished climbs, translucent) and live
-// climbers (players on today's tower right now), each wearing their own avatar.
+// climbers (players on today's tower right now), and racers in a room, each wearing their own avatar.
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html, useAnimations } from "@react-three/drei";
@@ -9,6 +9,7 @@ import { animateAccessories } from "../../../avatar/build";
 import { useAvatarModel } from "../../../avatar/useAvatarModel";
 import { angleDelta, playClock, riderMarks, sampleGhost, type RiderKind } from "../ghosts";
 import { LIVE_MAX, sampleLive, useLiveRiders } from "../live";
+import { sampleRival, useRoomRivals } from "../room";
 import { floorAt } from "../tower";
 import { useClimb } from "../store";
 import { POSE_CLIP } from "./Climber";
@@ -23,6 +24,7 @@ const LOOK: Record<RiderKind, { opacity: number; glow: string | null; label: str
   ghost: { opacity: 0.4, glow: "#9fc4ff", label: "bg-sky-300/85 text-stone-950" },
   challenge: { opacity: 0.5, glow: "#ff8fa3", label: "bg-rose-400/90 text-stone-950" },
   live: { opacity: 0.9, glow: null, label: "bg-moss-400/90 text-stone-950" },
+  rival: { opacity: 1, glow: null, label: "bg-violet-300/95 text-stone-950" },
 };
 
 interface RiderProps {
@@ -59,7 +61,7 @@ function Rider({ id, name, avatar, kind, sample }: RiderProps) {
         m.emissiveIntensity = 0.35;
       }
       mesh.material = m;
-      mesh.castShadow = kind === "live";
+      mesh.castShadow = kind === "live" || kind === "rival";
       out.push(m);
     });
     return out;
@@ -116,7 +118,7 @@ function Rider({ id, name, avatar, kind, sample }: RiderProps) {
       {/* Labels stay the same size on screen, so far-off climbers are still readable. */}
       <Html position={[0, 1.3, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap shadow-lg ring-1 ring-black/10 backdrop-blur-sm ${look.label}`}>
-          {kind === "live" ? "● " : kind === "challenge" ? "⚔ " : "👻 "}
+          {kind === "live" ? "● " : kind === "challenge" ? "⚔ " : kind === "rival" ? "🏁 " : "👻 "}
           {name}
         </span>
       </Html>
@@ -127,9 +129,11 @@ function Rider({ id, name, avatar, kind, sample }: RiderProps) {
 export function Ghosts() {
   const ghosts = useClimb((s) => s.ghosts);
   const live = useLiveRiders();
+  const rivals = useRoomRivals();
+  const racing = useClimb((s) => s.race !== null);
   const phase = useClimb((s) => s.phase);
   const sim = useSim();
-  if (phase !== "playing" && phase !== "summit") return null;
+  if (phase !== "playing" && phase !== "summit" && !(racing && phase === "countdown")) return null;
 
   return (
     <>
@@ -154,6 +158,12 @@ export function Ghosts() {
         .map((r) => (
           <Suspense key={`live-${r.id}`} fallback={null}>
             <Rider id={`live-${r.id}`} name={r.name} avatar={r.avatar} kind="live" sample={(out) => sampleLive(r, out)} />
+          </Suspense>
+        ))}
+      {racing &&
+        rivals.map((r) => (
+          <Suspense key={`rival-${r.id}`} fallback={null}>
+            <Rider id={`rival-${r.id}`} name={r.name} avatar={r.avatar} kind="rival" sample={(out) => sampleRival(r, out)} />
           </Suspense>
         ))}
     </>

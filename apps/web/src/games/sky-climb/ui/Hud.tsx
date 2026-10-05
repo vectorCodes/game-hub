@@ -8,6 +8,7 @@ import { pressJump, setStick } from "../input";
 import { liveEffects } from "../powerups";
 import { nextCheckpointAfter } from "../sim";
 import { useClimb } from "../store";
+import { RaceClock, RaceStandings } from "./Race";
 
 const ZONE_COLORS: Record<string, string> = {
   meadow: "#8fc76a",
@@ -46,6 +47,7 @@ const MARK_COLORS: Record<RiderKind, string> = {
   ghost: "bg-sky-300",
   challenge: "bg-rose-400",
   live: "bg-moss-400",
+  rival: "bg-violet-300",
 };
 
 /** Where the other climbers are, a few times a second. */
@@ -243,6 +245,7 @@ export function Hud({ touch }: { touch: boolean }) {
   const windy = useClimb((s) => s.windy);
   const phase = useClimb((s) => s.phase);
   const finish = useClimb((s) => s.finish);
+  const race = useClimb((s) => s.race);
   const { muted, toggle } = useSound();
   const next = nextCheckpointAfter(floor);
 
@@ -270,7 +273,14 @@ export function Hud({ touch }: { touch: boolean }) {
 
       <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2 sm:top-4 sm:right-4">
         <div className="flex gap-2">
-          <Chip>⏱ {startedAt && <Clock startedAt={startedAt} endedAt={endedAt} />}</Chip>
+          {race ? (
+            <Chip>
+              ⏳ <RaceClock endsAt={race.endsAt} />
+              <span className="sr-only">left in the race</span>
+            </Chip>
+          ) : (
+            <Chip>⏱ {startedAt && <Clock startedAt={startedAt} endedAt={endedAt} />}</Chip>
+          )}
           <Chip>🪙 {coins}</Chip>
           <Chip>
             💫 {falls}
@@ -290,11 +300,17 @@ export function Hud({ touch }: { touch: boolean }) {
               onClick={() => void finish()}
               className="rounded-full bg-stone-950/70 px-3.5 py-1.5 text-sm font-medium text-stone-200 ring-1 ring-white/10 backdrop-blur-md hover:bg-stone-900"
             >
-              End climb
+              {race ? "Stop racing" : "End climb"}
             </button>
           )}
         </div>
       </div>
+
+      {race && (
+        <div className="absolute inset-x-0 bottom-40 flex justify-center px-3 sm:top-4 sm:bottom-auto sm:px-48">
+          <RaceStandings />
+        </div>
+      )}
 
       <HeightBar floor={floor} best={best} />
       <Toasts />

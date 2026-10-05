@@ -11,6 +11,7 @@ import { frameOf, record, recordCheer } from "../ghosts";
 import { input } from "../input";
 import { LIVE_SEND_EVERY, sendLive } from "../live";
 import { liveEffects } from "../powerups";
+import { ROOM_SEND_EVERY, sendRoomPos } from "../room";
 import { Sim } from "../sim";
 import { useClimb } from "../store";
 import { generateTower } from "../tower";
@@ -34,6 +35,13 @@ function Driver() {
     // Long frames (a background tab) are capped so nobody tunnels through a platform.
     const dt = Math.min(raw, 1 / 30);
     const store = useClimb.getState();
+    const { race } = store;
+    if (store.phase === "countdown" && race && Date.now() >= race.startAt) {
+      // A room's race: every racer's tower clock starts at the same moment, so their
+      // moving platforms, hazards and gusts stay in step.
+      sim.t = (Date.now() - race.startAt) / 1000;
+      store.go();
+    }
     if (store.phase === "playing") {
       sim.step(dt / 2, input);
       sim.step(dt / 2, input);
@@ -41,15 +49,17 @@ function Driver() {
       sim.idle(dt);
     }
 
-    // The ghost recording, and this climber's position for anyone watching live.
+    // The ghost recording, and this climber's position for anyone watching live (or for
+    // the other racers, waiting at the bottom too during the countdown).
     const pl = sim.player;
     const s = steps.current;
-    if (store.phase === "playing" || store.phase === "summit") {
-      record(dt, pl);
+    if (store.phase === "playing" || store.phase === "summit") record(dt, pl);
+    if (store.phase === "playing" || store.phase === "summit" || (race && store.phase === "countdown")) {
       s.live -= dt;
       if (s.live <= 0) {
-        s.live = LIVE_SEND_EVERY;
-        sendLive(frameOf(pl));
+        s.live = race ? ROOM_SEND_EVERY : LIVE_SEND_EVERY;
+        if (race) sendRoomPos(frameOf(pl));
+        else sendLive(frameOf(pl));
       }
     }
 

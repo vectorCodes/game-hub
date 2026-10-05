@@ -10,7 +10,9 @@ import { Segmented } from "../../../components/Segmented";
 import { formatDuration } from "../../../lib/format";
 import { FLOORS, SKY_CLIMB_PATH, ZONES } from "../config";
 import { liveAvailable } from "../live";
+import { clearRoomError, roomsAvailable, useRoom } from "../room";
 import { localBest, useClimb } from "../store";
+import { FriendsCard, ROOM_ERRORS } from "./Lobby";
 
 const MODES: { value: ClimbMode; label: string }[] = [
   { value: "daily", label: "Today's tower" },
@@ -121,7 +123,20 @@ export function Menu() {
   const challenge = useClimb((s) => s.challenge);
   const challengeFailed = useClimb((s) => s.challengeFailed);
   const clearChallenge = useClimb((s) => s.clearChallenge);
+  const roomError = useRoom().error;
+  const [friends, setFriends] = useState(false);
   const best = localBest(mode);
+
+  if (friends) {
+    return (
+      <FriendsCard
+        onBack={() => {
+          clearRoomError();
+          setFriends(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="pointer-events-none absolute inset-0 flex items-end p-3 sm:p-6 md:items-center">
@@ -131,6 +146,14 @@ export function Menu() {
         <p className="mt-1.5 text-stone-400">Climb as high as you can. It gets harder the higher you go.</p>
 
         {challenge ? <ChallengeCard challenge={challenge} /> : <Segmented className="mt-5" label="Mode" options={MODES} value={mode} onChange={setMode} />}
+        {roomError && (
+          <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">
+            {ROOM_ERRORS[roomError]}
+            <button onClick={clearRoomError} aria-label="Dismiss" className="text-stone-500 hover:text-stone-200">
+              ✕
+            </button>
+          </p>
+        )}
         {challengeFailed && (
           <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">
             That challenge link didn&rsquo;t open. Climb today&rsquo;s tower instead!
@@ -172,6 +195,11 @@ export function Menu() {
                 : "Start climbing"}
           <span aria-hidden>↑</span>
         </button>
+        {roomsAvailable && (
+          <button onClick={() => setFriends(true)} className="btn btn-secondary mt-2 w-full">
+            👥 Play with friends
+          </button>
+        )}
         {best > 0 && (
           <p className="mt-2 text-center text-sm text-stone-400">
             Your best {mode === "daily" ? "today" : "in practice"}: <span className="font-semibold text-stone-100">floor {best}</span>

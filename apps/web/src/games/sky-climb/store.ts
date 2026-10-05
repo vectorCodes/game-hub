@@ -18,10 +18,18 @@ import { useAvatar } from "../../avatar/store";
 import { CHARACTERS, FLOORS, zoneIndexOf, type CharacterId } from "./config";
 import { keepLocalGhost, localGhost, recordedFrames, resetRecording } from "./ghosts";
 import { guestProfile, recordGuestClimb, rememberClimbRun, saveGuestLoadout } from "./guest";
+import { sendRoomFinish, sendRoomProgress } from "./room";
 
 const BASE = "/api/sky-climb";
 
-export type Phase = "menu" | "starting" | "playing" | "summit" | "over";
+export type Phase = "menu" | "starting" | "countdown" | "playing" | "summit" | "over";
+
+/** A room's race: the tower everyone climbs, and when (on this browser's clock). */
+export interface Race {
+  seed: string;
+  startAt: number;
+  endsAt: number;
+}
 
 export interface Toast {
   id: number;
@@ -134,6 +142,8 @@ interface State {
   showLive: boolean;
   /** The finished climb, once its ghost is saved: it can be sent as a challenge. */
   shareRunId: string | null;
+  /** Racing friends in a room. Not recorded as a run: the room keeps the score. */
+  race: Race | null;
 
   setMode: (mode: ClimbMode) => void;
   loadProfile: () => Promise<void>;
@@ -159,6 +169,12 @@ interface State {
   clearChallenge: () => void;
   loadGhosts: (seed: string) => Promise<void>;
   setOthers: (others: { ghosts?: boolean; live?: boolean }) => void;
+  /** The room's countdown began: build its tower and wait at the bottom. */
+  startRace: (race: Race) => void;
+  /** The countdown is over. */
+  go: () => void;
+  /** Back to the room's lobby (or out of the room). */
+  leaveRace: () => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -193,6 +209,7 @@ export const useClimb = create<State>((set, get) => ({
   showGhosts: startSettings.ghosts,
   showLive: startSettings.live,
   shareRunId: null,
+  race: null,
 
   setMode: (mode) => set({ mode, seed: mode === "daily" ? dailySeed() : get().seed, challenge: null }),
 
@@ -280,10 +297,11 @@ export const useClimb = create<State>((set, get) => ({
   },
 
   finish: async () => {
-    const { run, floor, coins, falls, phase, mode, cleanFloor, startedAt } = get();
+    const { run, floor, coins, falls, phase, mode, cleanFloor, startedAt, race } = get();
     if (phase !== "playing" && phase !== "summit") return;
     const endedAt = get().endedAt ?? Date.now();
     set({ phase: "over", endedAt });
+    if (race) return sendRoomFinish();
     const before = new Set(get().profile.achievements.filter((a) => a.unlocked).map((a) => a.id));
     const ghost = floor > 0 ? encodeGhost(recordedFrames()) : undefined;
     const seconds = (endedAt - (startedAt ?? endedAt)) / 1000;
@@ -318,14 +336,15 @@ export const useClimb = create<State>((set, get) => ({
     set((s) => ({ phase: "menu", toast: null, attempt: s.attempt + 1, seed: s.mode === "daily" ? dailySeed() : s.seed })),
 
   reachFloor: (floor) => {
-    const { mode, previousBest, falls } = get();
+    const { mode, previousBest, falls, race } = get();
     set(falls === 0 ? { floor, cleanFloor: floor } : { floor });
+    const zone = zoneIndexOf(floor);
+    if (zone !== get().zone) set({ zone });
+    if (race) return sendRoomProgress(floor);
     if (floor > localBest(mode)) writeNumber(bestKey(mode), floor);
     if (previousBest > 0 && floor === previousBest + 1) {
       get().showToast({ title: "New best!", subtitle: `Higher than ever: floor ${floor}`, tone: "best" });
     }
-    const zone = zoneIndexOf(floor);
-    if (zone !== get().zone) set({ zone });
     // Floors between checkpoints are saved every few seconds, so leaving early still counts.
     if (Date.now() - lastReport > 4000) get().report();
   },
@@ -340,6 +359,7 @@ export const useClimb = create<State>((set, get) => ({
 
   summit: () => {
     set({ phase: "summit", floor: FLOORS, endedAt: Date.now() });
+    if (get().race) sendRoomProgress(FLOORS);
     // Let the celebration play before the results.
     setTimeout(() => void get().finish(), 3200);
   },
@@ -415,5 +435,39 @@ export const useClimb = create<State>((set, get) => ({
     } catch {
       // Remembered for this page view.
     }
+  },
+
+  startRace: (race) => {
+    resetRecording();
+    set((s) => ({
+      race,
+      phase: "countdown",
+      seed: race.seed,
+      run: null,
+      shareRunId: null,
+      ghosts: [],
+      attempt: s.attempt + 1,
+      floor: 0,
+      cleanFloor: 0,
+      coins: 0,
+      falls: 0,
+      checkpoint: 0,
+      zone: 0,
+      unlocked: [],
+      startedAt: race.startAt,
+      endedAt: null,
+      previousBest: 0,
+      toast: null,
+    }));
+  },
+
+  go: () => {
+    if (get().phase === "countdown") set({ phase: "playing" });
+  },
+
+  leaveRace: () => {
+    if (!get().race) return;
+    set({ race: null });
+    get().backToMenu();
   },
 }));

@@ -59,7 +59,8 @@ export interface Input {
 const ISLAND_TOP = -0.65;
 const ISLAND_RADIUS = 9.5;
 const DEATH_TIME = 1.1;
-const GUST = { period: 7, length: 2.2, accel: 9 };
+/** Wind: a gust every `period` seconds, lasting `length`. It pushes hard in the air but only gently on a platform, so you can always stand your ground. */
+const GUST = { period: 9, length: 1.8, accel: 4, grounded: 0.35 };
 
 export class Sim {
   t = 0;
@@ -188,8 +189,9 @@ export class Sim {
 
     // Wind pushes outwards, off the tower.
     if (this.gust > 0) {
-      pl.vx += (-fx) * GUST.accel * this.gust * dt;
-      pl.vz += (-fz) * GUST.accel * this.gust * dt;
+      const push = GUST.accel * this.gust * (pl.grounded ? GUST.grounded : 1) * dt;
+      pl.vx += -fx * push;
+      pl.vz += -fz * push;
     }
 
     // Jump, with a buffer before landing and coyote time after leaving an edge.
