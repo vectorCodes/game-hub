@@ -65,15 +65,18 @@ function newCode() {
   return Array.from(bytes, (b) => ROOM_CODE_ALPHABET[b % ROOM_CODE_ALPHABET.length]).join("");
 }
 
-/** `ALLOWED_ORIGINS` is comma-separated; `*` matches within one label (Vercel preview URLs). */
+/**
+ * `ALLOWED_ORIGINS` is comma-separated; `*` matches within one label (Vercel preview URLs).
+ * Forgiving of how it was pasted: quotes, spaces, a trailing slash or a path, any case.
+ */
 function originAllowed(origin: string, list = "") {
   return list
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/^["']|["']$/g, "").replace(/(\/\/[^/]+)\/.*$/, "$1").toLowerCase())
     .filter(Boolean)
     .some((pattern) => {
       const re = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("*", "[^.]*")}$`);
-      return re.test(origin);
+      return re.test(origin.toLowerCase());
     });
 }
 
