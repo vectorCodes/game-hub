@@ -284,8 +284,8 @@ export const ZONE_POWERUPS: Record<ZoneId, Partial<Record<PowerupKind, number>>>
 export const POWERUP_MIN_FLOOR = 5;
 export const POWERUP_SPACING = 6;
 
-/** Respawn points: every 5 floors low down, every 10 higher up. */
-export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, FLOORS];
+/** Respawn points: every 5 floors low down, every 7 or 8 higher up (where floors are harder). */
+export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS];
 
 export const isCheckpoint = (floor: number) => CHECKPOINTS.includes(floor);
 
