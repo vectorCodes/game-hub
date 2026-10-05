@@ -1,5 +1,6 @@
-// Hub card body for Shadow Guess: today's puzzle, the player's status, and a countdown.
-// Kept free of three.js so the homepage stays light.
+// Shadow Guess cards: the GameHub tile (cover + status) and the full card on the game's
+// landing page (today's puzzle, the player's status, and a countdown).
+// Kept free of three.js so the pages that show them stay light.
 import { Link } from "react-router";
 import type { DailyInfo } from "@shadow/shared";
 import { formatCountdown } from "../../lib/format";
@@ -44,6 +45,22 @@ function ShadowArt({ info }: { info: DailyInfo | null }) {
       )}
       <span className="absolute top-4 right-4 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-ink">3D</span>
     </div>
+  );
+}
+
+/** Cover art for the game's tile on the GameHub page. */
+export function ShadowGuessCover() {
+  return <ShadowArt info={useDaily()} />;
+}
+
+/** One line for the GameHub tile: today's puzzle, and where the player stands on it. */
+export function ShadowGuessStatus() {
+  const info = useDaily();
+  if (!info) return <span>A new puzzle every day</span>;
+  return (
+    <span>
+      Daily #{info.puzzleNumber} · <span className={dailyDone(info) ? "text-moss-300" : "text-stone-200"}>{statusLine(info)}</span>
+    </span>
   );
 }
 

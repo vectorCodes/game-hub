@@ -1,5 +1,8 @@
 import { sql } from "drizzle-orm";
-import type { LeaderboardEntry, LeaderboardPeriod, LeaderboardView } from "@shadow/shared";
+import { shortName, type AvatarConfig, type LeaderboardEntry, type LeaderboardPeriod, type LeaderboardView } from "@shadow/shared";
+
+// Shortened names ("Ada L.") so the public board doesn't show full names.
+export { shortName };
 import type { Db } from "../../db/client";
 import { queryRows } from "../../db/rows";
 
@@ -15,17 +18,11 @@ interface Row {
   total: number;
   display_name: string | null;
   avatar_url: string | null;
+  avatar: AvatarConfig | null;
 }
 
 function isoDay(offsetDays = 0): string {
   return new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
-}
-
-/** "Ada Lovelace" → "Ada L." so the public board doesn't show full names. */
-export function shortName(displayName: string | null): string {
-  const parts = displayName?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (!parts.length) return "Anonymous";
-  return parts.length === 1 ? parts[0] : `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
 }
 
 function range(period: LeaderboardPeriod): { from: string; to: string } {
@@ -69,9 +66,10 @@ export async function getLeaderboard(
                (count(*) over ())::int as total
         from totals t
       )
-      select r.*, p.display_name, p.avatar_url
+      select r.*, p.display_name, p.avatar_url, a.config as avatar
       from ranked r
       left join profiles p on p.id = r.user_id
+      left join avatars a on a.user_id = r.user_id
       where r.rank <= ${TOP} or r.user_id = ${userId}::uuid
       order by r.rank, r.seconds
     `,
@@ -86,6 +84,7 @@ export async function getLeaderboard(
     played: r.played,
     seconds: Math.round(r.seconds),
     isMe: r.user_id === userId,
+    avatar: r.avatar,
   });
 
   const mine = rows.find((r) => r.user_id === userId);

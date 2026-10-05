@@ -10,6 +10,9 @@ import { shadowGuessRoutes } from "./modules/shadow-guess/routes";
 import { userRoutes } from "./modules/users/routes";
 import { leaderboardRoutes } from "./modules/leaderboard/routes";
 import { NotFoundError, ShadowGuessService } from "./modules/shadow-guess/service";
+import { avatarRoutes } from "./modules/avatar/routes";
+import { skyClimbRoutes } from "./modules/sky-climb/routes";
+import { SkyClimbService, TooFastError } from "./modules/sky-climb/service";
 import { MODELS_DIR } from "./paths";
 
 type AppConfig = Pick<
@@ -29,6 +32,9 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
     }
     if (error instanceof NotFoundError) {
       return reply.code(404).send({ error: "not_found" });
+    }
+    if (error instanceof TooFastError) {
+      return reply.code(422).send({ error: "too_fast" });
     }
     request.log.error(error);
     const status = (error as { statusCode?: number }).statusCode ?? 500;
@@ -50,7 +56,10 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
   const shadowGuess = new ShadowGuessService(db, config.modelsBaseUrl);
   shadowGuessRoutes(app, shadowGuess);
   userRoutes(app, db, shadowGuess);
-  leaderboardRoutes(app, db);
+  const skyClimb = new SkyClimbService(db);
+  leaderboardRoutes(app, db, skyClimb);
+  skyClimbRoutes(app, skyClimb);
+  avatarRoutes(app, db, skyClimb);
   if (!config.isProd) devRoutes(app, db, config.modelsBaseUrl);
 
   return { app, shadowGuess };

@@ -4,7 +4,9 @@ import { api } from "../../api/client";
 import { useAuth } from "../../auth/store";
 import { savedDailySessionId } from "./store";
 
-export const SHADOW_GUESS_PATH = "/games/shadow-guess";
+/** The Shadow Guess landing page; the game itself is at SHADOW_GUESS_PATH. */
+export const SHADOW_GUESS_HOME = "/games/shadow-guess";
+export const SHADOW_GUESS_PATH = `${SHADOW_GUESS_HOME}/play`;
 
 // One request per player per page view, shared by every component that asks.
 const cache = new Map<string, Promise<DailyInfo>>();

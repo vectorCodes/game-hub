@@ -12,7 +12,8 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+/** `keepalive` lets a request finish after the page is closed (saving progress on exit). */
+export async function api<T>(path: string, init: { method?: string; body?: unknown; keepalive?: boolean } = {}): Promise<T> {
   const method = init.method ?? (init.body === undefined ? "GET" : "POST");
   const headers: Record<string, string> = {};
   if (method !== "GET") headers["content-type"] = "application/json";
@@ -24,6 +25,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     headers,
     // Fastify rejects an empty JSON body, so body-less POSTs send {}.
     body: method === "GET" ? undefined : JSON.stringify(init.body ?? {}),
+    keepalive: init.keepalive,
   });
   if (!res.ok) {
     const data = await res.json().catch(() => null);

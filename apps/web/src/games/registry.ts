@@ -1,24 +1,47 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { ShadowGuessHubCard } from "./shadow-guess/HubCard";
+import { ShadowGuessCover, ShadowGuessStatus } from "./shadow-guess/HubCard";
+import { SkyClimbCover, SkyClimbStatus } from "./sky-climb/HubCard";
 
 export interface GameEntry {
   id: string;
   title: string;
+  /** For the header on phones. */
+  shortTitle: string;
   tagline: string;
+  /** The game's landing page. The game itself is at `${path}/play`. */
   path: string;
-  /** Lazy so each game (and three.js) loads only when it's opened. */
+  /** Lazy so each game's pages (and three.js) load only when they're opened. */
+  Landing: LazyExoticComponent<ComponentType>;
   Component: LazyExoticComponent<ComponentType>;
-  /** Body of the game's card on the hub (art, status, actions). Loaded eagerly: keep it light. */
-  HubCard: ComponentType;
+  /** Art for the game's tile on the GameHub page. Loaded eagerly: keep it light. */
+  Cover: ComponentType;
+  /** One line of live status for the tile ("Daily #3 is live"). */
+  Status: ComponentType;
 }
+
+export const playPath = (game: GameEntry) => `${game.path}/play`;
 
 export const games: GameEntry[] = [
   {
     id: "shadow-guess",
     title: "Shadow Guess",
+    shortTitle: "Shadow",
     tagline: "Name the object from its shadow. Every miss turns the light.",
     path: "/games/shadow-guess",
+    Landing: lazy(() => import("../pages/ShadowGuessHome")),
     Component: lazy(() => import("./shadow-guess/ShadowGuessPage")),
-    HubCard: ShadowGuessHubCard,
+    Cover: ShadowGuessCover,
+    Status: ShadowGuessStatus,
+  },
+  {
+    id: "sky-climb",
+    title: "Sky Climb",
+    shortTitle: "Climb",
+    tagline: "One tower a day. Jump from meadow to storm to the stars. Don't look down.",
+    path: "/games/sky-climb",
+    Landing: lazy(() => import("./sky-climb/SkyClimbHome")),
+    Component: lazy(() => import("./sky-climb/SkyClimbPage")),
+    Cover: SkyClimbCover,
+    Status: SkyClimbStatus,
   },
 ];

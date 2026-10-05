@@ -56,6 +56,7 @@
   --animate-sway: sway 7s ease-in-out infinite;
   --animate-fade: fade 0.3s ease-out both;
   --animate-spark: spark 1.1s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+  --animate-blackout: blackout 1.1s ease-in-out both;
 
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -93,6 +94,12 @@
   @keyframes fade {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+  /* Sky Climb: a dip to dark while a fallen climber is put back on the checkpoint. */
+  @keyframes blackout {
+    0% { opacity: 0; }
+    45%, 60% { opacity: 0.8; }
+    100% { opacity: 0; }
   }
   /* A spark flying out from the centre of the wall; --dx/--dy set per spark. */
   @keyframes spark {

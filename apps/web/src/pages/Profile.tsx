@@ -3,12 +3,16 @@ import { Link } from "react-router";
 import type { StatsView } from "@shadow/shared";
 import { GoogleIcon } from "../auth/AuthMenu";
 import { useAuth } from "../auth/store";
+import { AvatarImage } from "../avatar/AvatarImage";
+import { useAvatar } from "../avatar/store";
 import { Avatar } from "../components/Avatar";
+import { SHADOW_GUESS_PATH } from "../games/shadow-guess/useDaily";
+import { SkyClimbProfileSection } from "../games/sky-climb/ProfileSection";
 
 function StatTile({ label, value, accent = false, delay }: { label: string; value: string | number; accent?: boolean; delay: number }) {
   return (
     <div
-      className="animate-rise rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/10 sm:p-5"
+      className="animate-rise rounded-2xl bg-white/3 p-4 ring-1 ring-white/10 sm:p-5"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className={`font-display text-3xl font-bold tabular-nums sm:text-4xl ${accent ? "text-moss-300 text-glow" : "text-white"}`}>{value}</div>
@@ -28,7 +32,7 @@ function Distribution({ stats }: { stats: StatsView }) {
   const best = stats.distribution.indexOf(Math.max(...stats.distribution));
 
   return (
-    <figure className="animate-rise rounded-3xl bg-white/[0.03] p-5 ring-1 ring-white/10 [animation-delay:320ms] sm:p-6">
+    <figure className="animate-rise rounded-3xl bg-white/3 p-5 ring-1 ring-white/10 [animation-delay:320ms] sm:p-6">
       <figcaption className="mb-4 flex items-baseline justify-between">
         <span className="font-display text-lg font-semibold">Solved on angle</span>
         <span className="text-xs text-stone-500">wins per angle</span>
@@ -39,9 +43,8 @@ function Distribution({ stats }: { stats: StatsView }) {
             <span className="w-4 text-right text-stone-400 tabular-nums">{i + 1}</span>
             <div className="h-7 flex-1 rounded-lg bg-white/[0.03]">
               <div
-                className={`flex h-full items-center justify-end rounded-lg px-2 transition-[width] duration-700 ease-out ${
-                  count && i === best ? "bg-gradient-to-r from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(233,160,58,0.7)]" : count ? "bg-stone-600" : ""
-                }`}
+                className={`flex h-full items-center justify-end rounded-lg px-2 transition-[width] duration-700 ease-out ${count && i === best ? "bg-gradient-to-r from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(233,160,58,0.7)]" : count ? "bg-stone-600" : ""
+                  }`}
                 style={{
                   width: grown ? `${count ? Math.max(8, (count / max) * 100) : 0}%` : "0%",
                   transitionDelay: `${i * 70}ms`,
@@ -63,6 +66,7 @@ function Distribution({ stats }: { stats: StatsView }) {
 
 export default function Profile() {
   const { enabled, user, me, synced, signIn, refreshMe } = useAuth();
+  const avatar = useAvatar((s) => (s.custom ? s.config : null));
 
   useEffect(() => {
     if (synced) void refreshMe();
@@ -104,7 +108,16 @@ export default function Profile() {
     <div className="space-y-6">
       <div className="relative flex animate-rise items-center gap-4 overflow-hidden rounded-3xl bg-white/[0.03] p-5 ring-1 ring-white/10 sm:gap-5 sm:p-6">
         <div aria-hidden className="absolute -top-20 -right-10 h-56 w-56 rounded-full bg-lamp-500/20 blur-3xl" />
-        <Avatar src={profile.avatarUrl} name={name} size="lg" className="ring-4 ring-lamp-500/60" />
+        <Link to="/avatar" className="group relative shrink-0" aria-label="Edit your avatar">
+          {avatar ? (
+            <AvatarImage config={avatar} size="lg" className="ring-4 ring-lamp-500/60" />
+          ) : (
+            <Avatar src={profile.avatarUrl} name={name} size="lg" className="ring-4 ring-lamp-500/60" />
+          )}
+          <span className="absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full bg-lamp-400 text-xs text-ink shadow ring-2 ring-stone-950 transition group-hover:scale-110">
+            ✏️
+          </span>
+        </Link>
         <div className="relative min-w-0">
           <h1 className="font-display text-2xl font-bold tracking-tight break-words sm:text-3xl">{name}</h1>
           <p className="text-sm text-stone-400">
@@ -128,11 +141,13 @@ export default function Profile() {
       ) : (
         <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center text-sm text-stone-400">
           Win a round and your solve pattern shows up here.{" "}
-          <Link to="/games/shadow-guess" className="text-moss-300 hover:underline">
+          <Link to={SHADOW_GUESS_PATH} className="text-moss-300 hover:underline">
             Play now →
           </Link>
         </div>
       )}
+
+      <SkyClimbProfileSection />
     </div>
   );
 }

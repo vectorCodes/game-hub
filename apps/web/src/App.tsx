@@ -1,15 +1,17 @@
 import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router";
-import Home from "./pages/Home";
+import HubHome from "./pages/hub/HubHome";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import { AuthMenu } from "./auth/AuthMenu";
 import { useAuth } from "./auth/store";
+import { useAvatarSync } from "./avatar/store";
 import { Logo } from "./components/Logo";
-import { games } from "./games/registry";
+import { games, playPath } from "./games/registry";
 
-// Lazy: the album draws 3D models, so it brings three.js with it.
+// Lazy: the album and the avatar editor draw 3D models, so they bring three.js with them.
 const Album = lazy(() => import("./games/shadow-guess/album/AlbumPage"));
+const AvatarPage = lazy(() => import("./pages/AvatarPage"));
 
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;
@@ -40,7 +42,7 @@ function Header() {
         <div className="flex items-center gap-0.5 text-sm sm:gap-1">
           {games.map((g) => (
             <NavItem key={g.id} to={g.path}>
-              <span className="sm:hidden">Play</span>
+              <span className="sm:hidden">{g.shortTitle}</span>
               <span className="hidden sm:inline">{g.title}</span>
             </NavItem>
           ))}
@@ -96,11 +98,12 @@ function PageLoader() {
 export default function App() {
   const init = useAuth((s) => s.init);
   useEffect(() => init(), [init]);
+  useAvatarSync();
   const { pathname } = useLocation();
-  // Games get the full viewport; the landing page lays out its own sections; other
-  // pages sit in a centered column.
-  const game = pathname.startsWith("/games/");
-  const landing = pathname === "/";
+  // Games get the full viewport; landing pages (the hub's and each game's) lay out their
+  // own sections; other pages sit in a centered column.
+  const game = games.some((g) => pathname === playPath(g));
+  const landing = pathname === "/" || games.some((g) => pathname === g.path);
 
   return (
     <div className="relative flex min-h-dvh flex-col">
@@ -119,12 +122,16 @@ export default function App() {
       >
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HubHome />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/album" element={<Album />} />
+            <Route path="/avatar" element={<AvatarPage />} />
             {games.map((g) => (
-              <Route key={g.id} path={g.path} element={<g.Component />} />
+              <Route key={g.id} path={g.path} element={<g.Landing />} />
+            ))}
+            {games.map((g) => (
+              <Route key={`${g.id}-play`} path={playPath(g)} element={<g.Component />} />
             ))}
             {AnglePicker && <Route path="/dev/angles" element={<AnglePicker />} />}
           </Routes>

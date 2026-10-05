@@ -11,7 +11,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { GameMode, LightAngle, SessionStatus } from "@shadow/shared";
+import type { AvatarConfig, ClimbMode, ClimbStatus, GameMode, LightAngle, SessionStatus } from "@shadow/shared";
 
 // Every table has RLS enabled and no policies: the public Supabase REST API can't read
 // anything (answers included). The API connects as a privileged role and bypasses RLS.
@@ -108,3 +108,71 @@ export const userStats = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.gameType] })],
 ).enableRLS();
+
+/**
+ * Sky Climb runs. The tower itself is generated in the browser from `seed`; a run records
+ * how high the player got. Progress arrives checkpoint by checkpoint and is checked against
+ * the server's clock, so `time_ms` can't be faked shorter than the climb really took.
+ */
+export const climbRuns = pgTable(
+  "climb_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid(),
+    mode: text().$type<ClimbMode>().notNull(),
+    seed: text().notNull(),
+    /** Daily only: the UTC date of the tower. */
+    puzzleDate: date(),
+    bestFloor: integer().notNull().default(0),
+    /** Milliseconds from the start of the run to reaching bestFloor. */
+    timeMs: integer().notNull().default(0),
+    coins: integer().notNull().default(0),
+    falls: integer().notNull().default(0),
+    /** Highest floor reached before the first fall (for the "clean climb" achievement). */
+    cleanFloor: integer().notNull().default(0),
+    status: text().$type<ClimbStatus>().notNull().default("climbing"),
+    startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [index().on(t.puzzleDate, t.mode), index().on(t.userId)],
+).enableRLS();
+
+/** Sky Climb cosmetics bought with coins. Free and achievement items aren't stored. */
+export const climbUnlocks = pgTable(
+  "climb_unlocks",
+  {
+    userId: uuid().notNull(),
+    itemId: text().notNull(),
+    cost: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.itemId] })],
+).enableRLS();
+
+/** What each signed-in climber wears. */
+export const climbLoadouts = pgTable("climb_loadouts", {
+  userId: uuid().primaryKey(),
+  character: text().notNull(),
+  trail: text().notNull(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+/** Each player's GameHub avatar, worn in every game. Validated against what they own. */
+export const avatars = pgTable("avatars", {
+  userId: uuid().primaryKey(),
+  config: jsonb().$type<AvatarConfig>().notNull(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+/**
+ * A finished climb's replay (`encodeGhost`), raced by others as a translucent climber: the
+ * player's own best, today's leaders, and challenge links.
+ */
+export const climbGhosts = pgTable("climb_ghosts", {
+  runId: uuid()
+    .primaryKey()
+    .references(() => climbRuns.id, { onDelete: "cascade" }),
+  frames: integer().notNull(),
+  data: text().notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();

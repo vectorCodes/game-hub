@@ -4,6 +4,7 @@ import type { MeView } from "@shadow/shared";
 import { api } from "../api/client";
 import { supabase } from "../lib/supabase";
 import { savedSessionIds } from "../games/shadow-guess/store";
+import { forgetClimbRuns, savedClimbRunIds } from "../games/sky-climb/guest";
 
 interface AuthState {
   /** False when Supabase env vars are missing. */
@@ -35,6 +36,10 @@ export const useAuth = create<AuthState>((set, get) => ({
         if (user) {
           // Games played as a guest in this browser move into the account.
           await api("/api/me/claim", { body: { sessionIds: savedSessionIds() } }).catch(() => {});
+          const runIds = savedClimbRunIds();
+          if (runIds.length) {
+            await api("/api/sky-climb/claim", { body: { runIds } }).then(forgetClimbRuns, () => {});
+          }
           await get().refreshMe();
         } else {
           set({ me: null });

@@ -21,7 +21,7 @@ just restart the API after editing the catalog. PGlite is single-process, so don
 
 | Path | What |
 |---|---|
-| `apps/web` | React + Vite + react-three-fiber: games hub, Shadow Guess, dev angle picker |
+| `apps/web` | React + Vite + react-three-fiber: GameHub, Shadow Guess, Sky Climb, dev angle picker |
 | `apps/api` | Fastify + Drizzle: sessions, server-side guess checking and scoring, daily puzzle |
 | `packages/shared` | Guess matcher, scoring, angles, Zod API contract (used by web + api) |
 | `tools/models` | Model pipeline: fetch Kenney kits → normalize → upload to Supabase Storage |
@@ -44,6 +44,27 @@ shadows. Food, Nature and Animals are smoothed by default (2 passes); everything
 crisp. Override per object with `"smooth": 0 | 1 | 2` in the catalog: smoothing melts boxy
 shapes and can speckle parts that mix several palette colours, so check the revealed model.
 Pick its 6 angles in `/dev/angles`: **Save** writes them to `catalog.json` and the DB.
+
+## Sky Climb
+
+A daily 3D platformer tower at `/games/sky-climb` (landing) and `/games/sky-climb/play`. The
+tower is generated in the browser from a seed (`daily-<date>`, or random for practice), so
+everyone climbs the same daily tower. The API (`/api/sky-climb/*`, table `climb_runs`) only
+stores runs, rejects progress faster than `CLIMB_MIN_SECONDS_PER_FLOOR`, and ranks each day.
+
+- `apps/web/src/games/sky-climb/config.ts`: physics, zones and the difficulty ramp. Balance here.
+- `tower.ts` generates the tower; `sim.ts` runs platforms, hazards and the player's physics
+  (no physics engine: platforms are one-way, you land on their tops); `scene/` draws it.
+- Models: Kenney Mini Characters and Platformer Kit in `apps/web/public/sky-climb/`.
+- Locker items, prices and achievements: `packages/shared/src/skyClimb.ts` (shared by web and API).
+- After pulling, apply migrations `0003_sky_climb`, `0004_sky_climb_locker` and `0005_avatars`
+  to Supabase: `pnpm --filter api db:migrate`.
+
+## Avatars
+
+`/avatar` builds a GameHub avatar from the Mini Characters (any head on any body, recoloured,
+plus a hat and eyewear). Code in `apps/web/src/avatar/`; config schema, colours and items in
+`packages/shared/src/avatar.ts` and `skyClimb.ts`; API at `/api/avatar`.
 
 ## Themed weeks
 

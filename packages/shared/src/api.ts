@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { LightAngle } from "./angles";
+import type { AvatarConfig } from "./avatar";
 
 export const GameMode = z.enum(["daily", "free"]);
 export type GameMode = z.infer<typeof GameMode>;
@@ -118,7 +119,7 @@ export const LeaderboardPeriod = z.enum(["daily", "weekly", "all"]);
 export type LeaderboardPeriod = z.infer<typeof LeaderboardPeriod>;
 
 export const LeaderboardQuery = z.object({
-  game: z.literal("shadow-guess").default("shadow-guess"),
+  game: z.enum(["shadow-guess", "sky-climb"]).default("shadow-guess"),
   period: LeaderboardPeriod.default("daily"),
 });
 
@@ -133,6 +134,8 @@ export interface LeaderboardEntry {
   /** Total time spent on won puzzles; the tie-breaker (lower is better). */
   seconds: number;
   isMe: boolean;
+  /** The player's GameHub avatar, if they've made one. */
+  avatar: AvatarConfig | null;
 }
 
 export interface LeaderboardView {
@@ -185,4 +188,11 @@ export interface AlbumView {
   total: number;
   found: number;
   categories: AlbumCategory[];
+}
+
+/** A display name shortened for privacy: "Ada Lovelace" → "Ada L." */
+export function shortName(displayName: string | null | undefined): string {
+  const parts = displayName?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (!parts.length) return "Anonymous";
+  return parts.length === 1 ? parts[0] : `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
 }

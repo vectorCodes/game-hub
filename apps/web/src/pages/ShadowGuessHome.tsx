@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router";
-import { games } from "../games/registry";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, Navigate, useSearchParams } from "react-router";
+import { ShadowGuessHubCard } from "../games/shadow-guess/HubCard";
 import { ClockIcon, FlameIcon, PodiumIcon } from "../components/animated/icons";
 import { dailyCta, SHADOW_GUESS_PATH, useDaily, useNow } from "../games/shadow-guess/useDaily";
 import { formatCountdown } from "../lib/format";
-import { useReveal } from "../lib/useReveal";
+import { Reveal } from "../components/Reveal";
 import { preloadLandingModels } from "./landing/assets";
 import { useJourney } from "./landing/journey";
 
@@ -23,16 +23,6 @@ const STATS = [
   { value: "1", label: "new puzzle every day" },
   { value: "100", label: "points for a first-angle solve" },
 ];
-
-/** Rises in when it scrolls into view. */
-function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  const ref = useReveal<HTMLDivElement>();
-  return (
-    <div ref={ref} className={`reveal ${className}`} style={{ "--reveal-delay": `${delay}ms` } as CSSProperties}>
-      {children}
-    </div>
-  );
-}
 
 /** One stop on the journey: the 3D camera arrives here when this section is centred. */
 function Chapter({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -86,7 +76,7 @@ function PromoVideo() {
         const v = video.current;
         if (!v) return;
         if (e.intersectionRatio >= 0.4) {
-          if (!userPaused.current) void v.play().catch(() => {});
+          if (!userPaused.current) void v.play().catch(() => { });
         } else if (!v.paused) v.pause();
       },
       { threshold: [0, 0.4] },
@@ -127,7 +117,7 @@ function PromoVideo() {
           aria-label="Shadow Guess trailer"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
-          className="block aspect-video w-full rounded-[1.35rem] bg-stone-950 sm:rounded-[1.5rem]"
+          className="block aspect-video w-full rounded-[1.35rem] bg-stone-950 sm:rounded-3xl"
         />
       </div>
       <button
@@ -188,7 +178,7 @@ function Hero() {
         </div>
         <h1 className="mt-6 animate-rise text-display text-legible [animation-delay:80ms]">
           Can you name it from its{" "}
-          <span className="bg-gradient-to-r from-lamp-200 via-lamp-300 to-lamp-500 bg-clip-text text-transparent [text-shadow:none]">shadow</span>?
+          <span className="bg-gradient-to-r from-lamp-200 via-lamp-300 to-lamp-500 bg-clip-text text-transparent text-shadow-none">shadow</span>?
         </h1>
         <p className="mx-auto mt-5 max-w-xl animate-rise text-lead text-legible text-stone-300! [animation-delay:160ms]">
           A hidden 3D object casts its silhouette on the wall. Every miss turns the light and reveals a new angle.
@@ -235,13 +225,13 @@ function GuessChapter() {
   return (
     <Chapter>
       <div className="flex">
-        <Reveal className="glass w-full max-w-md rounded-[2rem] p-7 sm:p-9">
+        <Reveal className="glass w-full max-w-md rounded-4xl p-7 sm:p-9">
           <ChapterLabel n="02">Guess</ChapterLabel>
           <h2 className="mt-5 text-section text-legible">Every miss turns the light.</h2>
           <p className="mt-5 text-lead text-legible text-stone-300!">
             Six angles, hardest first. Each wrong guess shows a new side, and costs you 15 points.
           </p>
-          <div className="mt-8 rounded-2xl bg-stone-950/60 p-5 ring-1 ring-white/[0.08] sm:p-6">
+          <div className="mt-8 rounded-2xl bg-stone-950/60 p-5 ring-1 ring-white/8 sm:p-6">
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Angle</div>
@@ -339,13 +329,11 @@ function FinaleChapter() {
       </Reveal>
 
       <div className="mt-24 space-y-5">
-        {games.map((g) => (
-          <Reveal key={g.id}>
-            <article className="glass rounded-3xl p-3 sm:p-4">
-              <g.HubCard />
-            </article>
-          </Reveal>
-        ))}
+        <Reveal>
+          <article className="glass rounded-3xl p-3 sm:p-4">
+            <ShadowGuessHubCard />
+          </article>
+        </Reveal>
       </div>
 
       <div className="mt-20 grid gap-x-10 gap-y-12 md:grid-cols-3">
@@ -363,7 +351,14 @@ function FinaleChapter() {
   );
 }
 
-export default function Home() {
+/** Shadow Guess's landing page. Links from before the game moved to /play still open it. */
+export default function ShadowGuessHome() {
+  const [params] = useSearchParams();
+  if (params.has("mode")) return <Navigate to={`${SHADOW_GUESS_PATH}?${params}`} replace />;
+  return <Landing />;
+}
+
+function Landing() {
   const root = useRef<HTMLDivElement>(null);
   useJourney(root);
   // Models download alongside the 3D bundle (which React.lazy already started).

@@ -64,7 +64,7 @@ export default function AnglePicker() {
         </label>
       </div>
 
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-stone-800">
+      <div className="aspect-4/3 w-full overflow-hidden rounded-2xl border border-stone-800">
         <ShadowScene modelUrl={entry.modelUrl} angle={angle} revealed={showObject} snap />
       </div>
 
@@ -73,9 +73,8 @@ export default function AnglePicker() {
           <button
             key={i}
             onClick={() => setSlot(i)}
-            className={`rounded-lg border px-3 py-1.5 text-left text-xs ${
-              i === slot ? "border-amber-400 text-stone-100" : "border-stone-700 text-stone-400"
-            }`}
+            className={`rounded-lg border px-3 py-1.5 text-left text-xs ${i === slot ? "border-amber-400 text-stone-100" : "border-stone-700 text-stone-400"
+              }`}
           >
             <div className="font-medium">
               Step {i + 1}

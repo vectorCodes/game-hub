@@ -22,6 +22,34 @@
       "when": 1790849966847,
       "tag": "0002_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791179425799,
+      "tag": "0003_sky_climb",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791180476000,
+      "tag": "0004_sky_climb_locker",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791181302334,
+      "tag": "0005_avatars",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791182161917,
+      "tag": "0006_climb_ghosts",
+      "breakpoints": true
     }
   ]
 }

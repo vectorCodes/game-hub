@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { AvatarImage } from "../avatar/AvatarImage";
+import { useAvatar } from "../avatar/store";
 import { Avatar } from "../components/Avatar";
 import { useAuth } from "./store";
 
@@ -35,6 +37,8 @@ const menuItem =
 
 export function AuthMenu() {
   const { enabled, user, me, synced, signIn, signOut } = useAuth();
+  // Once a player has made a GameHub avatar, it replaces their Google picture.
+  const avatarConfig = useAvatar((s) => (s.custom ? s.config : null));
   const [open, setOpen] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -93,7 +97,7 @@ export function AuthMenu() {
         className="flex h-9 items-center gap-2 rounded-full bg-white/5 py-1 pr-2.5 pl-1 text-stone-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
       >
         <span className="relative">
-          <Avatar src={avatar} name={name} />
+          {avatarConfig ? <AvatarImage config={avatarConfig} size="sm" /> : <Avatar src={avatar} name={name} />}
           {/* While guest games are linked and stats load: a quiet ring, not a label. */}
           {!synced && (
             <span aria-hidden className="absolute -inset-[3px] animate-spin rounded-full border-2 border-lamp-300/80 border-t-transparent border-r-transparent" />
@@ -106,7 +110,7 @@ export function AuthMenu() {
       {open && (
         <div role="menu" className="glass absolute top-full right-0 z-40 mt-2 w-64 animate-pop rounded-2xl p-1.5 origin-top-right">
           <div className="flex items-center gap-3 px-3 pt-2.5 pb-3">
-            <Avatar src={avatar} name={name} size="md" />
+            {avatarConfig ? <AvatarImage config={avatarConfig} size="md" /> : <Avatar src={avatar} name={name} size="md" />}
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-stone-50">{name}</div>
               {user.email && <div className="truncate text-xs text-stone-400">{user.email}</div>}
@@ -116,6 +120,10 @@ export function AuthMenu() {
           <Link role="menuitem" to="/profile" className={menuItem}>
             <ProfileIcon />
             Your profile
+          </Link>
+          <Link role="menuitem" to="/avatar" className={menuItem}>
+            <span aria-hidden className="grid h-4 w-4 place-items-center text-sm">🧑‍🎨</span>
+            {avatarConfig ? "Edit your avatar" : "Make your avatar"}
           </Link>
           <Link role="menuitem" to="/leaderboard" className={menuItem}>
             <TrophyIcon />

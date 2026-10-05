@@ -2,7 +2,20 @@ import { create } from "zustand";
 
 // Game sounds, synthesized with Web Audio: no files to load, and they stay quiet and short.
 
-export type Sound = "turn" | "miss" | "close" | "duplicate" | "hint" | "win" | "lose";
+export type Sound =
+  | "turn"
+  | "miss"
+  | "close"
+  | "duplicate"
+  | "hint"
+  | "win"
+  | "lose"
+  // Sky Climb
+  | "jump"
+  | "coin"
+  | "spring"
+  | "checkpoint"
+  | "fall";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -96,6 +109,8 @@ const VIBRATION: Partial<Record<Sound, number | number[]>> = {
   close: [15, 40, 15],
   win: [20, 50, 20, 50, 40],
   lose: 120,
+  spring: 20,
+  fall: 80,
 };
 
 export function play(sound: Sound) {
@@ -130,5 +145,17 @@ export function play(sound: Sound) {
     case "lose":
       [392, 330, 262].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.22, dur: 0.5, type: "triangle", gain: 0.16 }));
       return;
+    case "jump":
+      return tone(ac, out, { freq: 330, to: 620, dur: 0.12, type: "triangle", gain: 0.07 });
+    case "coin":
+      tone(ac, out, { freq: 988, dur: 0.08, type: "square", gain: 0.04 });
+      return tone(ac, out, { freq: 1319, at: 0.07, dur: 0.22, type: "square", gain: 0.04 });
+    case "spring":
+      return tone(ac, out, { freq: 180, to: 900, dur: 0.35, type: "triangle", gain: 0.14 });
+    case "checkpoint":
+      [G5 / 2, C5, E5, G5].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.07, dur: 0.35, type: "triangle", gain: 0.1 }));
+      return;
+    case "fall":
+      return tone(ac, out, { freq: 520, to: 90, dur: 0.6, type: "triangle", gain: 0.14 });
   }
 }

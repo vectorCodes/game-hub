@@ -7,9 +7,8 @@ import { useAuth } from "../../../auth/store";
 import { ShadowScene } from "../scene/ShadowScene";
 import { REVEAL_ANGLE } from "../scene/angles";
 import { solvedSessionIds } from "../store";
+import { SHADOW_GUESS_PATH } from "../useDaily";
 import { thumbnail } from "./thumbnails";
-
-const GAME_PATH = "/games/shadow-guess";
 
 function Progress({ found, total, className = "" }: { found: number; total: number; className?: string }) {
   const [grown, setGrown] = useState(false);
@@ -218,7 +217,7 @@ export default function AlbumPage() {
       {album.found === 0 && (
         <div className="rounded-3xl bg-white/[0.03] p-8 text-center ring-1 ring-white/10">
           <p className="text-stone-300">Your album is empty. Solve a shadow to add your first object.</p>
-          <Link to={GAME_PATH} className="mt-4 inline-block rounded-2xl btn-primary px-5 py-2.5 font-semibold">
+          <Link to={SHADOW_GUESS_PATH} className="mt-4 inline-block rounded-2xl btn-primary px-5 py-2.5 font-semibold">
             Play Shadow Guess →
           </Link>
         </div>
