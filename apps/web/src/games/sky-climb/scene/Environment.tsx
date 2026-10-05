@@ -296,7 +296,7 @@ function cloudLayer(rng: () => number, y: number, count: number, minR: number, m
     const cx = Math.cos(a) * r;
     const cy = y + (rng() - 0.5) * spread;
     const cz = Math.sin(a) * r;
-    const scale = 1.6 + rng() * 2.4;
+    const scale = 1.4 + rng() * 1.8;
     for (let i = 0; i < 5; i++) {
       const blob = new IcosahedronGeometry(0.8 + rng() * 0.7 - Math.abs(i - 2) * 0.15, 1);
       m.makeScale(scale, scale * 0.6, scale).setPosition(
@@ -314,6 +314,12 @@ function cloudLayer(rng: () => number, y: number, count: number, minR: number, m
 }
 
 /**
+ * Clouds level with the climb are centred at least this far from the column, so even the
+ * biggest one (half-width ≈ 10.5) stays clear of the camera, which orbits at ≈ 14–16.
+ */
+const CLEAR_R = 28;
+
+/**
  * Cloud layers to climb through: a sea of cloud under the island, white clouds around the
  * cliffs, dark storm clouds higher up. They turn slowly round the tower.
  */
@@ -323,9 +329,9 @@ export function Clouds({ tower }: { tower: Tower }) {
     const rng = makeRng(`clouds:${tower.seed}`);
     return [
       { geometry: cloudLayer(rng, -14, 26, 6, 40, 4), color: "#ffffff", opacity: 0.95 },
-      { geometry: cloudLayer(rng, tower.floorTops[38], 22, 9, 34, 7), color: "#ffffff", opacity: 0.9 },
-      { geometry: cloudLayer(rng, tower.floorTops[66], 24, 9, 36, 8), color: "#7f86a6", opacity: 0.92 },
-      { geometry: cloudLayer(rng, tower.floorTops[96] + 3, 18, 10, 40, 5), color: "#5b6184", opacity: 0.85 },
+      { geometry: cloudLayer(rng, tower.floorTops[38], 22, CLEAR_R, CLEAR_R + 24, 7), color: "#ffffff", opacity: 0.9 },
+      { geometry: cloudLayer(rng, tower.floorTops[66], 24, CLEAR_R, CLEAR_R + 26, 8), color: "#7f86a6", opacity: 0.92 },
+      { geometry: cloudLayer(rng, tower.floorTops[96] + 3, 18, CLEAR_R, CLEAR_R + 30, 5), color: "#5b6184", opacity: 0.85 },
     ];
   }, [tower]);
 
