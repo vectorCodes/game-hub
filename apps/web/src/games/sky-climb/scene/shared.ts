@@ -32,7 +32,7 @@ export function emitSimEvent(e: SimEvent, sim: Sim) {
  * `above` cap the number of floors, `down` and `up` the height in world units, whichever
  * is tighter (floors are close together low down and far apart high up).
  */
-export function floorRange(sim: Sim, below = 8, above = 12, down = 9, up = 12): [number, number] {
+export function floorRange(sim: Sim, below = 16, above = 13, down = 18, up = 13): [number, number] {
   const tops = sim.tower.floorTops;
   const y = sim.player.y;
   const f = Math.floor(sim.player.height);

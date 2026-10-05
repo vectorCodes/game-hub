@@ -27,7 +27,7 @@ export function Core({ tower }: { tower: Tower }) {
     return out;
   }, [tower]);
   // The column reaches further than the platforms: it's the backdrop.
-  const [lo, hi] = useFloorRange(12, 18, 14, 18);
+  const [lo, hi] = useFloorRange(24, 20, 26, 20);
   return (
     <>
       {blocks.map((b, i) => (b.to >= lo && b.from <= hi ? <CoreBlock key={i} y={b.y} floor={b.to} turn={i} /> : null))}
