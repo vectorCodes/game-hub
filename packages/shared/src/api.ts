@@ -119,7 +119,7 @@ export const LeaderboardPeriod = z.enum(["daily", "weekly", "all"]);
 export type LeaderboardPeriod = z.infer<typeof LeaderboardPeriod>;
 
 export const LeaderboardQuery = z.object({
-  game: z.enum(["shadow-guess", "sky-climb"]).default("shadow-guess"),
+  game: z.enum(["shadow-guess", "sky-climb", "putt-isles"]).default("shadow-guess"),
   period: LeaderboardPeriod.default("daily"),
 });
 
@@ -133,6 +133,8 @@ export interface LeaderboardEntry {
   played: number;
   /** Total time spent on won puzzles; the tie-breaker (lower is better). */
   seconds: number;
+  /** Putt Isles: strokes against par over the rounds counted. */
+  toPar?: number;
   isMe: boolean;
   /** The player's GameHub avatar, if they've made one. */
   avatar: AvatarConfig | null;

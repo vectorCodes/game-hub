@@ -23,7 +23,12 @@ export type Sound =
   | "boom"
   | "alarm"
   | "thunder"
-  | "cleared";
+  | "cleared"
+  // Putt Isles
+  | "putt"
+  | "clack"
+  | "plunk"
+  | "splash";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -144,9 +149,13 @@ const VIBRATION: Partial<Record<Sound, number | number[]>> = {
   fall: 80,
   boom: [60, 30, 30],
   thunder: 40,
+  putt: 12,
+  plunk: [20, 40, 30],
+  splash: 60,
 };
 
-export function play(sound: Sound) {
+/** `level` (0–1) scales the sounds that have a strength: a soft putt, a light tap on a wall. */
+export function play(sound: Sound, level = 1) {
   if (useSound.getState().muted) return;
   const pattern = VIBRATION[sound];
   try {
@@ -215,5 +224,19 @@ export function play(sound: Sound) {
     case "cleared":
       [C5, G5, C6].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.08, dur: 0.45, type: "triangle", gain: 0.11 }));
       return tone(ac, out, { freq: E5 * 2, at: 0.24, dur: 0.5, gain: 0.05 });
+    case "putt":
+      tone(ac, out, { freq: 900 + level * 500, to: 380, dur: 0.07, type: "triangle", gain: 0.06 + level * 0.12 });
+      return rumble(ac, out, { dur: 0.08, cutoff: 3200, to: 900, gain: 0.04 + level * 0.1, attack: 0.002 });
+    case "clack":
+      tone(ac, out, { freq: 620 + level * 260, to: 300, dur: 0.06, type: "square", gain: 0.015 + level * 0.05 });
+      return rumble(ac, out, { dur: 0.06, cutoff: 2400, to: 600, gain: 0.03 + level * 0.12, attack: 0.002 });
+    case "plunk":
+      tone(ac, out, { freq: 420, to: 160, dur: 0.18, type: "triangle", gain: 0.2 });
+      tone(ac, out, { freq: 260, to: 120, at: 0.09, dur: 0.16, type: "triangle", gain: 0.12 });
+      [C5, E5, G5, C6].forEach((freq, i) => tone(ac, out, { freq, at: 0.22 + i * 0.07, dur: 0.6, gain: 0.08 }));
+      return;
+    case "splash":
+      tone(ac, out, { freq: 700, to: 140, dur: 0.5, type: "triangle", gain: 0.1 });
+      return rumble(ac, out, { dur: 0.7, cutoff: 1400, to: 200, gain: 0.18, attack: 0.03 });
   }
 }

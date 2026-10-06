@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { supabase } from "../lib/supabase";
 import { savedSessionIds } from "../games/shadow-guess/store";
 import { forgetClimbRuns, savedClimbRunIds } from "../games/sky-climb/guest";
+import { forgetPuttRounds, savedPuttRoundIds } from "../games/putt-isles/guest";
 
 interface AuthState {
   /** False when Supabase env vars are missing. */
@@ -39,6 +40,10 @@ export const useAuth = create<AuthState>((set, get) => ({
           const runIds = savedClimbRunIds();
           if (runIds.length) {
             await api("/api/sky-climb/claim", { body: { runIds } }).then(forgetClimbRuns, () => {});
+          }
+          const roundIds = savedPuttRoundIds();
+          if (roundIds.length) {
+            await api("/api/putt-isles/claim", { body: { roundIds } }).then(forgetPuttRounds, () => {});
           }
           await get().refreshMe();
         } else {

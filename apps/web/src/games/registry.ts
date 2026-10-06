@@ -1,6 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { ShadowGuessCover, ShadowGuessStatus } from "./shadow-guess/HubCard";
 import { SkyClimbCover, SkyClimbStatus } from "./sky-climb/HubCard";
+import { PuttIslesCover, PuttIslesStatus } from "./putt-isles/HubCard";
 
 export interface GameEntry {
   id: string;
@@ -43,5 +44,16 @@ export const games: GameEntry[] = [
     Component: lazy(() => import("./sky-climb/SkyClimbPage")),
     Cover: SkyClimbCover,
     Status: SkyClimbStatus,
+  },
+  {
+    id: "putt-isles",
+    title: "Putt Isles",
+    shortTitle: "Putt",
+    tagline: "Mini-golf on floating islands. Bank it, ride the hills, sink it.",
+    path: "/games/putt-isles",
+    Landing: lazy(() => import("./putt-isles/PuttIslesHome")),
+    Component: lazy(() => import("./putt-isles/PuttIslesPage")),
+    Cover: PuttIslesCover,
+    Status: PuttIslesStatus,
   },
 ];

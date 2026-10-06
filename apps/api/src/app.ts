@@ -13,6 +13,8 @@ import { NotFoundError, ShadowGuessService } from "./modules/shadow-guess/servic
 import { avatarRoutes } from "./modules/avatar/routes";
 import { skyClimbRoutes } from "./modules/sky-climb/routes";
 import { SkyClimbService, TooFastError } from "./modules/sky-climb/service";
+import { puttIslesRoutes } from "./modules/putt-isles/routes";
+import { PuttIslesService } from "./modules/putt-isles/service";
 import { MODELS_DIR } from "./paths";
 
 type AppConfig = Pick<
@@ -57,8 +59,10 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
   shadowGuessRoutes(app, shadowGuess);
   userRoutes(app, db, shadowGuess);
   const skyClimb = new SkyClimbService(db);
-  leaderboardRoutes(app, db, skyClimb);
+  const puttIsles = new PuttIslesService(db);
+  leaderboardRoutes(app, db, skyClimb, puttIsles);
   skyClimbRoutes(app, skyClimb);
+  puttIslesRoutes(app, puttIsles);
   avatarRoutes(app, db, skyClimb);
   if (!config.isProd) devRoutes(app, db, config.modelsBaseUrl);
 

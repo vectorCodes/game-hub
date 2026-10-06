@@ -50,6 +50,13 @@
       "when": 1791182161917,
       "tag": "0006_climb_ghosts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791269469145,
+      "tag": "0007_putt_isles",
+      "breakpoints": true
     }
   ]
 }

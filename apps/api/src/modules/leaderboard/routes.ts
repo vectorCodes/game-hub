@@ -1,13 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import { LeaderboardQuery } from "@shadow/shared";
 import type { Db } from "../../db/client";
+import type { PuttIslesService } from "../putt-isles/service";
 import type { SkyClimbService } from "../sky-climb/service";
 import { getLeaderboard } from "./service";
 
-export function leaderboardRoutes(app: FastifyInstance, db: Db, skyClimb: SkyClimbService) {
+export function leaderboardRoutes(app: FastifyInstance, db: Db, skyClimb: SkyClimbService, puttIsles: PuttIslesService) {
   app.get("/api/leaderboard", async (req) => {
     const { game, period } = LeaderboardQuery.parse(req.query);
     if (game === "sky-climb") return skyClimb.leaderboard(period, req.userId);
+    if (game === "putt-isles") return puttIsles.leaderboard(period, req.userId);
     return getLeaderboard(db, game, period, req.userId);
   });
 }

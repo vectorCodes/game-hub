@@ -5,3 +5,4 @@ export * from "./api";
 export * from "./skyClimb";
 export * from "./avatar";
 export * from "./skyClimbRoom";
+export * from "./puttIsles";
