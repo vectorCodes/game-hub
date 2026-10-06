@@ -6,20 +6,21 @@ import { Bloom, EffectComposer, SMAA, Vignette } from "@react-three/postprocessi
 import { Vector3, type PerspectiveCamera } from "three";
 import { play } from "../../../lib/sound";
 import { footstep, startAmbience, stopAmbience, surfaceOf, updateAmbience } from "../ambience";
-import { POWERUPS, zoneIndexOf, ZONES } from "../config";
+import { POWERUPS, SET_PIECES, zoneIndexOf, ZONES } from "../config";
 import { frameOf, record, recordCheer } from "../ghosts";
 import { input } from "../input";
 import { LIVE_SEND_EVERY, sendLive } from "../live";
-import { liveEffects } from "../powerups";
+import { liveCannon, liveEffects } from "../powerups";
 import { ROOM_SEND_EVERY, sendRoomPos } from "../room";
 import { Sim } from "../sim";
 import { useClimb } from "../store";
 import { generateTower } from "../tower";
 import { Bursts, Climber, preloadCharacter, Trail } from "./Climber";
+import { Cannons, Updrafts } from "./Cannons";
 import { Clouds, Island, SkyAndLight, Stars, Weather } from "./Environment";
 import { Ghosts } from "./Ghosts";
 import { PowerAuras, Pickups } from "./Powerups";
-import { emitSimEvent, preloadKit, SimContext, useSim } from "./shared";
+import { emitSimEvent, onSimEvent, preloadKit, SimContext, useSim } from "./shared";
 import { Coins, Core, Hazards, Platforms } from "./TowerView";
 
 preloadKit();
@@ -133,10 +134,44 @@ function Driver() {
           play("win");
           store.summit();
           break;
+        case "cannonLoad":
+          play("cannonLoad");
+          break;
+        case "cannonFire":
+          play("boom");
+          store.showToast(
+            e.grade === "perfect"
+              ? { title: "💥 PERFECT!", subtitle: `+${e.lift} floors`, tone: "best" }
+              : e.grade === "good"
+                ? { title: "💥 Nice shot!", subtitle: `+${e.lift} floors`, tone: "powerup" }
+                : { title: "💨 Weak shot", subtitle: `+${e.lift} floors · fire in the green`, tone: "powerup" },
+          );
+          break;
+        case "setpiece": {
+          const sp = SET_PIECES.find((x) => x.id === e.id)!;
+          play("alarm");
+          store.showToast({ title: `${sp.emoji} ${sp.name}`, subtitle: sp.call, tone: "event" });
+          break;
+        }
+        case "cleared": {
+          const sp = SET_PIECES.find((x) => x.id === e.id)!;
+          play("cleared");
+          store.showToast({
+            title: `${sp.emoji} ${sp.name} cleared!`,
+            subtitle: sp.id === "lightning" ? "The summit is yours" : "Bonus coins on the checkpoint",
+            tone: "checkpoint",
+          });
+          break;
+        }
+        case "strike":
+          play("thunder");
+          break;
       }
     }
     sim.events.length = 0;
     Object.assign(liveEffects, sim.effects);
+    liveCannon.aiming = sim.cannon?.phase === "load";
+    liveCannon.meter = sim.cannon?.meter ?? 0;
     const windy = sim.gust > 0.5;
     if (windy !== store.windy) useClimb.setState({ windy });
   });
@@ -151,31 +186,50 @@ function CameraRig() {
   const sim = useSim();
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const aspect = useThree((s) => s.size.width / s.size.height);
-  const v = useMemo(() => ({ goal: new Vector3(), look: new Vector3(), lookGoal: new Vector3(), ready: false }), []);
+  const v = useMemo(() => ({ goal: new Vector3(), look: new Vector3(), lookGoal: new Vector3(), ready: false, wide: 0, shake: 0 }), []);
+
+  // A cannon shot kicks the camera.
+  useEffect(
+    () =>
+      onSimEvent((e) => {
+        if (e.type === "cannonFire") v.shake = 1;
+      }),
+    [v],
+  );
 
   useFrame((_, dt) => {
     const pl = sim.player;
     const menu = useClimb.getState().phase === "menu";
     const portrait = aspect < 0.9;
-    const fov = portrait ? 62 : 50;
+    // A cannon shot pulls the camera back and widens it to take in the whole arc.
+    const flying = sim.cannon?.phase === "fly";
+    v.wide += ((flying ? 1 : 0) - v.wide) * (1 - Math.exp(-dt * (flying ? 3 : 1.6)));
+    v.shake = Math.max(0, v.shake - dt * 2.5);
+    const fov = Math.round(((portrait ? 62 : 50) + v.wide * 12) * 10) / 10;
     if (camera.fov !== fov) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
     }
     const r = Math.hypot(pl.x, pl.z) || 1;
-    const back = menu ? 5.5 : portrait ? 10.5 : 8.5;
-    const up = menu ? 1.4 : portrait ? 4.4 : 3.3;
+    const back = (menu ? 5.5 : portrait ? 10.5 : 8.5) + v.wide * 5;
+    const up = (menu ? 1.4 : portrait ? 4.4 : 3.3) + v.wide * 2;
     // In the menu, swing round a little to see the character's face.
     const swing = menu ? 0.35 : 0;
     const a = Math.atan2(pl.z, pl.x) + swing;
     v.goal.set(Math.cos(a) * (r + back), pl.y + up, Math.sin(a) * (r + back));
     v.lookGoal.set(pl.x, pl.y + (menu ? 0.7 : 0.9), pl.z);
 
-    const k = v.ready ? 1 - Math.exp(-dt * 4.5) : 1;
+    // Keeps up with the climber in flight, who moves far faster than any run.
+    const k = v.ready ? 1 - Math.exp(-dt * (4.5 + v.wide * 3)) : 1;
     v.ready = true;
     camera.position.lerp(v.goal, k);
     v.look.lerp(v.lookGoal, k);
     camera.lookAt(v.look);
+    if (v.shake > 0) {
+      const s = v.shake * v.shake * 0.18;
+      camera.position.x += (Math.random() - 0.5) * s;
+      camera.position.y += (Math.random() - 0.5) * s;
+    }
   });
   return null;
 }
@@ -233,6 +287,8 @@ export default function Game() {
             <Platforms />
             <Hazards />
             <Coins />
+            <Cannons />
+            <Updrafts />
             <Pickups />
             {/* Compiles the hidden effects (shield bubble, rings) up front, so the first pickup doesn't hitch. */}
             <Preload all />

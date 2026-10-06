@@ -1,7 +1,14 @@
 // The start menu (mode, climber, today's leaderboard) and the results after a climb.
 import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { CLIMB_ACHIEVEMENTS, DEFAULT_AVATAR, type ClimbChallengeView, type ClimbLeaderboardEntry, type ClimbMode } from "@shadow/shared";
+import {
+  CLIMB_ACHIEVEMENTS,
+  DEFAULT_AVATAR,
+  TWISTS,
+  type ClimbChallengeView,
+  type ClimbLeaderboardEntry,
+  type ClimbMode,
+} from "@shadow/shared";
 import { AvatarImage } from "../../../avatar/AvatarImage";
 import { useAvatar } from "../../../avatar/store";
 import { useAuth } from "../../../auth/store";
@@ -11,7 +18,8 @@ import { formatDuration } from "../../../lib/format";
 import { FLOORS, SKY_CLIMB_PATH, ZONES } from "../config";
 import { liveAvailable } from "../live";
 import { clearRoomError, roomsAvailable, useRoom } from "../room";
-import { localBest, useClimb } from "../store";
+import { dailySeed, localBest, useClimb } from "../store";
+import { towerTwist } from "../twists";
 import { FriendsCard, ROOM_ERRORS } from "./Lobby";
 
 const MODES: { value: ClimbMode; label: string }[] = [
@@ -73,6 +81,32 @@ function ChallengeCard({ challenge }: { challenge: ClimbChallengeView }) {
   );
 }
 
+/**
+ * The tower's twist: today's for the daily, the challenger's for a challenge. Practice rolls
+ * a new one with each tower, so it's a surprise until the climb starts.
+ */
+export function TwistCard() {
+  const mode = useClimb((s) => s.mode);
+  const challenge = useClimb((s) => s.challenge);
+  const seed = challenge?.seed ?? (mode === "daily" ? dailySeed() : null);
+  const twist = seed ? towerTwist(seed) : null;
+  if (seed && !twist) return null;
+  const t = twist ? TWISTS[twist] : null;
+  return (
+    <div className="mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 px-3 py-2.5 ring-1 ring-violet-300/30">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-400/20 text-2xl">{t?.emoji ?? "🎲"}</span>
+      <span className="min-w-0 flex-1 text-left leading-tight">
+        <span className="block text-[10px] font-semibold tracking-[0.14em] text-violet-200 uppercase">
+          {challenge ? "Their tower's twist" : mode === "daily" ? "Today's twist" : "Practice twist"}
+        </span>
+        <span className="block font-display text-base font-semibold">{t?.name ?? "A surprise every tower"}</span>
+        <span className="block text-xs text-stone-400">{t?.blurb ?? "Or no twist at all. Who knows?"}</span>
+      </span>
+      {mode === "daily" && !challenge && <span className="shrink-0 self-start text-[10px] text-stone-500">Tomorrow: ❓</span>}
+    </div>
+  );
+}
+
 /** Ghosts and live climbers, on or off. */
 function OthersToggles() {
   const mode = useClimb((s) => s.mode);
@@ -122,6 +156,11 @@ function Notice({ children, onDismiss }: { children: ReactNode; onDismiss: () =>
   );
 }
 
+function TodayTwist() {
+  const twist = towerTwist(dailySeed());
+  return twist ? <span className="ml-1.5 normal-case tracking-normal text-violet-200">· {TWISTS[twist].emoji} {TWISTS[twist].name}</span> : null;
+}
+
 /** Today's leaderboard, or in practice the zones on the way up. */
 function SidePanel() {
   const mode = useClimb((s) => s.mode);
@@ -145,7 +184,10 @@ function SidePanel() {
   return (
     <>
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Today&rsquo;s highest</p>
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">
+          Today&rsquo;s highest
+          <TodayTwist />
+        </p>
         {daily && <span className="text-xs text-stone-500">{daily.climbers} climbing</span>}
       </div>
       {daily ? <Board entries={daily.top} me={daily.me} /> : <p className="text-sm text-stone-500">Loading…</p>}
@@ -196,6 +238,7 @@ export function Menu() {
 
           {challenge ? <ChallengeCard challenge={challenge} /> : <Segmented className="mt-4" label="Mode" options={MODES} value={mode} onChange={setMode} />}
           {roomError && <Notice onDismiss={clearRoomError}>{ROOM_ERRORS[roomError]}</Notice>}
+          <TwistCard />
           {challengeFailed && (
             <Notice onDismiss={clearChallenge}>That challenge link didn&rsquo;t open. Climb today&rsquo;s tower instead!</Notice>
           )}
@@ -282,13 +325,17 @@ export function Results() {
   const openLocker = useClimb((s) => s.setLockerOpen);
   const challenge = useClimb((s) => s.challenge);
   const shareRunId = useClimb((s) => s.shareRunId);
+  const twist = towerTwist(useClimb((s) => s.seed));
   const [shared, setShared] = useState<"copied" | "failed" | null>(null);
   const seconds = (endedAt - startedAt) / 1000;
   const beatChallenge = challenge && (floor > challenge.floor || (floor === challenge.floor && seconds < challenge.seconds));
 
   const share = async () => {
     const url = `${window.location.origin}${SKY_CLIMB_PATH}?challenge=${shareRunId}`;
-    const text = summit ? `I reached the summit of Sky Climb in ${formatDuration(seconds)}. Can you beat me?` : `I reached floor ${floor} on Sky Climb. Can you beat me?`;
+    const on = twist ? ` (${TWISTS[twist].emoji} ${TWISTS[twist].name})` : "";
+    const text = summit
+      ? `I reached the summit of Sky Climb${on} in ${formatDuration(seconds)}. Can you beat me?`
+      : `I reached floor ${floor} on Sky Climb${on}. Can you beat me?`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Sky Climb challenge", text, url });
@@ -317,6 +364,11 @@ export function Results() {
       <div className="glass my-auto w-full max-w-md animate-pop rounded-[1.75rem] p-6 text-center sm:p-8">
         <div className="text-5xl">{summit ? "🏁" : zone.emoji}</div>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight">{summit ? "You reached the summit!" : `You reached floor ${floor}`}</h2>
+        {twist && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-violet-400/15 px-3 py-1 text-xs font-medium text-violet-100 ring-1 ring-violet-300/30">
+            {TWISTS[twist].emoji} {TWISTS[twist].name}
+          </p>
+        )}
         <p className="mt-2 text-stone-400">
           {summit ? "Above the storm, under the stars." : newBest && floor > 0 ? "That's a new personal best!" : `Made it to ${zone.name}. Keep climbing!`}
         </p>

@@ -151,7 +151,7 @@ export class ClimbRoom extends DurableObject<Env> {
         const others = this.seated().filter((p) => p.id !== me.id);
         if (others.some((p) => !p.ready || !p.connected)) return this.send(ws, { type: "error", code: "not_ready" });
         room.round += 1;
-        room.seed = `room-${room.code}-${room.round}-${randomId()}`;
+        room.seed = `room2-${room.code}-${room.round}-${randomId()}`;
         room.startAt = now + ROOM_COUNTDOWN_MS;
         room.endsAt = room.startAt + ROOM_RACE_SECONDS * 1000;
         room.status = "countdown";

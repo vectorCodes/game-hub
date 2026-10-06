@@ -1,13 +1,15 @@
 // What's laid over the climb: floor and zone, time, coins, a height bar with the zones
 // (and where the ghosts and live climbers are), toasts (new zone, checkpoint, new best), the wind warning, and the touch controls.
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { TWISTS } from "@shadow/shared";
 import { useSound } from "../../../lib/sound";
-import { CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES } from "../config";
+import { CANNON, CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES } from "../config";
 import { riderMarks, type RiderKind, type RiderMark } from "../ghosts";
 import { pressJump, setStick } from "../input";
-import { liveEffects } from "../powerups";
+import { liveCannon, liveEffects } from "../powerups";
 import { nextCheckpointAfter } from "../sim";
 import { useClimb } from "../store";
+import { towerTwist } from "../twists";
 import { RaceClock, RaceStandings } from "./Race";
 
 const ZONE_COLORS: Record<string, string> = {
@@ -137,6 +139,43 @@ function PowerupChips() {
   );
 }
 
+/** The cannon's power gauge: fire with the needle in the green for the big shot. */
+function CannonGauge({ touch }: { touch: boolean }) {
+  const [state, setState] = useState({ aiming: false, meter: 0 });
+  useEffect(() => {
+    let frame = 0;
+    const tick = () => {
+      setState((prev) => (prev.aiming === liveCannon.aiming && prev.meter === liveCannon.meter ? prev : { ...liveCannon }));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  if (!state.aiming) return null;
+  const pct = (n: number) => `${n * 100}%`;
+  return (
+    <div className="absolute inset-x-0 bottom-[30%] flex justify-center px-6">
+      <div className="w-full max-w-xs animate-pop rounded-2xl bg-stone-950/80 px-4 py-3 text-center ring-1 ring-white/15 backdrop-blur-md">
+        <div className="font-display text-lg font-bold">💣 {touch ? "Tap JUMP" : "Press SPACE"} to fire!</div>
+        <div className="relative mt-2 h-4 overflow-hidden rounded-full ring-1 ring-white/20">
+          <div className="absolute inset-y-0 left-0 bg-rose-500/70" style={{ width: pct(CANNON.good) }} />
+          <div className="absolute inset-y-0 bg-amber-400/80" style={{ left: pct(CANNON.good), width: pct(CANNON.perfect - CANNON.good) }} />
+          <div className="absolute inset-y-0 right-0 animate-pulse bg-emerald-400" style={{ left: pct(CANNON.perfect) }} />
+          <div
+            className="absolute -inset-y-0.5 w-1.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]"
+            style={{ left: pct(state.meter) }}
+          />
+        </div>
+        <div className="mt-1.5 flex justify-between text-[10px] font-semibold tracking-wide text-stone-400 uppercase">
+          <span>+{CANNON.lift.weak}</span>
+          <span>+{CANNON.lift.good}</span>
+          <span className="text-emerald-300">+{CANNON.lift.perfect} floors</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Toasts() {
   const toast = useClimb((s) => s.toast);
   if (!toast) return null;
@@ -147,6 +186,33 @@ function Toasts() {
         <div key={toast.id} className="animate-pop rounded-full bg-stone-950/90 px-5 py-2 text-center ring-1 ring-white/15">
           <span className="font-display text-lg font-bold">{toast.title}</span>
           {toast.subtitle && <span className="ml-2 text-sm text-stone-300">{toast.subtitle}</span>}
+        </div>
+      </div>
+    );
+  }
+  if (toast.tone === "event") {
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-[20%] flex justify-center px-4">
+        <div
+          key={toast.id}
+          className="animate-pop rounded-3xl bg-gradient-to-b from-orange-500/95 to-rose-700/95 px-8 py-4 text-center text-white shadow-[0_0_60px_-10px_rgba(251,113,133,0.9)] ring-1 ring-white/25 backdrop-blur-md"
+        >
+          <div className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{toast.title}</div>
+          {toast.subtitle && <div className="mt-1 text-base font-semibold uppercase tracking-wide opacity-95">{toast.subtitle}</div>}
+        </div>
+      </div>
+    );
+  }
+  if (toast.tone === "twist") {
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-[24%] flex justify-center px-4">
+        <div
+          key={toast.id}
+          className="animate-pop rounded-3xl bg-gradient-to-b from-violet-500/90 to-fuchsia-700/90 px-8 py-4 text-center text-white shadow-[0_0_60px_-10px_rgba(192,132,252,0.9)] ring-1 ring-white/25 backdrop-blur-md"
+        >
+          <div className="text-[11px] font-semibold tracking-[0.2em] uppercase opacity-80">Today&rsquo;s twist</div>
+          <div className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">{toast.title}</div>
+          {toast.subtitle && <div className="mt-1 text-sm opacity-90">{toast.subtitle}</div>}
         </div>
       </div>
     );
@@ -248,6 +314,7 @@ export function Hud({ touch }: { touch: boolean }) {
   const race = useClimb((s) => s.race);
   const { muted, toggle } = useSound();
   const next = nextCheckpointAfter(floor);
+  const twist = towerTwist(useClimb((s) => s.seed));
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -267,6 +334,11 @@ export function Hud({ touch }: { touch: boolean }) {
             {zone.emoji} {zone.name}
           </Chip>
           {floor < FLOORS && <Chip className="text-stone-300">🚩 Next checkpoint: {next}</Chip>}
+          {twist && (
+            <Chip className="text-violet-100 ring-violet-300/30">
+              {TWISTS[twist].emoji} {TWISTS[twist].name}
+            </Chip>
+          )}
         </div>
         <PowerupChips />
       </div>
@@ -314,6 +386,7 @@ export function Hud({ touch }: { touch: boolean }) {
 
       <HeightBar floor={floor} best={best} />
       <Toasts />
+      {phase === "playing" && <CannonGauge touch={touch} />}
 
       {windy && (
         <div className="absolute inset-x-0 bottom-[22%] flex justify-center">

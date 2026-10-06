@@ -5,10 +5,13 @@ import {
   CLIMB_MIN_SECONDS_PER_FLOOR,
   DEFAULT_LOADOUT,
   FAST_SUMMIT_MS,
+  TWISTED_FLOOR,
   climbItem,
   decodeGhost,
   evaluateAchievements,
   ownedItems,
+  practiceSeed,
+  twistOf,
   type AvatarConfig,
   type ClimbChallengeView,
   type ClimbDailyView,
@@ -191,7 +194,7 @@ export class SkyClimbService {
       values = { userId, mode: daily ? "daily" : "practice", seed: from.seed, puzzleDate: daily ? from.puzzleDate : null };
     } else {
       const date = mode === "daily" ? todayUtc() : null;
-      values = { userId, mode, seed: date ? `daily-${date}` : `practice-${randomUUID()}`, puzzleDate: date };
+      values = { userId, mode, seed: date ? `daily-${date}` : practiceSeed(randomUUID()), puzzleDate: date };
     }
     const [run] = await this.db.insert(climbRuns).values(values).returning();
     return view(run);
@@ -432,6 +435,12 @@ export class SkyClimbService {
         from climb_runs where user_id = ${userId}
       `,
     );
+    // Twists are derived from the seed, so "Twisted" counts the distinct twists of tall daily climbs.
+    const twisted = await queryRows<{ seed: string }>(
+      db as Db,
+      sql`select distinct seed from climb_runs where user_id = ${userId} and mode = 'daily' and best_floor >= ${TWISTED_FLOOR}`,
+    );
+    const twists = new Set(twisted.map((r) => twistOf(r.seed)).filter((t) => t !== null));
     const stats = await getStats(db as Db, userId, SKY_CLIMB);
     const sg = await getStats(db as Db, userId, "shadow-guess");
     const shadowGuess = { maxStreak: sg.maxStreak, won: sg.won };
@@ -444,6 +453,7 @@ export class SkyClimbService {
       coinsTotal: m.coins_total,
       maxFalls: m.max_falls,
       maxStreak: stats.maxStreak,
+      twists: twists.size,
     };
     const unlocks = await db.select().from(climbUnlocks).where(eq(climbUnlocks.userId, userId)).orderBy(asc(climbUnlocks.createdAt));
     const spent = unlocks.reduce((n, u) => n + u.cost, 0);

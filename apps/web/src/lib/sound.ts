@@ -18,7 +18,12 @@ export type Sound =
   | "fall"
   | "powerup"
   | "powerdown"
-  | "shield";
+  | "shield"
+  | "cannonLoad"
+  | "boom"
+  | "alarm"
+  | "thunder"
+  | "cleared";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -81,18 +86,41 @@ function tone(ac: AudioContext, out: AudioNode, { freq, to, at = 0, dur, type = 
   osc.stop(t + dur + 0.05);
 }
 
-/** Filtered noise swept upward: the light swinging round. */
-function whoosh(ac: AudioContext, out: AudioNode) {
+function noiseBuffer(ac: AudioContext): AudioBuffer {
   if (!noise) {
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   }
+  return noise;
+}
+
+/** Low-passed noise with a sharp attack: a cannon shot, a thunderclap. */
+function rumble(ac: AudioContext, out: AudioNode, { dur, cutoff, to, gain, attack = 0.005 }: { dur: number; cutoff: number; to: number; gain: number; attack?: number }) {
   const t = ac.currentTime;
   const src = ac.createBufferSource();
   const filter = ac.createBiquadFilter();
   const env = ac.createGain();
-  src.buffer = noise;
+  src.buffer = noiseBuffer(ac);
+  src.loop = true;
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(cutoff, t);
+  filter.frequency.exponentialRampToValueAtTime(to, t + dur);
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(gain, t + attack);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(filter).connect(env).connect(out);
+  src.start(t);
+  src.stop(t + dur + 0.05);
+}
+
+/** Filtered noise swept upward: the light swinging round. */
+function whoosh(ac: AudioContext, out: AudioNode) {
+  const t = ac.currentTime;
+  const src = ac.createBufferSource();
+  const filter = ac.createBiquadFilter();
+  const env = ac.createGain();
+  src.buffer = noiseBuffer(ac);
   filter.type = "bandpass";
   filter.Q.value = 1.2;
   filter.frequency.setValueAtTime(300, t);
@@ -114,6 +142,8 @@ const VIBRATION: Partial<Record<Sound, number | number[]>> = {
   lose: 120,
   spring: 20,
   fall: 80,
+  boom: [60, 30, 30],
+  thunder: 40,
 };
 
 export function play(sound: Sound) {
@@ -168,5 +198,22 @@ export function play(sound: Sound) {
     case "shield":
       tone(ac, out, { freq: 1000, to: 220, dur: 0.22, type: "square", gain: 0.06 });
       return tone(ac, out, { freq: 1500, at: 0.04, dur: 0.3, gain: 0.07 });
+    case "cannonLoad":
+      tone(ac, out, { freq: 140, to: 90, dur: 0.12, type: "square", gain: 0.06 });
+      return tone(ac, out, { freq: 260, to: 520, at: 0.12, dur: 0.25, type: "triangle", gain: 0.07 });
+    case "boom":
+      rumble(ac, out, { dur: 0.9, cutoff: 1800, to: 80, gain: 0.5 });
+      return tone(ac, out, { freq: 110, to: 38, dur: 0.6, gain: 0.35 });
+    case "alarm":
+      [0, 0.3, 0.6].forEach((at) => {
+        tone(ac, out, { freq: 880, at, dur: 0.14, type: "square", gain: 0.05 });
+        tone(ac, out, { freq: 660, at: at + 0.15, dur: 0.14, type: "square", gain: 0.05 });
+      });
+      return;
+    case "thunder":
+      return rumble(ac, out, { dur: 1.4, cutoff: 900, to: 60, gain: 0.3, attack: 0.02 });
+    case "cleared":
+      [C5, G5, C6].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.08, dur: 0.45, type: "triangle", gain: 0.11 }));
+      return tone(ac, out, { freq: E5 * 2, at: 0.24, dur: 0.5, gain: 0.05 });
   }
 }

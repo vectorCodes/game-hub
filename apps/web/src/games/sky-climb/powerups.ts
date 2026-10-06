@@ -3,3 +3,6 @@
 import type { PowerupKind } from "./config";
 
 export const liveEffects: Record<PowerupKind, number> = { feather: 0, doubleJump: 0, shield: 0, magnet: 0 };
+
+/** The cannon being aimed, if any: its power meter (0…1), for the HUD's gauge. */
+export const liveCannon = { aiming: false, meter: 0 };

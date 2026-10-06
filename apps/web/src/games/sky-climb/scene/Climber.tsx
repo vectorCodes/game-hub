@@ -78,6 +78,8 @@ export function Climber() {
     if (!g) return;
     animateAccessories(scene, dt);
     g.position.set(pl.x, pl.y, pl.z);
+    // Tucked inside the cannon while it aims.
+    g.visible = sim.cannon?.phase !== "load";
     g.rotation.y = MathUtils.lerp(g.rotation.y, g.rotation.y + angleDelta(g.rotation.y, pl.facing), 1 - Math.exp(-dt * 14));
 
     const f = fx.current;
@@ -175,6 +177,8 @@ export function Bursts() {
         if (e.type === "coin") spawn(8, "#ffd75e", { y: 0.6, speed: 1.8, up: 2.5, gravity: 6, size: 0.08, life: 0.5 });
         if (e.type === "checkpoint") spawn(16, CONFETTI, { y: 0.4, speed: 2.4, up: 5, gravity: 9, size: 0.09, life: 1.1 });
         if (e.type === "die") spawn(12, "#ffffff", { y: 0.4, speed: 2.6, up: 1.2, gravity: 0, size: 0.16, life: 0.6 });
+        if (e.type === "cannonFire") spawn(20, ["#e7e5e4", "#a8a29e", "#ffb15e"], { y: 0.8, speed: 3.4, up: 2.2, gravity: 0, size: 0.24, life: 0.8 });
+        if (e.type === "cannonLand" && e.grade === "perfect") spawn(18, CONFETTI, { y: 0.4, speed: 2.6, up: 5, gravity: 9, size: 0.1, life: 1 });
         if (e.type === "summit") summitTimer.current = 3;
       }),
     [],

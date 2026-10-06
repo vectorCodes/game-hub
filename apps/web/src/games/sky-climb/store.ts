@@ -3,6 +3,8 @@ import {
   climbItem,
   decodeGhost,
   encodeGhost,
+  practiceSeed,
+  TWISTS,
   type AvatarConfig,
   type ClimbChallengeView,
   type ClimbDailyView,
@@ -19,6 +21,7 @@ import { CHARACTERS, FLOORS, zoneIndexOf, type CharacterId } from "./config";
 import { keepLocalGhost, localGhost, recordedFrames, resetRecording } from "./ghosts";
 import { guestProfile, recordGuestClimb, rememberClimbRun, saveGuestLoadout } from "./guest";
 import { sendRoomFinish, sendRoomProgress } from "./room";
+import { towerTwist } from "./twists";
 
 const BASE = "/api/sky-climb";
 
@@ -35,7 +38,7 @@ export interface Toast {
   id: number;
   title: string;
   subtitle?: string;
-  tone: "zone" | "checkpoint" | "best" | "powerup";
+  tone: "zone" | "checkpoint" | "best" | "powerup" | "twist" | "event";
 }
 
 export const today = () => new Date().toISOString().slice(0, 10);
@@ -178,6 +181,14 @@ interface State {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** The tower's twist, shown big as the climb starts. */
+function announceTwist(seed: string) {
+  const twist = towerTwist(seed);
+  if (!twist) return;
+  const t = TWISTS[twist];
+  setTimeout(() => useClimb.getState().showToast({ title: `${t.emoji} ${t.name}`, subtitle: t.blurb, tone: "twist" }), 400);
+}
 let lastReport = 0;
 
 export const useClimb = create<State>((set, get) => ({
@@ -269,7 +280,7 @@ export const useClimb = create<State>((set, get) => ({
     // A challenge may climb as the daily or as practice, whichever the server decides.
     const mode = run?.mode ?? challenge?.mode ?? get().mode;
     const seed =
-      run?.seed ?? challenge?.seed ?? (mode === "daily" ? dailySeed() : `practice-${Math.random().toString(36).slice(2)}`);
+      run?.seed ?? challenge?.seed ?? (mode === "daily" ? dailySeed() : practiceSeed(Math.random().toString(36).slice(2)));
     // Guest runs move into the account on sign-in.
     if (run && !signedIn()) rememberClimbRun(run.runId);
     lastReport = 0;
@@ -294,6 +305,7 @@ export const useClimb = create<State>((set, get) => ({
       previousBest: localBest(mode),
       toast: null,
     }));
+    announceTwist(seed);
   },
 
   finish: async () => {
@@ -324,6 +336,7 @@ export const useClimb = create<State>((set, get) => ({
         falls,
         summit: floor >= FLOORS,
         timeMs: endedAt - (startedAt ?? endedAt),
+        twist: towerTwist(get().seed),
       });
     }
     await get().loadProfile();
@@ -336,13 +349,14 @@ export const useClimb = create<State>((set, get) => ({
     set((s) => ({ phase: "menu", toast: null, attempt: s.attempt + 1, seed: s.mode === "daily" ? dailySeed() : s.seed })),
 
   reachFloor: (floor) => {
-    const { mode, previousBest, falls, race } = get();
+    const { mode, previousBest, falls, race, floor: before } = get();
     set(falls === 0 ? { floor, cleanFloor: floor } : { floor });
     const zone = zoneIndexOf(floor);
     if (zone !== get().zone) set({ zone });
     if (race) return sendRoomProgress(floor);
     if (floor > localBest(mode)) writeNumber(bestKey(mode), floor);
-    if (previousBest > 0 && floor === previousBest + 1) {
+    // Passing the old best (a cannon can fly straight past it).
+    if (previousBest > 0 && before <= previousBest && floor > previousBest) {
       get().showToast({ title: "New best!", subtitle: `Higher than ever: floor ${floor}`, tone: "best" });
     }
     // Floors between checkpoints are saved every few seconds, so leaving early still counts.
@@ -462,7 +476,9 @@ export const useClimb = create<State>((set, get) => ({
   },
 
   go: () => {
-    if (get().phase === "countdown") set({ phase: "playing" });
+    if (get().phase !== "countdown") return;
+    set({ phase: "playing" });
+    announceTwist(get().seed);
   },
 
   leaveRace: () => {

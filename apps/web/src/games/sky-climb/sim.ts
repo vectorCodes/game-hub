@@ -5,8 +5,24 @@
 // Platforms are one-way from below: you jump up through them and land on top, the classic
 // platformer rule. Their sides are solid, though, so you can't walk into a block.
 import type { GhostPose } from "@shadow/shared";
-import { CHECKPOINTS, FLOORS, PHYS, POWER, POWERUPS, POWERUP_KINDS, TOWER, zoneOf, type PowerupKind } from "./config";
-import { floorAt, type Coin, type Hazard, type Platform, type Powerup, type Tower } from "./tower";
+import {
+  CANNON,
+  CHECKPOINTS,
+  FLOORS,
+  PHYS,
+  POWER,
+  POWERUPS,
+  POWERUP_KINDS,
+  TOWER,
+  UPDRAFT,
+  zoneIndexOf,
+  zoneOf,
+  type CannonGrade,
+  type PowerupKind,
+  type SetPieceId,
+} from "./config";
+import { rulesOf, type TwistRules } from "./twists";
+import { arcEnd, cannonPoint, floorAt, type ArcEnd, type Cannon, type Coin, type Hazard, type Platform, type Powerup, type Tower } from "./tower";
 
 export interface PlatformState {
   p: Platform;
@@ -44,7 +60,34 @@ export type SimEvent =
   | { type: "land"; speed: number }
   | { type: "coin"; id: number }
   | { type: "floor"; floor: number }
-  | { type: "checkpoint"; floor: number };
+  | { type: "checkpoint"; floor: number }
+  | { type: "cannonLoad" }
+  | { type: "cannonFire" | "cannonLand"; grade: CannonGrade; lift: number }
+  | { type: "setpiece" | "cleared"; id: SetPieceId }
+  | { type: "strike" };
+
+/** In a cannon: aiming (the meter swinging), then flying. */
+export interface CannonRide {
+  cannon: Cannon;
+  phase: "load" | "fly";
+  /** When this phase began. */
+  at: number;
+  /** The power meter, 0…1 (frozen once fired). */
+  meter: number;
+  grade: CannonGrade;
+  /** The flight. */
+  to: ArcEnd;
+  target: number;
+  duration: number;
+}
+
+/** The power meter's reading: a triangle wave, 0 → 1 → 0 each period. */
+export const meterAt = (elapsed: number, period: number) => {
+  const x = (elapsed / period) % 1;
+  return 1 - Math.abs(x * 2 - 1);
+};
+
+export const gradeOf = (meter: number): CannonGrade => (meter >= CANNON.perfect ? "perfect" : meter >= CANNON.good ? "good" : "weak");
 
 export interface Input {
   /** Joystick or keys: x right, y forward (into the screen), each −1…1. */
@@ -62,8 +105,13 @@ const DEATH_TIME = 1.1;
 /** Wind: a gust every `period` seconds, lasting `length`. It pushes hard in the air but only gently on a platform, so you can always stand your ground. */
 const GUST = { period: 9, length: 1.8, accel: 4, grounded: 0.35 };
 
+type Phys = { -readonly [K in keyof typeof PHYS]: number };
+
 export class Sim {
   t = 0;
+  /** The tower's twist, and the physics it plays with. */
+  rules: TwistRules;
+  phys: Phys;
   platforms: PlatformState[];
   hazards: HazardState[];
   coins: Coin[];
@@ -80,6 +128,15 @@ export class Sim {
   events: SimEvent[] = [];
   /** 0…1 strength of the current wind gust (windy zones only). */
   gust = 0;
+  /** Riding a cannon, if any. */
+  cannon: CannonRide | null = null;
+  private cannonAt = new Map<number, Cannon>();
+  /** Set-pieces announced and cleared this run. */
+  private entered = new Set<SetPieceId>();
+  private cleared = new Set<SetPieceId>();
+  /** Lightning Sprint platforms that were solid last step, to hear them go. */
+  private struck = new Set<number>();
+  private flight = { x: 0, y: 0, z: 0 };
 
   player = {
     x: 0,
@@ -107,6 +164,10 @@ export class Sim {
   };
 
   constructor(public tower: Tower) {
+    this.rules = rulesOf(tower.twist);
+    const phys: Phys = { ...PHYS };
+    for (const [key, scale] of Object.entries(this.rules.phys ?? {})) phys[key as keyof Phys] *= scale ?? 1;
+    this.phys = phys;
     this.platforms = tower.platforms.map((p) => ({
       p,
       x: p.x,
@@ -123,6 +184,7 @@ export class Sim {
     this.hazards = tower.hazards.map((h) => ({ h, x: 0, y: 0, z: 0, extend: 0, spin: 0 }));
     this.coins = tower.coins;
     this.powerups = tower.powerups;
+    for (const c of tower.cannons) this.cannonAt.set(c.floor, c);
     this.respawn(false);
     this.updateWorld(0);
   }
@@ -157,6 +219,7 @@ export class Sim {
     }
 
     this.tickEffects(dt);
+    if (this.cannon) return this.ride(dt, input);
 
     // Screen-relative movement: the camera always looks in at the column, so "forward" is
     // towards it and "right" runs around the tower.
@@ -170,11 +233,11 @@ export class Sim {
       wx /= len;
       wz /= len;
     }
-    wx *= PHYS.runSpeed;
-    wz *= PHYS.runSpeed;
+    wx *= this.phys.runSpeed;
+    wz *= this.phys.runSpeed;
 
     const ground = pl.grounded ? pl.ground : null;
-    const accel = pl.grounded ? (ground?.p.ice ? PHYS.iceAccel : PHYS.groundAccel) : PHYS.airAccel;
+    const accel = pl.grounded ? (ground?.p.ice ? this.phys.iceAccel : this.phys.groundAccel) : this.phys.airAccel;
     const ddx = wx - pl.vx;
     const ddz = wz - pl.vz;
     const dlen = Math.hypot(ddx, ddz);
@@ -187,8 +250,12 @@ export class Sim {
       pl.vz += (ddz / dlen) * maxStep;
     }
 
+    // Rising air lifts whoever is in it (and shelters them from the wind).
+    const lifted = !pl.grounded && this.inUpdraft();
+    if (lifted) pl.vy = Math.min(UPDRAFT.maxRise, pl.vy + UPDRAFT.accel * dt);
+
     // Wind pushes outwards, off the tower.
-    if (this.gust > 0) {
+    if (this.gust > 0 && !lifted) {
       const push = GUST.accel * this.gust * (pl.grounded ? GUST.grounded : 1) * dt;
       pl.vx += -fx * push;
       pl.vz += -fz * push;
@@ -196,12 +263,12 @@ export class Sim {
 
     // Jump, with a buffer before landing and coyote time after leaving an edge.
     const pressed = input.jumpPressed;
-    if (pressed) pl.buffer = PHYS.jumpBuffer;
+    if (pressed) pl.buffer = this.phys.jumpBuffer;
     input.jumpPressed = false;
     pl.buffer -= dt;
-    pl.coyote = pl.grounded ? PHYS.coyote : pl.coyote - dt;
+    pl.coyote = pl.grounded ? this.phys.coyote : pl.coyote - dt;
     if (pl.buffer > 0 && pl.coyote > 0) {
-      pl.vy = PHYS.jumpSpeed;
+      pl.vy = this.phys.jumpSpeed;
       pl.buffer = 0;
       pl.coyote = 0;
       pl.grounded = false;
@@ -210,14 +277,14 @@ export class Sim {
       this.events.push({ type: "jump" });
     } else if (pressed && !pl.grounded && pl.coyote <= 0 && this.effects.doubleJump > 0 && !pl.airJumped) {
       // Double jump: one more in the air, recharged on landing.
-      pl.vy = PHYS.jumpSpeed * POWER.airJump;
+      pl.vy = this.phys.jumpSpeed * POWER.airJump;
       pl.buffer = 0;
       pl.airJumped = true;
       pl.canCut = true;
       this.events.push({ type: "airjump" });
     }
     if (!input.jumpHeld && pl.canCut && pl.vy > 0) {
-      pl.vy *= PHYS.jumpCut;
+      pl.vy *= this.phys.jumpCut;
       pl.canCut = false;
     }
 
@@ -232,11 +299,11 @@ export class Sim {
       }
     }
 
-    if (!pl.grounded) {
+    if (!pl.grounded && !lifted) {
       // Feather: while falling with jump held, gravity eases and the fall speed is capped.
       const float = this.effects.feather > 0 && input.jumpHeld && pl.vy < 0;
-      const gravity = float ? PHYS.gravity * POWER.featherGravity : PHYS.gravity;
-      pl.vy = Math.max(pl.vy - gravity * dt, float ? -POWER.featherMaxFall : -PHYS.maxFall);
+      const gravity = float ? this.phys.gravity * POWER.featherGravity : this.phys.gravity;
+      pl.vy = Math.max(pl.vy - gravity * dt, float ? -POWER.featherMaxFall : -this.phys.maxFall);
     }
     const prevFeet = pl.y;
     const prevX = pl.x;
@@ -248,7 +315,7 @@ export class Sim {
 
     // The column is solid all the way up.
     const r = Math.hypot(pl.x, pl.z);
-    const minR = TOWER.coreRadius + PHYS.radius;
+    const minR = TOWER.coreRadius + this.phys.radius;
     if (r < minR && r > 0) {
       pl.x *= minR / r;
       pl.z *= minR / r;
@@ -260,10 +327,11 @@ export class Sim {
     this.touchHazards();
     this.collectCoins(dt);
     this.collectPowerups();
+    this.boardCannon();
 
     if (Math.hypot(pl.vx, pl.vz) > 0.4) pl.facing = Math.atan2(pl.vx, pl.vz);
     pl.height = floorAt(this.tower, pl.y);
-    if (pl.y < this.tower.floorTops[pl.checkpoint] - PHYS.fallDepth) this.die();
+    if (pl.y < this.tower.floorTops[pl.checkpoint] - this.phys.fallDepth) this.die();
   }
 
   /**
@@ -276,11 +344,11 @@ export class Sim {
     for (const ps of this.platforms) {
       if (!ps.solid || Math.abs(ps.top - pl.y) > 3) continue;
       // Feet near the top are the landing's business; the body has to overlap the slab.
-      if (pl.y >= ps.top - 0.08 || pl.y + PHYS.height <= ps.top - ps.p.h) continue;
+      if (pl.y >= ps.top - 0.08 || pl.y + this.phys.height <= ps.top - ps.p.h) continue;
       const c = Math.cos(ps.p.yaw);
       const s = Math.sin(ps.p.yaw);
-      const hw = ps.p.w / 2 + PHYS.radius;
-      const hd = ps.p.d / 2 + PHYS.radius;
+      const hw = ps.p.w / 2 + this.phys.radius;
+      const hd = ps.p.d / 2 + this.phys.radius;
       const rx = pl.x - ps.x;
       const rz = pl.z - ps.z;
       let lx = rx * c - rz * s;
@@ -340,7 +408,7 @@ export class Sim {
       const rz = pl.z - ps.z;
       const lx = rx * c - rz * s;
       const lz = rx * s + rz * c;
-      const edge = PHYS.radius * 0.35;
+      const edge = this.phys.radius * 0.35;
       if (Math.abs(lx) > ps.p.w / 2 + edge || Math.abs(lz) > ps.p.d / 2 + edge) continue;
       if (!best || ps.top > best.top) best = ps;
     }
@@ -354,11 +422,13 @@ export class Sim {
       if (!wasGrounded) this.events.push({ type: "land", speed: fallSpeed });
       this.reach(best);
       if (best.p.kind === "spring") {
-        pl.vy = PHYS.springSpeed;
+        pl.vy = this.phys.springSpeed;
         pl.grounded = false;
         pl.ground = null;
         best.springAt = this.t;
         this.events.push({ type: "spring" });
+      } else if (best.p.chain !== undefined && best.crumbleAt === null) {
+        this.collapseFrom(best);
       } else if (best.p.kind === "crumble" && best.crumbleAt === null) {
         best.crumbleAt = this.t;
       }
@@ -381,9 +451,20 @@ export class Sim {
     if (floor <= pl.floor) return;
     pl.floor = floor;
     this.events.push({ type: "floor", floor });
-    if (ps.p.checkpoint && floor > pl.checkpoint) {
-      pl.checkpoint = floor;
-      if (floor < FLOORS) this.events.push({ type: "checkpoint", floor });
+    // The highest checkpoint at or below: a cannon shot over one still saves it.
+    const checkpoint = CHECKPOINTS.filter((c) => c <= floor).pop() ?? 0;
+    if (checkpoint > pl.checkpoint) {
+      pl.checkpoint = checkpoint;
+      if (checkpoint < FLOORS) this.events.push({ type: "checkpoint", floor: checkpoint });
+    }
+    for (const sp of this.tower.setPieces) {
+      if (floor >= sp.from && floor <= sp.to && !this.entered.has(sp.id)) {
+        this.entered.add(sp.id);
+        this.events.push({ type: "setpiece", id: sp.id });
+      } else if (floor > sp.to && this.entered.has(sp.id) && !this.cleared.has(sp.id)) {
+        this.cleared.add(sp.id);
+        this.events.push({ type: "cleared", id: sp.id });
+      }
     }
     if (floor === FLOORS) {
       pl.summit = true;
@@ -474,6 +555,98 @@ export class Sim {
     this.die();
   }
 
+  /** Standing at a cannon: climb in. */
+  private boardCannon() {
+    const pl = this.player;
+    if (!pl.grounded || !pl.ground) return;
+    const c = this.cannonAt.get(pl.ground.p.id);
+    if (!c || Math.hypot(pl.x - c.x, pl.z - c.z) > CANNON.padRadius) return;
+    this.cannon = { cannon: c, phase: "load", at: this.t, meter: 0, grade: "weak", to: c.from, target: c.floor, duration: 1 };
+    pl.vx = pl.vy = pl.vz = 0;
+    // A jump pressed on the way in mustn't go off when the shot lands.
+    pl.buffer = 0;
+    pl.coyote = 0;
+    pl.facing = c.facing;
+    this.events.push({ type: "cannonLoad" });
+  }
+
+  /** Aiming, then the scripted flight along the arc. */
+  private ride(dt: number, input: Input) {
+    const pl = this.player;
+    const ride = this.cannon!;
+    const c = ride.cannon;
+    const pressed = input.jumpPressed;
+    input.jumpPressed = false;
+    if (ride.phase === "load") {
+      pl.x = c.x;
+      pl.y = c.y;
+      pl.z = c.z;
+      const elapsed = this.t - ride.at;
+      ride.meter = meterAt(elapsed, c.period);
+      if ((pressed && elapsed > CANNON.arm) || elapsed > CANNON.autoFire) {
+        const grade = gradeOf(ride.meter);
+        const target = c.targets[grade];
+        Object.assign(ride, { phase: "fly", at: this.t, grade, target, to: arcEnd(this.platforms[target].p), duration: CANNON.flight[grade] });
+        pl.grounded = false;
+        pl.ground = null;
+        this.events.push({ type: "cannonFire", grade, lift: target - c.floor });
+      }
+      return;
+    }
+
+    const u = (this.t - ride.at) / ride.duration;
+    if (u >= 1) {
+      const ps = this.platforms[ride.target];
+      pl.x = ps.x;
+      pl.y = ps.top;
+      pl.z = ps.z;
+      pl.vx = pl.vz = 0;
+      pl.vy = 0;
+      pl.grounded = true;
+      pl.ground = ps;
+      pl.airJumped = false;
+      this.cannon = null;
+      this.events.push({ type: "land", speed: 14 });
+      this.events.push({ type: "cannonLand", grade: ride.grade, lift: ride.target - c.floor });
+      this.reach(ps);
+    } else {
+      const at = cannonPoint(c.from, ride.to, u, this.flight);
+      pl.vx = (at.x - pl.x) / dt;
+      pl.vy = (at.y - pl.y) / dt;
+      pl.vz = (at.z - pl.z) / dt;
+      pl.x = at.x;
+      pl.y = at.y;
+      pl.z = at.z;
+      if (Math.hypot(pl.vx, pl.vz) > 0.4) pl.facing = Math.atan2(pl.vx, pl.vz);
+      this.collectCoins(dt);
+    }
+    pl.height = floorAt(this.tower, pl.y);
+  }
+
+  /** Inside an updraft column? */
+  private inUpdraft() {
+    const pl = this.player;
+    for (const u of this.tower.updrafts) {
+      if (pl.y < u.bottom || pl.y > u.top) continue;
+      if (Math.hypot(pl.x - u.x, pl.z - u.z) < u.radius) return true;
+    }
+    return false;
+  }
+
+  /**
+   * The collapsing bridge: this plank and every one after it fall in turn, the first after
+   * the bridge's opening grace, the rest at their spacing (whichever plank started it).
+   */
+  private collapseFrom(ps: PlatformState) {
+    const planks = this.platforms.filter((o) => o.p.setPiece === ps.p.setPiece && o.p.chain !== undefined);
+    const grace = planks[0].p.chain!;
+    for (const plank of planks) {
+      if (plank.p.floor < ps.p.floor || plank.crumbleAt !== null) continue;
+      // A crumbling platform shakes from crumbleAt and falls 0.65 s later.
+      plank.crumbleAt = this.t + grace + (plank.p.chain! - ps.p.chain!) - 0.65;
+    }
+  }
+
   die() {
     const pl = this.player;
     if (pl.dead > 0 || pl.summit) return;
@@ -501,6 +674,7 @@ export class Sim {
     // A fresh start for the section: orbs and flying coins go back where they were.
     for (const kind of POWERUP_KINDS) this.effects[kind] = 0;
     this.grace = 0;
+    this.cannon = null;
     this.collected.clear();
     this.pulled.clear();
     // Face along the way up.
@@ -535,6 +709,12 @@ export class Sim {
         const phase = (t + p.vanish.phase) % p.vanish.period;
         ps.solid = phase < p.vanish.on;
         ps.warn = ps.solid && phase > p.vanish.on - 0.8;
+        if (p.strike) {
+          // A thunderclap as each one goes, if it's near enough to hear.
+          if (!ps.solid && this.struck.has(p.id) && Math.abs(p.floor - this.player.height) < 2.5) this.events.push({ type: "strike" });
+          if (ps.solid) this.struck.add(p.id);
+          else this.struck.delete(p.id);
+        }
       } else if (ps.crumbleAt !== null) {
         const since = t - ps.crumbleAt;
         ps.solid = since < 0.65;
@@ -573,8 +753,9 @@ export class Sim {
     }
 
     // Gusts in windy zones: a few seconds of wind every so often.
-    const zone = zoneOf(Math.floor(this.player.height));
-    if (zone.wind) {
+    const floor = Math.floor(this.player.height);
+    const windFrom = this.rules.windFrom;
+    if (zoneOf(floor).wind || (windFrom !== undefined && zoneIndexOf(floor) >= windFrom && zoneOf(floor).id !== "summit")) {
       const c = t % GUST.period;
       const target = c < GUST.length ? 1 : 0;
       this.gust += (target - this.gust) * Math.min(1, dt * 3);

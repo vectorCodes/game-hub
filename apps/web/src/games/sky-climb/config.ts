@@ -284,6 +284,56 @@ export const ZONE_POWERUPS: Record<ZoneId, Partial<Record<PowerupKind, number>>>
 export const POWERUP_MIN_FLOOR = 5;
 export const POWERUP_SPACING = 6;
 
+export type CannonGrade = "weak" | "good" | "perfect";
+
+/**
+ * Launch cannons (version 2 towers). Each range holds one cannon's floor, picked by the seed;
+ * the shot lands 2, 5 or 8 floors up depending on the power meter. The ranges keep every
+ * shot clear of the set-pieces, so nobody flies over one.
+ */
+export const CANNON = {
+  ranges: [
+    [11, 12],
+    [27, 32],
+    [47, 56],
+    [73, 84],
+  ] as [number, number][],
+  lift: { weak: 2, good: 5, perfect: 8 } as Record<CannonGrade, number>,
+  /** The meter sweeps 0 → 1 → 0 in this many seconds (divided by tempo). */
+  period: 1.3,
+  /** Meter readings from which a shot is perfect, or good. */
+  perfect: 0.8,
+  good: 0.45,
+  /** Fires by itself after this long. Jump doesn't fire before `arm` (a jump pressed while landing on the pad). */
+  autoFire: 3.2,
+  arm: 0.35,
+  /** Walk within this distance of the cannon to climb in. */
+  padRadius: 0.6,
+  /** Seconds in the air for each grade. */
+  flight: { weak: 1.1, good: 1.5, perfect: 1.9 } as Record<CannonGrade, number>,
+  /** Slows the flight at the top of the arc (0 = none, under 1). */
+  hang: 0.55,
+  /** The arc swings out from the tower this far, clear of the platforms on the way. */
+  swing: 3,
+  /** Coins strung along the perfect shot's arc. */
+  coins: 7,
+} as const;
+
+export type SetPieceId = "bridge" | "saws" | "canyon" | "lightning";
+
+/** Hand-built finales between two checkpoints (version 2 towers). */
+export const SET_PIECES: { id: SetPieceId; name: string; emoji: string; call: string; from: number; to: number }[] = [
+  { id: "bridge", name: "Collapsing Bridge", emoji: "🌉", call: "It's falling apart. RUN!", from: 21, to: 24 },
+  { id: "saws", name: "Saw Gauntlet", emoji: "🪚", call: "Find the rhythm, jump the blades", from: 41, to: 44 },
+  { id: "canyon", name: "Updraft Canyon", emoji: "🌪️", call: "Too far to jump: ride the wind", from: 66, to: 70 },
+  { id: "lightning", name: "Lightning Sprint", emoji: "⚡", call: "Chase the strikes to the summit", from: 94, to: 99 },
+];
+
+export const setPieceAt = (floor: number) => SET_PIECES.find((sp) => floor >= sp.from && floor <= sp.to);
+
+/** Updraft columns: how hard they push up, and the top speed they lift to. */
+export const UPDRAFT = { accel: 45, maxRise: 9, radius: 1.4 } as const;
+
 /** Respawn points: every 5 floors low down, every 7 or 8 higher up (where floors are harder). */
 export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS];
 

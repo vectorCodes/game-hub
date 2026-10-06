@@ -12,6 +12,7 @@ import {
   type DirectionalLight,
   type Group,
   type HemisphereLight,
+  type PointLight,
   type LineSegments,
   type Points,
   IcosahedronGeometry,
@@ -23,7 +24,7 @@ import {
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { zoneOf } from "../config";
 import { makeRng, type Tower } from "../tower";
-import { lookAt, newLook, useKit, useSim } from "./shared";
+import { lookAt, newLook, onSimEvent, useKit, useSim } from "./shared";
 
 const SKY_VERTEX = /* glsl */ `
   varying float vHeight;
@@ -48,6 +49,19 @@ const SKY_FRAGMENT = /* glsl */ `
 /** Lightning in the storm: 0 most of the time, a sharp flash now and then. */
 const storm = { flash: 0, next: 4 };
 
+/** The Night Climb twist: this dark, whatever the height. */
+const NIGHT = {
+  top: new Color("#060a20"),
+  bottom: new Color("#1a1f42"),
+  fog: new Color("#121731"),
+  sun: new Color("#8d9ad8"),
+  sunIntensity: 0.4,
+  hemiSky: new Color("#46508a"),
+  hemiGround: new Color("#0c0f1e"),
+  hemiIntensity: 0.5,
+};
+const NIGHT_MIX = 0.88;
+
 /** The sky dome, sun, ambient light and fog, all blended for the climber's height. */
 const SHADOW_BOX = 12;
 const SUN_OFFSET = new Vector3(9, 16, 6);
@@ -63,9 +77,20 @@ export function SkyAndLight({ shadowMap }: { shadowMap: number }) {
   const dome = useRef<Group>(null);
   const sun = useRef<DirectionalLight>(null);
   const hemi = useRef<HemisphereLight>(null);
+  const lantern = useRef<PointLight>(null);
+  const night = !!sim.rules.night;
   const look = useMemo(newLook, []);
   const uniforms = useMemo(() => ({ top: { value: new Color() }, bottom: { value: new Color() }, flash: { value: 0 } }), []);
   const fog = useMemo(() => new Fog("#cde9fb", 22, 85), []);
+
+  // Lightning Sprint: every platform that goes, goes with a flash.
+  useEffect(
+    () =>
+      onSimEvent((e) => {
+        if (e.type === "strike") storm.flash = 1;
+      }),
+    [],
+  );
 
   // A new map size needs a new shadow map.
   useEffect(() => {
@@ -78,6 +103,14 @@ export function SkyAndLight({ shadowMap }: { shadowMap: number }) {
   useFrame((_, dt) => {
     const pl = sim.player;
     lookAt(pl.height, look);
+    if (night) {
+      for (const key of Object.keys(NIGHT) as (keyof typeof NIGHT)[]) {
+        const to = NIGHT[key];
+        if (typeof to === "number") look[key] = (look[key] as number) + (to - (look[key] as number)) * NIGHT_MIX;
+        else (look[key] as Color).lerp(to, NIGHT_MIX);
+      }
+    }
+    lantern.current?.position.set(pl.x, pl.y + 1.3, pl.z);
 
     // Lightning only in the storm.
     if (zoneOf(Math.floor(pl.height)).id === "storm") {
@@ -94,6 +127,8 @@ export function SkyAndLight({ shadowMap }: { shadowMap: number }) {
     uniforms.bottom.value.copy(look.bottom as Color);
     uniforms.flash.value = flash;
     fog.color.copy(look.fog as Color);
+    fog.near = night ? 12 : 22;
+    fog.far = night ? 48 : 85;
     dome.current?.position.copy(camera.position);
 
     if (hemi.current) {
@@ -134,6 +169,8 @@ export function SkyAndLight({ shadowMap }: { shadowMap: number }) {
         </mesh>
       </group>
       <hemisphereLight ref={hemi} />
+      {/* The climber's lantern on a Night Climb: a warm pool of light around them. */}
+      {night && <pointLight ref={lantern} color="#ffc56e" intensity={22} distance={11} decay={1.4} />}
       <directionalLight
         ref={sun}
         castShadow
@@ -179,7 +216,8 @@ export function Stars() {
     const p = points.current;
     if (!p) return;
     p.position.copy(camera.position);
-    const night = Math.min(1, Math.max(0, (sim.player.height - 60) / 25));
+    // A Night Climb has stars from the very bottom.
+    const night = sim.rules.night ? 1 : Math.min(1, Math.max(0, (sim.player.height - 60) / 25));
     (p.material as PointsMaterial).opacity = night;
     p.visible = night > 0.01;
   });

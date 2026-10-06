@@ -1,12 +1,14 @@
 // /games/sky-climb: the game's landing page. The 3D climb itself is on /play.
 import { useEffect } from "react";
 import { Link } from "react-router";
+import { TWISTS } from "@shadow/shared";
 import { Reveal } from "../../components/Reveal";
 import { formatCountdown, formatDuration } from "../../lib/format";
 import { useNow } from "../shadow-guess/useDaily";
 import { FLOORS, SKY_CLIMB_PATH, ZONES } from "./config";
 import { SkyClimbCover } from "./HubCard";
-import { localBest, useClimb } from "./store";
+import { dailySeed, localBest, useClimb } from "./store";
+import { towerTwist } from "./twists";
 
 const STEPS = [
   { emoji: "🕹️", title: "Run and jump", body: "Arrow keys or WASD and Space. On phones, a joystick and a big jump button." },
@@ -27,6 +29,7 @@ export default function SkyClimbHome() {
   const setMode = useClimb((s) => s.setMode);
   const now = useNow();
   const best = localBest("daily");
+  const twist = towerTwist(dailySeed());
 
   useEffect(() => {
     void loadDaily();
@@ -44,6 +47,13 @@ export default function SkyClimbHome() {
           <p className="mx-auto mt-5 max-w-md animate-rise text-lead [animation-delay:160ms] md:mx-0">
             One tower a day. Don&rsquo;t look down. Jump from meadow to storm to the stars: {FLOORS} floors, harder the higher you go.
           </p>
+          {twist && (
+            <p className="mt-5 inline-flex animate-rise items-center gap-2 rounded-full bg-violet-400/15 px-4 py-1.5 text-sm font-medium text-violet-100 ring-1 ring-violet-300/30 [animation-delay:200ms]">
+              <span className="text-lg">{TWISTS[twist].emoji}</span>
+              Today&rsquo;s twist: {TWISTS[twist].name}
+              <span className="text-violet-200/70">· {TWISTS[twist].blurb}</span>
+            </p>
+          )}
           <div className="mt-8 flex animate-rise flex-col gap-3 [animation-delay:240ms] sm:flex-row max-md:justify-center">
             <Link to={SKY_CLIMB_PATH} onClick={() => setMode("daily")} className="btn btn-primary">
               {best > 0 ? `Beat floor ${best}` : "Climb today's tower"} <span aria-hidden>↑</span>

@@ -107,7 +107,8 @@ function PlatformView({ ps }: { ps: PlatformState }) {
     if (p.kind === "crumble" && ps.crumbleAt !== null) {
       const since = sim.t - ps.crumbleAt;
       if (since < 0.65) {
-        x += Math.sin(sim.t * 70) * 0.05;
+        // Bridge planks are set to go a while ahead: they only shake in their last moments.
+        if (since > -0.35) x += Math.sin(sim.t * 70) * 0.05;
       } else {
         y -= (since - 0.65) ** 2 * 9;
         opacity = Math.max(0, 1 - (since - 0.65) * 1.4);

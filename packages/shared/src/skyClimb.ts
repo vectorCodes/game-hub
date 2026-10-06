@@ -174,6 +174,8 @@ export interface ClimbMetrics {
   coinsTotal: number;
   maxFalls: number;
   maxStreak: number;
+  /** Different daily twists climbed to TWISTED_FLOOR or higher. */
+  twists: number;
 }
 
 export const EMPTY_METRICS: ClimbMetrics = {
@@ -185,6 +187,7 @@ export const EMPTY_METRICS: ClimbMetrics = {
   coinsTotal: 0,
   maxFalls: 0,
   maxStreak: 0,
+  twists: 0,
 };
 
 export const FAST_SUMMIT_MS = 5 * 60_000;
@@ -211,6 +214,7 @@ export const CLIMB_ACHIEVEMENTS: ClimbAchievementDef[] = [
   { id: "never-give-up", emoji: "💪", name: "Never give up", description: "Fall 20 times in one climb and keep going", metric: "maxFalls", target: 20 },
   { id: "regular", emoji: "📅", name: "Regular", description: "Climb the daily tower 3 days in a row", metric: "maxStreak", target: 3 },
   { id: "devoted", emoji: "🔥", name: "7-day climber", description: "Climb the daily tower 7 days in a row", metric: "maxStreak", target: 7 },
+  { id: "twisted", emoji: "🌀", name: "Twisted", description: "Reach floor 30 on 5 different daily twists", metric: "twists", target: 5 },
 ];
 
 export interface ClimbAchievement {
@@ -405,3 +409,87 @@ export interface ClimbChallengeView extends ClimbGhostView {
   /** The tower's date, for a daily climb. */
   date: string | null;
 }
+
+// ---------- Tower versions and daily twists ----------
+
+/** Seeded random numbers in [0, 1): xmur3 hash into mulberry32. Same seed, same numbers. */
+export function makeRng(seed: string) {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Daily towers from this date on are version 2: twists, cannons and set-pieces. Older seeds
+ * keep building the tower they always did, so their ghosts and challenge links still fit.
+ */
+export const TOWER_V2_FROM = "2026-10-07";
+
+const DAILY_SEED = /^daily-(\d{4}-\d{2}-\d{2})$/;
+
+export function towerVersion(seed: string): 1 | 2 {
+  const daily = DAILY_SEED.exec(seed);
+  if (daily) return daily[1] >= TOWER_V2_FROM ? 2 : 1;
+  return seed.startsWith("practice2-") || seed.startsWith("room2-") ? 2 : 1;
+}
+
+/** A new practice tower (version 2). */
+export const practiceSeed = (id: string) => `practice2-${id}`;
+
+export const TWIST_IDS = ["moon", "ice", "mirror", "night", "turbo", "gale", "gold"] as const;
+export type TwistId = (typeof TWIST_IDS)[number];
+
+/** One wild rule per tower. The gameplay tuning lives with the game (apps/web …/twists.ts). */
+export const TWISTS: Record<TwistId, { name: string; emoji: string; blurb: string }> = {
+  moon: { name: "Moon Gravity", emoji: "🌙", blurb: "Floaty jumps, slow falls" },
+  ice: { name: "Ice Day", emoji: "🧊", blurb: "Every platform is slippery" },
+  mirror: { name: "Mirror Tower", emoji: "🪞", blurb: "The tower winds the other way" },
+  night: { name: "Night Climb", emoji: "🔦", blurb: "Dark all the way up: follow your lantern" },
+  turbo: { name: "Turbo", emoji: "⚡", blurb: "Everything moves faster, you too" },
+  gale: { name: "Gale Force", emoji: "🌬️", blurb: "Wind gusts from the treetops up" },
+  gold: { name: "Gold Rush", emoji: "💰", blurb: "Twice the coins" },
+};
+
+/** The twists in a seeded order for one cycle of days. */
+function twistCycle(cycle: number): TwistId[] {
+  const rng = makeRng(`twists:${cycle}`);
+  const order = [...TWIST_IDS];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+/**
+ * A tower's twist. Dailies step through every twist before any repeats (and never the same
+ * twist two days running); practice and room towers roll one, or none a quarter of the time.
+ */
+export function twistOf(seed: string): TwistId | null {
+  if (towerVersion(seed) < 2) return null;
+  const daily = DAILY_SEED.exec(seed);
+  if (daily) {
+    const day = Math.round((Date.parse(daily[1]) - Date.parse(TOWER_V2_FROM)) / 86_400_000);
+    const n = TWIST_IDS.length;
+    const cycle = Math.floor(day / n);
+    const order = twistCycle(cycle);
+    if (cycle > 0 && order[0] === twistCycle(cycle - 1)[n - 1]) [order[0], order[1]] = [order[1], order[0]];
+    return order[day % n];
+  }
+  const rng = makeRng(`${seed}:twist`);
+  const none = rng() < 0.25;
+  const pick = TWIST_IDS[Math.floor(rng() * TWIST_IDS.length)];
+  return none ? null : pick;
+}
+
+/** The floor a daily climb must reach for its twist to count toward "Twisted". */
+export const TWISTED_FLOOR = 30;

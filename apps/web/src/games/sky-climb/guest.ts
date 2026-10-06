@@ -5,12 +5,14 @@ import {
   DEFAULT_LOADOUT,
   EMPTY_METRICS,
   FAST_SUMMIT_MS,
+  TWISTED_FLOOR,
   climbItem,
   evaluateAchievements,
   isFreeItem,
   ownedItems,
   type ClimbMetrics,
   type ClimbProfileView,
+  type TwistId,
 } from "@shadow/shared";
 
 const RUNS_KEY = "sky-climb:guest-runs";
@@ -60,9 +62,11 @@ interface GuestStats {
   metrics: ClimbMetrics;
   lastDailyDate: string | null;
   currentStreak: number;
+  /** Daily twists climbed to TWISTED_FLOOR (the metric counts them). */
+  twisted: TwistId[];
 }
 
-const EMPTY_STATS: GuestStats = { metrics: EMPTY_METRICS, lastDailyDate: null, currentStreak: 0 };
+const EMPTY_STATS: GuestStats = { metrics: EMPTY_METRICS, lastDailyDate: null, currentStreak: 0, twisted: [] };
 
 export interface FinishedClimb {
   daily: boolean;
@@ -73,6 +77,7 @@ export interface FinishedClimb {
   falls: number;
   summit: boolean;
   timeMs: number;
+  twist: TwistId | null;
 }
 
 /** Folds a finished climb into the guest's stats (the server does the same for accounts). */
@@ -86,6 +91,9 @@ export function recordGuestClimb(c: FinishedClimb) {
   m.maxRunCoins = Math.max(m.maxRunCoins, c.coins);
   m.coinsTotal += c.coins;
   m.maxFalls = Math.max(m.maxFalls, c.falls);
+  const twisted = new Set(s.twisted);
+  if (c.daily && c.twist && c.floor >= TWISTED_FLOOR) twisted.add(c.twist);
+  m.twists = twisted.size;
   let { lastDailyDate, currentStreak } = s;
   if (c.daily && c.floor > 0 && c.date !== lastDailyDate) {
     const yesterday = new Date(Date.parse(c.date) - 86_400_000).toISOString().slice(0, 10);
@@ -93,7 +101,7 @@ export function recordGuestClimb(c: FinishedClimb) {
     lastDailyDate = c.date;
     m.maxStreak = Math.max(m.maxStreak, currentStreak);
   }
-  write(STATS_KEY, { metrics: m, lastDailyDate, currentStreak });
+  write(STATS_KEY, { metrics: m, lastDailyDate, currentStreak, twisted: [...twisted] });
 }
 
 /** A guest's locker: coins to see (spending needs an account), free items, achievements. */
