@@ -1,5 +1,5 @@
 // The start menu (mode, climber, today's leaderboard) and the results after a climb.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CLIMB_ACHIEVEMENTS, DEFAULT_AVATAR, type ClimbChallengeView, type ClimbLeaderboardEntry, type ClimbMode } from "@shadow/shared";
 import { AvatarImage } from "../../../avatar/AvatarImage";
@@ -110,6 +110,52 @@ function SignInNudge({ text }: { text: string }) {
   );
 }
 
+/** A dismissible notice in the menu: a room that couldn't be joined, a broken challenge link. */
+function Notice({ children, onDismiss }: { children: ReactNode; onDismiss: () => void }) {
+  return (
+    <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">
+      {children}
+      <button onClick={onDismiss} aria-label="Dismiss" className="text-stone-500 hover:text-stone-200">
+        ✕
+      </button>
+    </p>
+  );
+}
+
+/** Today's leaderboard, or in practice the zones on the way up. */
+function SidePanel() {
+  const mode = useClimb((s) => s.mode);
+  const daily = useClimb((s) => s.daily);
+  if (mode !== "daily") {
+    return (
+      <>
+        <p className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">The climb</p>
+        <ol className="space-y-1">
+          {[...ZONES].reverse().map((z) => (
+            <li key={z.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2 text-sm">
+              <span className="text-lg">{z.emoji}</span>
+              <span className="flex-1 font-medium">{z.name}</span>
+              <span className="text-xs text-stone-500 tabular-nums">floor {z.from}+</span>
+            </li>
+          ))}
+        </ol>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Today&rsquo;s highest</p>
+        {daily && <span className="text-xs text-stone-500">{daily.climbers} climbing</span>}
+      </div>
+      {daily ? <Board entries={daily.top} me={daily.me} /> : <p className="text-sm text-stone-500">Loading…</p>}
+      <div className="mt-3">
+        <SignInNudge text="Sign in to join the leaderboard" />
+      </div>
+    </>
+  );
+}
+
 export function Menu() {
   const mode = useClimb((s) => s.mode);
   const setMode = useClimb((s) => s.setMode);
@@ -138,92 +184,81 @@ export function Menu() {
     );
   }
 
+  // Desktop: the main card on the left, the leaderboard on the right, the climber in between.
+  // Phones: one bottom sheet that scrolls, with the start button pinned at its foot.
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-end p-3 sm:p-6 md:items-center">
-      <div className="glass pointer-events-auto w-full max-w-md animate-rise rounded-[1.75rem] p-5 sm:p-7">
-        <p className="eyebrow">{mode === "daily" && daily ? `Tower #${daily.number} · ${daily.climbers} climbing today` : "GameHub"}</p>
-        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Sky Climb</h1>
-        <p className="mt-1.5 text-stone-400">Climb as high as you can. It gets harder the higher you go.</p>
+    <div className="pointer-events-none absolute inset-0 flex items-end justify-between gap-4 p-3 sm:p-5 md:items-center">
+      <div className="glass pointer-events-auto flex max-h-[72%] w-full animate-rise flex-col overflow-hidden rounded-[1.75rem] md:max-h-full md:max-w-sm">
+        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain p-5 pb-3 sm:p-6 sm:pb-3">
+          <p className="eyebrow">{mode === "daily" && daily ? `Tower #${daily.number} · ${daily.climbers} climbing today` : "GameHub"}</p>
+          <h1 className="mt-1.5 font-display text-3xl font-bold tracking-tight sm:text-4xl">Sky Climb</h1>
+          <p className="mt-1 text-sm text-stone-400">Climb as high as you can. It gets harder the higher you go.</p>
 
-        {challenge ? <ChallengeCard challenge={challenge} /> : <Segmented className="mt-5" label="Mode" options={MODES} value={mode} onChange={setMode} />}
-        {roomError && (
-          <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">
-            {ROOM_ERRORS[roomError]}
-            <button onClick={clearRoomError} aria-label="Dismiss" className="text-stone-500 hover:text-stone-200">
-              ✕
-            </button>
-          </p>
-        )}
-        {challengeFailed && (
-          <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">
-            That challenge link didn&rsquo;t open. Climb today&rsquo;s tower instead!
-            <button onClick={clearChallenge} aria-label="Dismiss" className="text-stone-500 hover:text-stone-200">
-              ✕
-            </button>
-          </p>
-        )}
+          {challenge ? <ChallengeCard challenge={challenge} /> : <Segmented className="mt-4" label="Mode" options={MODES} value={mode} onChange={setMode} />}
+          {roomError && <Notice onDismiss={clearRoomError}>{ROOM_ERRORS[roomError]}</Notice>}
+          {challengeFailed && (
+            <Notice onDismiss={clearChallenge}>That challenge link didn&rsquo;t open. Climb today&rsquo;s tower instead!</Notice>
+          )}
 
-        <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-3 py-2.5 ring-1 ring-white/10">
-          <div className="flex items-center gap-3">
-            <AvatarImage config={avatar} size="lg" className="h-12! w-12!" />
-            <div className="text-left">
-              <div className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Your climber</div>
-              <div className="font-display text-lg font-semibold">{custom ? "Your avatar" : "Make it yours"}</div>
-            </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link
+              to="/avatar?from=sky-climb"
+              className="flex items-center gap-2.5 rounded-2xl bg-white/[0.04] p-2.5 ring-1 ring-white/10 transition hover:bg-white/[0.08]"
+            >
+              <AvatarImage config={avatar} size="md" className="h-10! w-10! shrink-0" />
+              <span className="min-w-0 text-left leading-tight">
+                <span className="block text-[10px] font-semibold tracking-[0.14em] text-stone-400 uppercase">Climber</span>
+                <span className="block truncate text-sm font-semibold">{custom ? "Customize" : "Make it yours"}</span>
+              </span>
+            </Link>
+            <button
+              onClick={() => openLocker(true)}
+              className="flex items-center gap-2.5 rounded-2xl bg-white/[0.04] p-2.5 ring-1 ring-white/10 transition hover:bg-white/[0.08]"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-xl">🎒</span>
+              <span className="min-w-0 text-left leading-tight">
+                <span className="block text-[10px] font-semibold tracking-[0.14em] text-stone-400 uppercase">Locker</span>
+                <span className="block truncate text-sm font-semibold text-lamp-200 tabular-nums">🪙 {profile.coins.balance}</span>
+              </span>
+            </button>
           </div>
-          <Link to="/avatar?from=sky-climb" className="btn btn-secondary h-9! px-4! text-sm">
-            ✏️ Customize
-          </Link>
+          <OthersToggles />
+
+          {/* Phones have no side panel, so the leaderboard lives at the bottom of the sheet. */}
+          <div className="mt-5 md:hidden">
+            <SidePanel />
+          </div>
         </div>
 
-        <button
-          onClick={() => openLocker(true)}
-          className="mt-2 flex w-full items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-2.5 text-sm ring-1 ring-white/10 transition hover:bg-white/[0.08]"
-        >
-          <span>🎒 Locker · styles, hats, trails, awards</span>
-          <span className="font-semibold text-lamp-200 tabular-nums">🪙 {profile.coins.balance}</span>
-        </button>
-        <OthersToggles />
-
-        <button onClick={() => void start()} disabled={phase === "starting"} className="btn btn-primary mt-5 w-full disabled:opacity-60">
-          {phase === "starting"
-            ? "Getting ready…"
-            : challenge && !challenge.isMe
-              ? `Beat ${challenge.name}`
-              : best > 0
-                ? "Climb again"
-                : "Start climbing"}
-          <span aria-hidden>↑</span>
-        </button>
-        {roomsAvailable && (
-          <button onClick={() => setFriends(true)} className="btn btn-secondary mt-2 w-full">
-            👥 Play with friends
+        <div className="border-t border-white/10 p-5 pt-3 sm:p-6 sm:pt-4">
+          <button onClick={() => void start()} disabled={phase === "starting"} className="btn btn-primary w-full disabled:opacity-60">
+            {phase === "starting"
+              ? "Getting ready…"
+              : challenge && !challenge.isMe
+                ? `Beat ${challenge.name}`
+                : best > 0
+                  ? "Climb again"
+                  : "Start climbing"}
+            <span aria-hidden>↑</span>
           </button>
-        )}
-        {best > 0 && (
-          <p className="mt-2 text-center text-sm text-stone-400">
-            Your best {mode === "daily" ? "today" : "in practice"}: <span className="font-semibold text-stone-100">floor {best}</span>
-          </p>
-        )}
-
-        {mode === "daily" ? (
-          <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Today&rsquo;s highest</p>
-            {daily ? <Board entries={daily.top} me={daily.me} /> : <p className="text-sm text-stone-500">Loading…</p>}
-            <div className="mt-3">
-              <SignInNudge text="Sign in to join the leaderboard" />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-5 flex flex-wrap gap-1.5">
-            {ZONES.map((z) => (
-              <span key={z.id} className="rounded-full bg-white/[0.05] px-2.5 py-1 text-xs text-stone-300 ring-1 ring-white/10">
-                {z.emoji} {z.name}
+          <div className="mt-2 flex items-center justify-between gap-3">
+            {roomsAvailable && (
+              <button onClick={() => setFriends(true)} className="text-sm font-medium text-stone-300 transition hover:text-stone-100">
+                👥 Play with friends
+              </button>
+            )}
+            {best > 0 && (
+              <span className="ml-auto text-sm text-stone-400">
+                Best {mode === "daily" ? "today" : "in practice"}: <span className="font-semibold text-stone-100">floor {best}</span>
               </span>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      <aside className="glass pointer-events-auto hidden max-h-full w-80 shrink-0 animate-rise touch-pan-y overflow-y-auto overscroll-contain rounded-[1.5rem] p-5 md:block">
+        <SidePanel />
+      </aside>
     </div>
   );
 }
@@ -278,8 +313,8 @@ export function Results() {
   ];
 
   return (
-    <div className="absolute inset-0 grid place-items-center bg-stone-950/40 p-4 backdrop-blur-[2px]">
-      <div className="glass w-full max-w-md animate-pop rounded-[1.75rem] p-6 text-center sm:p-8">
+    <div className="absolute inset-0 flex touch-pan-y flex-col items-center overflow-y-auto overscroll-contain bg-stone-950/40 p-4 backdrop-blur-[2px]">
+      <div className="glass my-auto w-full max-w-md animate-pop rounded-[1.75rem] p-6 text-center sm:p-8">
         <div className="text-5xl">{summit ? "🏁" : zone.emoji}</div>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight">{summit ? "You reached the summit!" : `You reached floor ${floor}`}</h2>
         <p className="mt-2 text-stone-400">

@@ -25,7 +25,7 @@ export const ROOM_ERRORS: Record<RoomError, string> = {
 function Card({ children }: { children: ReactNode }) {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-end p-3 sm:p-6 md:items-center">
-      <div className="glass pointer-events-auto w-full max-w-md animate-rise rounded-[1.75rem] p-5 sm:p-7">{children}</div>
+      <div className="glass pointer-events-auto max-h-full w-full max-w-md animate-rise touch-pan-y overflow-y-auto overscroll-contain rounded-[1.75rem] p-5 sm:p-7">{children}</div>
     </div>
   );
 }
