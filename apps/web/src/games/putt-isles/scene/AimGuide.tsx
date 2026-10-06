@@ -2,7 +2,7 @@
 // a gauge round the ball that fills green → yellow → red.
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Color, Object3D, type InstancedMesh } from "three";
+import { Color, Object3D, type InstancedMesh, type MeshBasicMaterial } from "three";
 import { AIM, BALL_RADIUS } from "../config";
 import { aim } from "../input";
 import { usePutt } from "../store";
@@ -81,7 +81,7 @@ export function AimGuide() {
     }
     d.count = count;
     d.instanceMatrix.needsUpdate = true;
-    (d.material as { color: Color }).color.copy(powerColor(aim.power, color));
+    (d.material as MeshBasicMaterial).color.copy(powerColor(aim.power, color));
 
     // The gauge: segments lit up to the power, starting behind the ball.
     const lit = Math.max(1, Math.round(aim.power * SEGMENTS));
