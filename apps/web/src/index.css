@@ -179,6 +179,71 @@
   @keyframes ping-soft {
     75%, 100% { transform: scale(2.2); opacity: 0; }
   }
+
+  /* Putt Isles landing: a sky world of floating islands. */
+  --animate-isle-bob: isle-bob 9s ease-in-out infinite;
+  --animate-cloud-scroll: cloud-scroll 90s linear infinite;
+  --animate-aurora: aurora 18s ease-in-out infinite;
+  --animate-flag: flag 1.6s ease-in-out infinite;
+  --animate-waterfall: waterfall 0.9s linear infinite;
+  --animate-mote: mote 9s ease-out infinite;
+  --animate-glide: glide 38s linear infinite;
+  --animate-flap: flap 0.7s ease-in-out infinite;
+  --animate-shooting: shooting 9s ease-in infinite;
+  --animate-flash: flash 7s ease-out infinite;
+  --animate-march: march 1.4s linear infinite;
+  --animate-sway-soft: sway-soft 5s ease-in-out infinite;
+
+  @keyframes isle-bob {
+    0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+    50% { transform: translateY(-16px) rotate(0.6deg); }
+  }
+  /* The cloud sea is two identical strips side by side; sliding one width loops seamlessly. */
+  @keyframes cloud-scroll {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes aurora {
+    0%, 100% { transform: translate(-6%, 0) scale(1) rotate(-4deg); opacity: 0.55; }
+    50% { transform: translate(6%, 4%) scale(1.15) rotate(3deg); opacity: 0.85; }
+  }
+  @keyframes flag {
+    0%, 100% { transform: skewY(0deg) scaleX(1); }
+    50% { transform: skewY(-9deg) scaleX(0.88); }
+  }
+  @keyframes waterfall {
+    to { stroke-dashoffset: -40; }
+  }
+  /* A glowing mote drifting up out of the clouds; --dx sets its sideways drift. */
+  @keyframes mote {
+    0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--dx, 20px), -260px) scale(1); }
+  }
+  @keyframes glide {
+    from { transform: translate(-10vw, 0); }
+    50% { transform: translate(50vw, -40px); }
+    to { transform: translate(110vw, 10px); }
+  }
+  @keyframes flap {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(-0.6); }
+  }
+  @keyframes shooting {
+    0%, 82% { opacity: 0; transform: translate(0, 0) rotate(-24deg) scaleX(0.2); }
+    85% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-420px, 190px) rotate(-24deg) scaleX(1); }
+  }
+  @keyframes flash {
+    0%, 88%, 92%, 100% { opacity: 0; }
+    89%, 91% { opacity: 1; }
+  }
+  @keyframes march {
+    to { stroke-dashoffset: -24; }
+  }
+  @keyframes sway-soft {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+  }
 }
 
 /* ---------- Design system ---------- */
