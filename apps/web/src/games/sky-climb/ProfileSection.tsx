@@ -1,18 +1,10 @@
-// Sky Climb on the player's profile: best floor, summits, streak, coins and achievements.
+// Sky Climb on the player's profile: best floor, summits, streak, coins, and the
+// achievements as a row of seals.
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import { CLIMB_ACHIEVEMENTS, type ClimbProfileView } from "@shadow/shared";
 import { api } from "../../api/client";
+import { ChapterHeader, StatStrip } from "../../components/Editorial";
 import { SKY_CLIMB_HOME } from "./config";
-
-function Tile({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
-  return (
-    <div className="rounded-2xl bg-white/3 p-4 ring-1 ring-white/10 sm:p-5">
-      <div className={`font-display text-3xl font-bold tabular-nums sm:text-4xl ${accent ? "text-moss-300 text-glow" : "text-white"}`}>{value}</div>
-      <div className="mt-1 text-xs font-medium tracking-wide text-stone-400 uppercase">{label}</div>
-    </div>
-  );
-}
 
 export function SkyClimbProfileSection() {
   const [profile, setProfile] = useState<ClimbProfileView | null>(null);
@@ -23,38 +15,36 @@ export function SkyClimbProfileSection() {
   const done = profile.achievements.filter((a) => a.unlocked).length;
 
   return (
-    <section className="animate-rise space-y-3 [animation-delay:400ms]">
-      <div className="flex items-baseline justify-between pt-4">
-        <h2 className="font-display text-xl font-semibold">Sky Climb</h2>
-        <span className="text-sm text-stone-400">
-          <Link to={SKY_CLIMB_HOME} className="text-moss-300 hover:underline">
-            Climb today&rsquo;s tower →
-          </Link>
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="Best floor" value={profile.metrics.bestFloor} />
-        <Tile label="Summits" value={profile.metrics.summits} />
-        <Tile label="Climb streak" value={`${profile.currentStreak}🔥`} accent />
-        <Tile label="Coins" value={`🪙 ${profile.coins.balance}`} />
-      </div>
-      <div className="rounded-3xl bg-white/3 p-5 ring-1 ring-white/10 sm:p-6">
-        <div className="mb-3 flex items-baseline justify-between">
-          <span className="font-display text-lg font-semibold">Achievements</span>
-          <span className="text-xs text-stone-500">
+    <section className="animate-rise [animation-delay:200ms]">
+      <ChapterHeader number="02" title="Sky Climb" note="One tower a day, a hundred floors." link={{ to: SKY_CLIMB_HOME, label: "Today's tower" }} />
+      <StatStrip
+        stats={[
+          { label: "Best floor", value: profile.metrics.bestFloor },
+          { label: "Summits", value: profile.metrics.summits },
+          { label: "Climb streak", value: profile.currentStreak, accent: true },
+          { label: "Coins", value: profile.coins.balance },
+        ]}
+      />
+      <div className="pt-6">
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <span className="font-display text-lg font-light uppercase">Achievements</span>
+          <span className="label-mono text-stone-500">
             {done} of {profile.achievements.length}
           </span>
         </div>
-        <ul className="flex flex-wrap gap-2">
+        <ul className="grid grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-6 lg:grid-cols-8">
           {CLIMB_ACHIEVEMENTS.map((def) => {
             const unlocked = profile.achievements.find((a) => a.id === def.id)?.unlocked;
             return (
-              <li
-                key={def.id}
-                title={`${def.name}: ${def.description}`}
-                className={`grid h-12 w-12 place-items-center rounded-xl text-2xl ring-1 ${unlocked ? "bg-moss-500/15 ring-moss-400/40" : "bg-white/[0.03] opacity-40 grayscale ring-white/10"}`}
-              >
-                {def.emoji}
+              <li key={def.id} title={`${def.name}: ${def.description}`} className="flex flex-col items-center text-center">
+                <span
+                  className={`grid h-14 w-14 place-items-center rounded-full text-2xl sm:h-16 sm:w-16 ${
+                    unlocked ? "bg-gold/20 ring-2 ring-gold" : "border border-dashed border-white/25 opacity-50 grayscale"
+                  }`}
+                >
+                  {def.emoji}
+                </span>
+                <span className={`mt-2 line-clamp-2 font-serif text-xs leading-tight ${unlocked ? "text-stone-200" : "text-stone-500"}`}>{def.name}</span>
               </li>
             );
           })}
