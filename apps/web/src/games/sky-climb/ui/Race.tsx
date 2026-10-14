@@ -35,7 +35,7 @@ export function RaceCountdown() {
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center">
       <div key={text} className="animate-pop text-center">
-        <div className={`font-display font-bold drop-shadow-[0_6px_24px_rgba(0,0,0,0.5)] ${left > 0 ? "text-8xl text-white" : "text-7xl text-lamp-300"}`}>{text}</div>
+        <div className={`font-display font-bold drop-shadow-[0_6px_24px_rgba(0,0,0,0.5)] ${left > 0 ? "text-7xl text-white sm:text-8xl" : "text-6xl text-lamp-300 sm:text-7xl"}`}>{text}</div>
         {left > 0 && <div className="mt-2 text-lg font-medium text-stone-200 drop-shadow">Get ready…</div>}
       </div>
     </div>
@@ -87,9 +87,9 @@ function Podium({ standings, you }: { standings: RoomStanding[]; you: string | n
   // 2nd, 1st, 3rd: the winner in the middle.
   const order = [standings[1], standings[0], standings[2]].filter(Boolean);
   return (
-    <div className="mt-6 flex items-end justify-center gap-3">
+    <div className="mt-6 flex items-end justify-center gap-2 sm:gap-3">
       {order.map((s) => (
-        <div key={s.id} className="flex w-28 animate-rise flex-col items-center" style={{ animationDelay: `${(3 - s.place) * 120}ms` }}>
+        <div key={s.id} className="flex w-24 min-w-0 animate-rise flex-col items-center sm:w-28" style={{ animationDelay: `${(3 - s.place) * 120}ms` }}>
           <AvatarImage config={s.avatar ?? DEFAULT_AVATAR} size="lg" className={s.dnf ? "opacity-40" : ""} />
           <div className="mt-1 max-w-full truncate text-sm font-semibold">
             {s.name}

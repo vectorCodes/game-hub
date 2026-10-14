@@ -15,7 +15,7 @@ import { useAuth } from "../../../auth/store";
 import { GoogleIcon } from "../../../auth/AuthMenu";
 import { Segmented } from "../../../components/Segmented";
 import { formatDuration } from "../../../lib/format";
-import { FLOORS, SKY_CLIMB_PATH, ZONES } from "../config";
+import { FLOORS, SKY_CLIMB_HOME, SKY_CLIMB_PATH, ZONES } from "../config";
 import { liveAvailable } from "../live";
 import { clearRoomError, roomsAvailable, useRoom } from "../room";
 import { dailySeed, localBest, useClimb } from "../store";
@@ -232,7 +232,17 @@ export function Menu() {
     <div className="pointer-events-none absolute inset-0 flex items-end justify-between gap-4 p-3 sm:p-5 md:items-center">
       <div className="glass pointer-events-auto flex max-h-[72%] w-full animate-rise flex-col overflow-hidden rounded-[1.75rem] md:max-h-full md:max-w-sm">
         <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain p-5 pb-3 sm:p-6 sm:pb-3">
-          <p className="eyebrow">{mode === "daily" && daily ? `Tower #${daily.number} · ${daily.climbers} climbing today` : "GameHub"}</p>
+          {/* The way back: there's no site header during a game. */}
+          <div className="flex items-center gap-2.5">
+            <Link
+              to={SKY_CLIMB_HOME}
+              aria-label="Back to Sky Climb"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/[0.06] text-sm ring-1 ring-white/10 transition hover:bg-white/[0.12]"
+            >
+              ←
+            </Link>
+            <p className="eyebrow min-w-0 truncate">{mode === "daily" && daily ? `Tower #${daily.number} · ${daily.climbers} climbing today` : "GameHub"}</p>
+          </div>
           <h1 className="mt-1.5 font-display text-3xl font-bold tracking-tight sm:text-4xl">Sky Climb</h1>
           <p className="mt-1 text-sm text-stone-400">Climb as high as you can. It gets harder the higher you go.</p>
 

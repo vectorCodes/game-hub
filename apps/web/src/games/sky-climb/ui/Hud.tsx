@@ -38,7 +38,7 @@ function Clock({ startedAt, endedAt }: { startedAt: number; endedAt: number | nu
 
 function Chip({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full bg-stone-950/70 px-3 py-1.5 text-sm font-medium text-stone-100 ring-1 ring-white/10 backdrop-blur-md ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full bg-stone-950/70 px-2.5 py-1 text-xs font-medium whitespace-nowrap sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm text-stone-100 ring-1 ring-white/10 backdrop-blur-md ${className}`}>
       {children}
     </span>
   );
@@ -66,7 +66,7 @@ function useRiderMarks(): RiderMark[] {
 function HeightBar({ floor, best }: { floor: number; best: number }) {
   const marks = useRiderMarks();
   return (
-    <div className="pointer-events-none absolute top-1/2 right-3 h-[52%] w-2 -translate-y-1/2 sm:right-5" aria-hidden>
+    <div className="pointer-events-none absolute top-1/2 right-3 h-[52%] w-2 -translate-y-1/2 sm:right-5 [@media(max-height:500px)]:top-[42%] [@media(max-height:500px)]:h-[36%]" aria-hidden>
       <div className="relative h-full w-full overflow-hidden rounded-full ring-1 ring-white/15">
         {ZONES.slice(0, -1).map((z, i) => {
           const end = ZONES[i + 1].from;
@@ -125,10 +125,10 @@ function PowerupChips() {
           <span
             key={k}
             title={`${p.name}: ${p.blurb}`}
-            className={`grid h-11 w-11 place-items-center rounded-full shadow-lg ${left[k] < 2 ? "animate-pulse" : ""}`}
+            className={`grid h-9 w-9 place-items-center rounded-full shadow-lg sm:h-11 sm:w-11 ${left[k] < 2 ? "animate-pulse" : ""}`}
             style={{ background: `conic-gradient(${p.color} ${(left[k] / p.duration) * 360}deg, rgba(12,10,9,0.7) 0)` }}
           >
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-stone-950/90 text-lg">{p.emoji}</span>
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-stone-950/90 text-base sm:h-9 sm:w-9 sm:text-lg">{p.emoji}</span>
             <span className="sr-only">
               {p.name}, {Math.ceil(left[k])} seconds left
             </span>
@@ -269,7 +269,8 @@ function TouchControls() {
     <>
       <div
         ref={base}
-        className="absolute bottom-6 left-6 h-32 w-32 touch-none rounded-full bg-stone-950/40 ring-1 ring-white/20 backdrop-blur-sm select-none"
+        style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}
+        className="absolute h-28 w-28 touch-none rounded-full sm:h-32 sm:w-32 bg-stone-950/40 ring-1 ring-white/20 backdrop-blur-sm select-none"
         onPointerDown={(e) => {
           pointer.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -286,7 +287,8 @@ function TouchControls() {
       </div>
       <button
         aria-label="Jump"
-        className="absolute right-8 bottom-8 grid h-24 w-24 touch-none place-items-center rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 font-display text-lg font-bold text-ink shadow-[0_0_30px_-6px_rgba(244,185,78,0.8)] select-none active:scale-95"
+        style={{ bottom: "calc(1.75rem + env(safe-area-inset-bottom))", right: "calc(1.75rem + env(safe-area-inset-right))" }}
+        className="absolute grid h-20 w-20 touch-none sm:h-24 sm:w-24 place-items-center rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 font-display text-lg font-bold text-ink shadow-[0_0_30px_-6px_rgba(244,185,78,0.8)] select-none active:scale-95"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           pressJump(true);
@@ -321,19 +323,23 @@ export function Hud({ touch }: { touch: boolean }) {
       {/* A dip to dark on every fall, while the climber is put back. */}
       {falls > 0 && <div key={falls} aria-hidden className="absolute inset-0 animate-blackout bg-stone-950" />}
 
-      <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
-        <div className="rounded-2xl bg-stone-950/70 px-4 py-2.5 ring-1 ring-white/10 backdrop-blur-md">
-          <div className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Floor</div>
-          <div className="font-display text-4xl leading-none font-bold tabular-nums">
+      <div className="absolute top-3 left-3 max-w-[48%] sm:top-4 sm:left-4 sm:max-w-[55%]">
+        <div className="inline-block rounded-2xl bg-stone-950/70 px-3 py-2 ring-1 ring-white/10 backdrop-blur-md sm:px-4 sm:py-2.5">
+          <div className="text-[10px] font-semibold tracking-[0.16em] text-stone-400 uppercase sm:text-[11px]">Floor</div>
+          <div className="font-display text-3xl leading-none font-bold tabular-nums sm:text-4xl">
             {floor}
-            <span className="text-lg text-stone-500">/{FLOORS}</span>
+            <span className="text-base text-stone-500 sm:text-lg">/{FLOORS}</span>
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2 sm:gap-2">
           <Chip>
             {zone.emoji} {zone.name}
           </Chip>
-          {floor < FLOORS && <Chip className="text-stone-300">🚩 Next checkpoint: {next}</Chip>}
+          {floor < FLOORS && (
+            <Chip className="text-stone-300">
+              🚩 <span className="hidden sm:inline">Next checkpoint:</span> {next}
+            </Chip>
+          )}
           {twist && (
             <Chip className="text-violet-100 ring-violet-300/30">
               {TWISTS[twist].emoji} {TWISTS[twist].name}
@@ -343,8 +349,8 @@ export function Hud({ touch }: { touch: boolean }) {
         <PowerupChips />
       </div>
 
-      <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2 sm:top-4 sm:right-4">
-        <div className="flex gap-2">
+      <div className="pointer-events-auto absolute top-3 right-3 flex max-w-[50%] flex-col items-end gap-1.5 sm:top-4 sm:right-4 sm:max-w-none sm:gap-2">
+        <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
           {race ? (
             <Chip>
               ⏳ <RaceClock endsAt={race.endsAt} />
@@ -359,18 +365,18 @@ export function Hud({ touch }: { touch: boolean }) {
             <span className="sr-only">falls</span>
           </Chip>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <button
             onClick={toggle}
             aria-label={muted ? "Unmute" : "Mute"}
-            className="grid h-9 w-9 place-items-center rounded-full bg-stone-950/70 text-sm ring-1 ring-white/10 backdrop-blur-md hover:bg-stone-900"
+            className="grid h-8 w-8 place-items-center rounded-full bg-stone-950/70 text-sm ring-1 sm:h-9 sm:w-9 ring-white/10 backdrop-blur-md hover:bg-stone-900"
           >
             {muted ? "🔇" : "🔊"}
           </button>
           {phase === "playing" && (
             <button
               onClick={() => void finish()}
-              className="rounded-full bg-stone-950/70 px-3.5 py-1.5 text-sm font-medium text-stone-200 ring-1 ring-white/10 backdrop-blur-md hover:bg-stone-900"
+              className="rounded-full bg-stone-950/70 px-3 py-1 text-xs font-medium whitespace-nowrap text-stone-200 ring-1 sm:px-3.5 sm:py-1.5 sm:text-sm ring-white/10 backdrop-blur-md hover:bg-stone-900"
             >
               {race ? "Stop racing" : "End climb"}
             </button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { HINT_PENALTY, SKIPPED, type GameMode, type LightAngle, type SessionView } from "@shadow/shared";
 import { useAuth } from "../../auth/store";
 import { Segmented } from "../../components/Segmented";
@@ -11,6 +11,7 @@ import { ShadowHistory } from "./ui/ShadowHistory";
 import { GuessInput } from "./ui/GuessInput";
 import { ResultPanel } from "./ui/ResultPanel";
 import { useRunBest } from "./useRunBest";
+import { SHADOW_GUESS_HOME } from "./useDaily";
 
 const ERROR_MESSAGES: Record<string, string> = {
   api_unreachable: "Can't reach the game server. Is the API running? Start everything with `pnpm dev` from the repo root.",
@@ -207,7 +208,7 @@ export default function ShadowGuessPage() {
   if (session && playing) angle = viewing !== null ? session.angles[viewing] : session.angle;
 
   return (
-    <div className="mx-auto grid min-h-[calc(100dvh-3.5rem)] max-w-7xl grid-rows-[minmax(min(20rem,45dvh),1fr)_auto] gap-3 p-3 sm:gap-4 sm:p-4 md:h-[calc(100dvh-3.5rem)] md:grid-cols-[minmax(0,1fr)_19rem] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_23rem] lg:p-5">
+    <div className="mx-auto grid min-h-dvh max-w-7xl grid-rows-[minmax(min(20rem,45dvh),1fr)_auto] gap-3 p-3 sm:gap-4 sm:p-4 md:h-dvh md:grid-cols-[minmax(0,1fr)_19rem] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_23rem] lg:p-5">
       {/* Stage: the lit wall and the shadow. */}
       <section className="relative min-h-0 overflow-hidden rounded-2xl bg-wall sm:rounded-3xl ring-1 ring-lamp-300/20 shadow-[0_0_90px_-30px_rgba(244,185,78,0.45)]">
         {session && (
@@ -247,8 +248,17 @@ export default function ShadowGuessPage() {
           </div>
         )}
 
-        {session && (
-          <div className="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
+        {/* The way back (there's no site header during a game), then the round's chips. */}
+        <div className="pointer-events-none absolute inset-x-2.5 top-2.5 z-10 flex items-start gap-2 sm:inset-x-4 sm:top-4">
+          <Link
+            to={SHADOW_GUESS_HOME}
+            aria-label="Back to Shadow Guess"
+            className="pointer-events-auto grid h-7 w-7 shrink-0 place-items-center rounded-full bg-stone-950/75 text-sm text-stone-100 ring-1 ring-white/10 backdrop-blur-md transition-colors hover:bg-stone-900"
+          >
+            ←
+          </Link>
+          {session && (
+            <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
             <StageChip>
               {session.puzzleNumber
                 ? `Daily #${session.puzzleNumber}${session.theme ? ` · ${session.theme.emoji} ${session.theme.name}` : ""}`
@@ -263,8 +273,9 @@ export default function ShadowGuessPage() {
                   : `Angle ${session.step + 1} of ${session.maxSteps}`
                 : "Drag to rotate"}
             </StageChip>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {session && (
           <div className="absolute right-2.5 bottom-2.5 sm:right-4 sm:bottom-4">

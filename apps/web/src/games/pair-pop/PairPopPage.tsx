@@ -57,7 +57,7 @@ export default function PairPopPage() {
   }, [param, synced, userId]);
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] touch-manipulation overflow-hidden overscroll-none bg-[radial-gradient(ellipse_90%_70%_at_50%_15%,#9a7dff_0%,#6a4ae6_38%,#3a1f9e_72%,#1c0e5a_100%)] select-none">
+    <div className="relative h-dvh touch-manipulation overflow-hidden overscroll-none bg-[radial-gradient(ellipse_90%_70%_at_50%_15%,#9a7dff_0%,#6a4ae6_38%,#3a1f9e_72%,#1c0e5a_100%)] select-none">
       <Suspense fallback={null}>
         <Game />
       </Suspense>

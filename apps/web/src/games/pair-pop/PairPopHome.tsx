@@ -11,16 +11,20 @@ import { levelUnlocked, savedDaily, savedStars } from "./guest";
 import { usePairPopProgress } from "./progress";
 import { EXTRUDE } from "./ui/Hud";
 
-/** Hero tiles: [face, colour, left %, top %, size rem]. Two of each, like a real board. */
-const HERO: [string, string, number, number, number][] = [
-  ["🐷", "#ff8fc8", 6, 18, 5.5],
-  ["🐝", "#ffd84d", 18, 62, 4.5],
-  ["🦁", "#ffb340", 80, 14, 5],
-  ["🐷", "#ff8fc8", 88, 58, 4.5],
-  ["🍩", "#55a8ff", 70, 74, 4],
-  ["🐝", "#ffd84d", 32, 8, 3.5],
-  ["🦁", "#ffb340", 58, 6, 3.5],
-  ["🍩", "#55a8ff", 4, 82, 3.5],
+/**
+ * Hero tiles: [face, colour, left %, top %, size rem, wide only]. Two of each, like a real
+ * board. The "wide only" ones sit beside the buttons, so narrow screens leave them out; the
+ * rest stay in the corners, clear of the text.
+ */
+const HERO: [string, string, number, number, number, boolean][] = [
+  ["🐷", "#ff8fc8", 6, 14, 5.5, false],
+  ["🐝", "#ffd84d", 16, 62, 4.5, true],
+  ["🦁", "#ffb340", 80, 10, 5, false],
+  ["🐷", "#ff8fc8", 86, 60, 4.5, true],
+  ["🍩", "#55a8ff", 74, 84, 4, false],
+  ["🐝", "#ffd84d", 32, 5, 3.5, false],
+  ["🦁", "#ffb340", 58, 4, 3.5, false],
+  ["🍩", "#55a8ff", 6, 86, 3.5, false],
 ];
 
 const STEPS = [
@@ -32,9 +36,9 @@ const STEPS = [
 const BUTTON_3D =
   "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-display text-base font-extrabold sm:px-7 sm:py-4 sm:text-lg transition-[transform,box-shadow] duration-100 hover:-translate-y-0.5 active:translate-y-[3px]";
 
-function FlipTile({ face, color, style, delay, size = 4 }: { face: string; color: string; style?: CSSProperties; delay: number; size?: number }) {
+function FlipTile({ face, color, style, delay, size = 4, className = "" }: { face: string; color: string; style?: CSSProperties; delay: number; size?: number; className?: string }) {
   return (
-    <div aria-hidden className="absolute [perspective:700px]" style={{ ...style, width: `calc(${size}rem * var(--s))`, animation: `pp-bob ${6 + delay}s ease-in-out ${-delay}s infinite` }}>
+    <div aria-hidden className={`absolute [perspective:700px] ${className}`} style={{ ...style, width: `calc(${size}rem * var(--s))`, animation: `pp-bob ${6 + delay}s ease-in-out ${-delay}s infinite` }}>
       <div className="relative aspect-square [transform-style:preserve-3d]" style={{ animation: `pp-flip 6s cubic-bezier(0.5,0,0.2,1.3) ${delay * 0.7}s infinite` }}>
         <div className="absolute inset-0 grid place-items-center rounded-[22%] bg-gradient-to-br from-[#7c6cff] via-[#5a8dff] to-[#38c8e8] font-display font-black text-white shadow-[0_8px_0_#3a2a9e,0_16px_30px_rgba(20,8,70,0.4)] ring-4 ring-white/40 ring-inset [backface-visibility:hidden]" style={{ fontSize: `calc(${size * 0.5}rem * var(--s))` }}>
           ?
@@ -77,13 +81,21 @@ export default function PairPopHome() {
   return (
     <div className="overflow-x-clip pb-24">
       {/* ---------- Hero ---------- */}
-      <section className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden py-16 [--s:0.55] sm:[--s:0.8] lg:[--s:1] bg-[radial-gradient(ellipse_90%_70%_at_50%_10%,#a48bff_0%,#6a4ae6_40%,#3a1f9e_75%,#1c0e5a_100%)]">
+      <section className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden py-20 sm:py-16 [--s:0.55] sm:[--s:0.8] lg:[--s:1] bg-[radial-gradient(ellipse_90%_70%_at_50%_10%,#a48bff_0%,#6a4ae6_40%,#3a1f9e_75%,#1c0e5a_100%)]">
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_80%,rgba(255,143,200,0.35),transparent_40%),radial-gradient(circle_at_85%_20%,rgba(85,168,255,0.35),transparent_40%)]" />
-        {HERO.map(([face, color, left, top, size], i) => (
-          <FlipTile key={i} face={face} color={color} delay={i * 0.8} size={size} style={{ left: `${left}%`, top: `${top}%`, opacity: size < 4 ? 0.7 : 1 }} />
+        {HERO.map(([face, color, left, top, size, wide], i) => (
+          <FlipTile
+            key={i}
+            face={face}
+            color={color}
+            delay={i * 0.8}
+            size={size}
+            className={wide ? "max-lg:hidden" : ""}
+            style={{ left: `${left}%`, top: `${top}%`, opacity: size < 4 ? 0.7 : 1 }}
+          />
         ))}
 
-        <div className="container-page relative text-center">
+        <div className="container-page relative z-10 text-center">
           <span className="inline-flex animate-rise items-center gap-2 rounded-full bg-white/15 px-3.5 py-1.5 text-xs sm:px-4 sm:text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur-md">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#7ddc6f]" />
             Daily #{dailyNumber()} is live{board?.players ? ` · ${board.players} played` : ""}

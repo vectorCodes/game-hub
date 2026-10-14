@@ -21,7 +21,7 @@ function NavItem({ to, children }: { to: string; children: ReactNode }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `rounded-full px-3.5 py-2 transition-colors ${
+        `shrink-0 rounded-full px-2.5 py-2 whitespace-nowrap transition-colors sm:px-3.5 ${
           isActive ? "bg-white/10 text-white" : "text-stone-400 hover:bg-white/5 hover:text-white"
         }`
       }
@@ -35,23 +35,27 @@ function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-stone-950/75 backdrop-blur-xl">
       <nav className="container-page flex h-16 items-center justify-between gap-3">
-        <Link to="/" className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
           <Logo />
-          <span className="hidden sm:inline">GameHub</span>
+          <span className="hidden md:inline">GameHub</span>
         </Link>
-        <div className="flex items-center gap-0.5 text-sm sm:gap-1">
-          {games.map((g) => (
-            <NavItem key={g.id} to={g.path}>
-              <span className="sm:hidden">{g.shortTitle}</span>
-              <span className="hidden sm:inline">{g.title}</span>
+        {/* Phones: the links scroll sideways if they ever don't fit, the account menu stays put. */}
+        <div className="flex min-w-0 items-center gap-0.5 text-[13px] sm:gap-1 sm:text-sm">
+          <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden">
+            {/* Short names until there's room for every full title (tablets get the short ones). */}
+            {games.map((g) => (
+              <NavItem key={g.id} to={g.path}>
+                <span className="lg:hidden">{g.shortTitle}</span>
+                <span className="hidden lg:inline">{g.title}</span>
+              </NavItem>
+            ))}
+            <NavItem to="/album">Album</NavItem>
+            <NavItem to="/leaderboard">
+              <span className="lg:hidden">Ranks</span>
+              <span className="hidden lg:inline">Leaderboard</span>
             </NavItem>
-          ))}
-          <NavItem to="/album">Album</NavItem>
-          <NavItem to="/leaderboard">
-            <span className="sm:hidden">Ranks</span>
-            <span className="hidden sm:inline">Leaderboard</span>
-          </NavItem>
-          <div className="ml-1.5 sm:ml-3">
+          </div>
+          <div className="ml-1 shrink-0 sm:ml-3">
             <AuthMenu />
           </div>
         </div>
@@ -100,7 +104,7 @@ export default function App() {
   useEffect(() => init(), [init]);
   useAvatarSync();
   const { pathname } = useLocation();
-  // Games get the full viewport; landing pages (the hub's and each game's) lay out their
+  // Games get the full viewport (no header or footer); landing pages (the hub's and each game's) lay out their
   // own sections; other pages sit in a centered column.
   const game = games.some((g) => pathname === playPath(g));
   const landing = pathname === "/" || games.some((g) => pathname === g.path);
@@ -115,7 +119,8 @@ export default function App() {
         aria-hidden
         className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)] bg-[size:56px_56px]"
       />
-      <Header />
+      {/* Games take the whole screen; each has its own way back. */}
+      {!game && <Header />}
       <main
         key={game ? "game" : pathname}
         className={game || landing ? "flex-1" : "mx-auto w-full max-w-5xl flex-1 animate-rise px-4 py-8 sm:px-6 sm:py-12"}

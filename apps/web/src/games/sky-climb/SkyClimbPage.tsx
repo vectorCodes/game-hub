@@ -123,7 +123,7 @@ export default function SkyClimbPage() {
   }, []);
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] touch-none overflow-hidden bg-stone-950 select-none">
+    <div className="relative h-dvh touch-none overflow-hidden bg-stone-950 select-none">
       <Suspense fallback={null}>
         <Game />
       </Suspense>
