@@ -137,7 +137,7 @@ function PeekBanner() {
   if (go)
     return (
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="animate-pop font-display text-7xl font-light text-lamp-300 uppercase text-legible sm:text-9xl">Go</div>
+        <div className="animate-pop font-display text-7xl font-light text-ember-500 uppercase sm:text-9xl">Go</div>
       </div>
     );
   return null;
@@ -156,8 +156,8 @@ function ComboPop() {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[30%] flex justify-center px-4">
       <div key={pop.id} className="animate-pop text-center" style={{ rotate: pop.id % 2 ? "-4deg" : "4deg" }}>
-        <div className="font-display text-4xl font-light text-stone-50 uppercase text-legible sm:text-6xl">Combo ×{pop.combo}</div>
-        <div className="mt-1 font-mono text-lg font-semibold text-lamp-300 text-legible sm:text-xl">+{pop.points}</div>
+        <div className="font-display text-4xl font-light text-stone-50 uppercase sm:text-6xl">Combo ×{pop.combo}</div>
+        <div className="mt-1 font-mono text-lg font-semibold text-ember-500 sm:text-xl">+{pop.points}</div>
       </div>
     </div>
   );
@@ -238,7 +238,7 @@ function Results() {
 
   return (
     // Scrolls when it can't fit (a phone on its side); centred otherwise.
-    <div className="absolute inset-0 animate-fade overflow-y-auto overscroll-contain bg-stone-950/60 backdrop-blur-[3px]">
+    <div className="absolute inset-0 animate-fade overflow-y-auto overscroll-contain bg-ink/25 backdrop-blur-[3px]">
       <div className="flex min-h-full items-center justify-center px-3 pt-10 pb-6 [perspective:900px] sm:px-4">
         <div className="theme-paper paper-ground pp-card-in relative w-full max-w-[26rem] rounded-sm px-5 pt-6 pb-6 text-center text-stone-100 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.75)] sm:px-7 sm:pt-7">
           <div>

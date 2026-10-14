@@ -46,10 +46,10 @@ function Chip({ children, className = "" }: { children: ReactNode; className?: s
 
 const MARK_COLORS: Record<RiderKind, string> = {
   me: "bg-lamp-300",
-  ghost: "bg-sky-300",
-  challenge: "bg-rose-400",
+  ghost: "bg-stone-400",
+  challenge: "bg-ember-400",
   live: "bg-moss-400",
-  rival: "bg-violet-300",
+  rival: "bg-lamp-500",
 };
 
 /** Where the other climbers are, a few times a second. */
@@ -92,7 +92,7 @@ function HeightBar({ floor, best }: { floor: number; best: number }) {
           className="absolute right-full mr-1.5 flex translate-y-1/2 items-center gap-1 transition-[bottom] duration-300"
           style={{ bottom: `${(Math.min(m.floor, FLOORS) / FLOORS) * 100}%` }}
         >
-          {m.kind === "challenge" && <span className="text-[10px] font-semibold whitespace-nowrap text-rose-200">{m.name}</span>}
+          {m.kind === "challenge" && <span className="text-[10px] font-semibold whitespace-nowrap text-ember-300">{m.name}</span>}
           <span className={`h-2.5 w-2.5 rounded-full ring-1 ring-stone-950/60 ${MARK_COLORS[m.kind]}`} />
         </span>
       ))}
@@ -158,9 +158,9 @@ function CannonGauge({ touch }: { touch: boolean }) {
       <div className="w-full max-w-xs animate-pop rounded-2xl bg-stone-950/80 px-4 py-3 text-center ring-1 ring-white/15 backdrop-blur-md">
         <div className="font-display text-lg font-bold">💣 {touch ? "Tap JUMP" : "Press SPACE"} to fire!</div>
         <div className="relative mt-2 h-4 overflow-hidden rounded-full ring-1 ring-white/20">
-          <div className="absolute inset-y-0 left-0 bg-rose-500/70" style={{ width: pct(CANNON.good) }} />
-          <div className="absolute inset-y-0 bg-amber-400/80" style={{ left: pct(CANNON.good), width: pct(CANNON.perfect - CANNON.good) }} />
-          <div className="absolute inset-y-0 right-0 animate-pulse bg-emerald-400" style={{ left: pct(CANNON.perfect) }} />
+          <div className="absolute inset-y-0 left-0 bg-ember-500/70" style={{ width: pct(CANNON.good) }} />
+          <div className="absolute inset-y-0 bg-lamp-400/80" style={{ left: pct(CANNON.good), width: pct(CANNON.perfect - CANNON.good) }} />
+          <div className="absolute inset-y-0 right-0 animate-pulse bg-moss-400" style={{ left: pct(CANNON.perfect) }} />
           <div
             className="absolute -inset-y-0.5 w-1.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]"
             style={{ left: pct(state.meter) }}
@@ -169,7 +169,7 @@ function CannonGauge({ touch }: { touch: boolean }) {
         <div className="mt-1.5 flex justify-between text-[10px] font-semibold tracking-wide text-stone-400 uppercase">
           <span>+{CANNON.lift.weak}</span>
           <span>+{CANNON.lift.good}</span>
-          <span className="text-emerald-300">+{CANNON.lift.perfect} floors</span>
+          <span className="text-moss-300">+{CANNON.lift.perfect} floors</span>
         </div>
       </div>
     </div>
@@ -195,10 +195,10 @@ function Toasts() {
       <div className="pointer-events-none absolute inset-x-0 top-[20%] flex justify-center px-4">
         <div
           key={toast.id}
-          className="animate-pop rounded-3xl bg-gradient-to-b from-orange-500/95 to-rose-700/95 px-8 py-4 text-center text-white shadow-[0_0_60px_-10px_rgba(251,113,133,0.9)] ring-1 ring-white/25 backdrop-blur-md"
+          className="animate-pop rounded-xs bg-sun px-8 py-4 text-center text-rice shadow-[0_24px_60px_-20px_rgba(217,88,44,0.6)]"
         >
           <div className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{toast.title}</div>
-          {toast.subtitle && <div className="mt-1 text-base font-semibold uppercase tracking-wide opacity-95">{toast.subtitle}</div>}
+          {toast.subtitle && <div className="mt-1 label-mono opacity-90">{toast.subtitle}</div>}
         </div>
       </div>
     );
@@ -208,9 +208,9 @@ function Toasts() {
       <div className="pointer-events-none absolute inset-x-0 top-[24%] flex justify-center px-4">
         <div
           key={toast.id}
-          className="animate-pop rounded-3xl bg-gradient-to-b from-violet-500/90 to-fuchsia-700/90 px-8 py-4 text-center text-white shadow-[0_0_60px_-10px_rgba(192,132,252,0.9)] ring-1 ring-white/25 backdrop-blur-md"
+          className="animate-pop rounded-xs bg-gold px-8 py-4 text-center text-ink shadow-[0_24px_60px_-20px_rgba(204,146,47,0.6)]"
         >
-          <div className="text-[11px] font-semibold tracking-[0.2em] uppercase opacity-80">Today&rsquo;s twist</div>
+          <div className="label-mono opacity-75">Today&rsquo;s twist</div>
           <div className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">{toast.title}</div>
           {toast.subtitle && <div className="mt-1 text-sm opacity-90">{toast.subtitle}</div>}
         </div>
@@ -219,13 +219,13 @@ function Toasts() {
   }
   const tone =
     toast.tone === "best"
-      ? "from-lamp-300/95 to-lamp-500/95 text-ink"
+      ? "bg-gold text-ink"
       : toast.tone === "checkpoint"
-        ? "from-moss-400/90 to-moss-600/90 text-stone-950"
-        : "from-stone-900/85 to-stone-950/85 text-stone-50";
+        ? "bg-jade text-rice"
+        : "glass text-stone-50";
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[18%] flex justify-center px-4">
-      <div key={toast.id} className={`animate-pop rounded-2xl bg-gradient-to-b px-6 py-3 text-center shadow-2xl ring-1 ring-white/15 backdrop-blur-md ${tone}`}>
+      <div key={toast.id} className={`animate-pop rounded-xs px-6 py-3 text-center shadow-[0_24px_60px_-24px_rgba(42,34,22,0.45)] ${tone}`}>
         <div className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{toast.title}</div>
         {toast.subtitle && <div className="mt-0.5 text-sm opacity-80">{toast.subtitle}</div>}
       </div>
@@ -321,7 +321,7 @@ export function Hud({ touch }: { touch: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-0">
       {/* A dip to dark on every fall, while the climber is put back. */}
-      {falls > 0 && <div key={falls} aria-hidden className="absolute inset-0 animate-blackout bg-stone-950" />}
+      {falls > 0 && <div key={falls} aria-hidden className="absolute inset-0 animate-blackout bg-ink" />}
 
       <div className="absolute top-3 left-3 max-w-[48%] sm:top-4 sm:left-4 sm:max-w-[55%]">
         <div className="inline-block rounded-2xl bg-stone-950/70 px-3 py-2 ring-1 ring-white/10 backdrop-blur-md sm:px-4 sm:py-2.5">
@@ -341,7 +341,7 @@ export function Hud({ touch }: { touch: boolean }) {
             </Chip>
           )}
           {twist && (
-            <Chip className="text-violet-100 ring-violet-300/30">
+            <Chip className="text-lamp-300 ring-lamp-400/30">
               {TWISTS[twist].emoji} {TWISTS[twist].name}
             </Chip>
           )}

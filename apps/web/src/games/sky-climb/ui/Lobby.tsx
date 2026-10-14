@@ -106,7 +106,7 @@ export function FriendsCard({ onBack }: { onBack: () => void }) {
         </button>
       </form>
 
-      {shown && <p className="mt-3 rounded-xl bg-rose-400/10 px-3 py-2 text-sm text-rose-100 ring-1 ring-rose-300/30">{ROOM_ERRORS[shown]}</p>}
+      {shown && <p className="mt-3 rounded-xl bg-ember-400/10 px-3 py-2 text-sm text-ember-300 ring-1 ring-ember-300/30">{ROOM_ERRORS[shown]}</p>}
     </Card>
   );
 }
@@ -202,7 +202,7 @@ export function Lobby() {
       {connection === "reconnecting" && (
         <p className="mt-3 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10">Connection lost. Reconnecting…</p>
       )}
-      {error && <p className="mt-3 rounded-xl bg-rose-400/10 px-3 py-2 text-sm text-rose-100 ring-1 ring-rose-300/30">{ROOM_ERRORS[error]}</p>}
+      {error && <p className="mt-3 rounded-xl bg-ember-400/10 px-3 py-2 text-sm text-ember-300 ring-1 ring-ember-300/30">{ROOM_ERRORS[error]}</p>}
 
       {room.status === "results" && standings ? (
         <ol className="mt-5 space-y-1.5 text-sm">

@@ -67,20 +67,30 @@ void document.fonts?.load(`300 300px "Chakra Petch"`).then(() => {
   backTexture.needsUpdate = true;
 });
 
-/** The night sky behind the board, painted into the scene so the canvas can be opaque. */
+/** The paper behind the board, painted into the scene so the canvas can be opaque. */
 export const skyTexture = (() => {
   const tex = canvas(512, (g, s) => {
-    const sky = g.createRadialGradient(s / 2, s * 0.12, 0, s / 2, s * 0.12, s * 0.95);
-    sky.addColorStop(0, "#2c4743");
-    sky.addColorStop(0.4, "#17302c");
-    sky.addColorStop(0.75, "#0c1f1e");
-    sky.addColorStop(1, "#081615");
+    const sky = g.createRadialGradient(s / 2, s * 0.4, 0, s / 2, s * 0.4, s * 0.8);
+    sky.addColorStop(0, "#f8f0e0");
+    sky.addColorStop(0.7, "#f1e6d1");
+    sky.addColorStop(1, "#e6d8bd");
     g.fillStyle = sky;
     g.fillRect(0, 0, s, s);
-    // A gold sun-glow above the board.
-    const sun = g.createRadialGradient(s * 0.5, s * 0.05, 0, s * 0.5, s * 0.05, s * 0.45);
-    sun.addColorStop(0, "rgba(204,146,47,0.35)");
-    sun.addColorStop(1, "rgba(204,146,47,0)");
+    // The pages' printed grid, faint.
+    g.strokeStyle = "rgba(42,34,22,0.045)";
+    g.lineWidth = 1;
+    for (let x = 32; x < s; x += 32) {
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, s);
+      g.moveTo(0, x);
+      g.lineTo(s, x);
+      g.stroke();
+    }
+    // A warm sun-glow above the board.
+    const sun = g.createRadialGradient(s * 0.62, s * 0.02, 0, s * 0.62, s * 0.02, s * 0.45);
+    sun.addColorStop(0, "rgba(217,88,44,0.18)");
+    sun.addColorStop(1, "rgba(217,88,44,0)");
     g.fillStyle = sun;
     g.fillRect(0, 0, s, s);
   });

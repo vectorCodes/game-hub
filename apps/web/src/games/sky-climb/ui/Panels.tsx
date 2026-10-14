@@ -57,10 +57,10 @@ function ChallengeCard({ challenge }: { challenge: ClimbChallengeView }) {
   const clearChallenge = useClimb((s) => s.clearChallenge);
   const [, setParams] = useSearchParams();
   return (
-    <div className="mt-5 flex items-center gap-3 rounded-2xl bg-rose-400/10 px-3 py-2.5 ring-1 ring-rose-300/30">
+    <div className="mt-5 flex items-center gap-3 rounded-2xl bg-ember-400/10 px-3 py-2.5 ring-1 ring-ember-300/30">
       <AvatarImage config={challenge.avatar ?? DEFAULT_AVATAR} size="lg" className="h-12! w-12!" />
       <div className="min-w-0 flex-1 text-left">
-        <div className="text-[11px] font-semibold tracking-[0.16em] text-rose-200 uppercase">
+        <div className="text-[11px] font-semibold tracking-[0.16em] text-ember-300 uppercase">
           ⚔️ {challenge.isMe ? "Your own challenge" : `Challenge from ${challenge.name}`}
         </div>
         <div className="font-display text-lg font-semibold">
@@ -93,10 +93,10 @@ export function TwistCard() {
   if (seed && !twist) return null;
   const t = twist ? TWISTS[twist] : null;
   return (
-    <div className="mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 px-3 py-2.5 ring-1 ring-violet-300/30">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-400/20 text-2xl">{t?.emoji ?? "🎲"}</span>
+    <div className="mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-lamp-400/20 to-lamp-500/10 px-3 py-2.5 ring-1 ring-lamp-400/30">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-lamp-400/20 text-2xl">{t?.emoji ?? "🎲"}</span>
       <span className="min-w-0 flex-1 text-left leading-tight">
-        <span className="block text-[10px] font-semibold tracking-[0.14em] text-violet-200 uppercase">
+        <span className="block text-[10px] font-semibold tracking-[0.14em] text-lamp-300 uppercase">
           {challenge ? "Their tower's twist" : mode === "daily" ? "Today's twist" : "Practice twist"}
         </span>
         <span className="block font-display text-base font-semibold">{t?.name ?? "A surprise every tower"}</span>
@@ -158,7 +158,7 @@ function Notice({ children, onDismiss }: { children: ReactNode; onDismiss: () =>
 
 function TodayTwist() {
   const twist = towerTwist(dailySeed());
-  return twist ? <span className="ml-1.5 normal-case tracking-normal text-violet-200">· {TWISTS[twist].emoji} {TWISTS[twist].name}</span> : null;
+  return twist ? <span className="ml-1.5 normal-case tracking-normal text-lamp-300">· {TWISTS[twist].emoji} {TWISTS[twist].name}</span> : null;
 }
 
 /** Today's leaderboard, or in practice the zones on the way up. */
@@ -375,7 +375,7 @@ export function Results() {
         <div className="text-5xl">{summit ? "🏁" : zone.emoji}</div>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight">{summit ? "You reached the summit!" : `You reached floor ${floor}`}</h2>
         {twist && (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-violet-400/15 px-3 py-1 text-xs font-medium text-violet-100 ring-1 ring-violet-300/30">
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-lamp-400/15 px-3 py-1 text-xs font-medium text-lamp-300 ring-1 ring-lamp-400/30">
             {TWISTS[twist].emoji} {TWISTS[twist].name}
           </p>
         )}
@@ -411,11 +411,11 @@ export function Results() {
 
         {challenge && !challenge.isMe && (
           <div
-            className={`mt-5 flex animate-pop items-center gap-3 rounded-2xl px-4 py-2.5 text-left ring-1 ${beatChallenge ? "bg-moss-500/15 ring-moss-400/40" : "bg-rose-400/10 ring-rose-300/30"}`}
+            className={`mt-5 flex animate-pop items-center gap-3 rounded-2xl px-4 py-2.5 text-left ring-1 ${beatChallenge ? "bg-moss-500/15 ring-moss-400/40" : "bg-ember-400/10 ring-ember-300/30"}`}
           >
             <AvatarImage config={challenge.avatar ?? DEFAULT_AVATAR} size="md" />
             <span>
-              <span className={`block text-[11px] font-semibold tracking-[0.16em] uppercase ${beatChallenge ? "text-moss-300" : "text-rose-200"}`}>
+              <span className={`block text-[11px] font-semibold tracking-[0.16em] uppercase ${beatChallenge ? "text-moss-300" : "text-ember-300"}`}>
                 {beatChallenge ? "Challenge won" : "Challenge"}
               </span>
               <span className="font-medium">

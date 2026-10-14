@@ -122,8 +122,8 @@ export default function App() {
   // own sections; other pages sit in a centered column.
   const game = games.some((g) => pathname === playPath(g));
   const landing = pathname === "/" || games.some((g) => pathname === g.path);
-  // Paper for pages, night for game screens and for pages that are one night scene.
-  const scheme = game || NIGHT_PAGES.has(pathname) ? "night" : "paper";
+  // Paper everywhere, game screens included; night only for pages that are one night scene.
+  const scheme = NIGHT_PAGES.has(pathname) ? "night" : "paper";
   useEffect(() => {
     const { classList } = document.body;
     classList.toggle("theme-night", scheme === "night");

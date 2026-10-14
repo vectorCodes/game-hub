@@ -35,8 +35,8 @@ export function RaceCountdown() {
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center">
       <div key={text} className="animate-pop text-center">
-        <div className={`font-display font-bold drop-shadow-[0_6px_24px_rgba(0,0,0,0.5)] ${left > 0 ? "text-7xl text-white sm:text-8xl" : "text-6xl text-lamp-300 sm:text-7xl"}`}>{text}</div>
-        {left > 0 && <div className="mt-2 text-lg font-medium text-stone-200 drop-shadow">Get ready…</div>}
+        <div className={`font-display font-light drop-shadow-[0_6px_24px_rgba(243,234,217,0.7)] ${left > 0 ? "text-7xl text-stone-50 sm:text-8xl" : "text-6xl text-ember-500 sm:text-7xl"}`}>{text}</div>
+        {left > 0 && <div className="mt-2 label-mono text-stone-300">Get ready…</div>}
       </div>
     </div>
   );
@@ -46,7 +46,7 @@ export function RaceCountdown() {
 export function RaceClock({ endsAt }: { endsAt: number }) {
   const now = useNow(250);
   const left = endsAt - now;
-  return <span className={`tabular-nums ${left < 30_000 ? "text-rose-300" : ""}`}>{clock(left)}</span>;
+  return <span className={`tabular-nums ${left < 30_000 ? "text-ember-300" : ""}`}>{clock(left)}</span>;
 }
 
 /** Everyone's floor, highest first, for the HUD. */

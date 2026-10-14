@@ -127,7 +127,7 @@ function Board({ cols, rows }: { cols: number; rows: number }) {
   return (
     <group>
       <mesh geometry={geo} position-y={-0.15} receiveShadow>
-        <meshStandardMaterial color="#f3ead9" roughness={0.7} />
+        <meshStandardMaterial color="#e3d2b2" roughness={0.75} />
       </mesh>
       {/* A lip of colour under the top. */}
       <mesh geometry={geo} position-y={-0.38} scale={[1.02, 0.6, 1.02]}>
@@ -187,7 +187,7 @@ function Lights({ span }: { span: number }) {
   }, [span]);
   return (
     <>
-      <hemisphereLight args={["#fff6e6", "#17302c", 0.9]} />
+      <hemisphereLight args={["#fff8ec", "#b9a27c", 1.1]} />
       <directionalLight
         ref={sun}
         position={[3.5, 9, 5]}
@@ -231,7 +231,7 @@ function Decor({ span }: { span: number }) {
           </mesh>
         </Float>
       ))}
-      <Sparkles count={70} scale={[span * 4, 4, span * 4]} position-y={1} size={3.2} speed={0.35} opacity={0.7} color="#eec266" />
+      <Sparkles count={70} scale={[span * 4, 4, span * 4]} position-y={1} size={3.2} speed={0.35} opacity={0.55} color="#cc922f" />
     </>
   );
 }
