@@ -1,54 +1,61 @@
-// Sky Climb's tile on the GameHub page: a painted tower (no three.js, so the hub stays
-// light) and a line of live status.
+// Sky Climb's tile on the GameHub page: the tower drawn as an elevation plate (SVG, no
+// three.js, so the hub stays light) and a line of live status.
 import { useEffect } from "react";
+import { CoverFrame } from "../../components/CoverFrame";
 import { useClimb } from "./store";
 
-/** Platforms zig-zagging up through the day: [left %, bottom %, width %, colour]. */
-const STEPS: [number, number, number, string][] = [
-  [8, 6, 26, "#79c66b"],
-  [44, 18, 18, "#79c66b"],
-  [16, 31, 16, "#5fae5e"],
-  [52, 43, 14, "#e9b066"],
-  [26, 55, 12, "#e9b066"],
-  [58, 66, 12, "#eef0ff"],
-  [34, 77, 10, "#9aa6c4"],
-  [56, 88, 14, "#eef0ff"],
+/** Floors of the elevation drawing: [x, y, width, checkpoint]. Bottom to top. */
+const FLOORS_ART: [number, number, number, boolean][] = [
+  [150, 214, 70, false],
+  [196, 194, 52, false],
+  [158, 174, 46, true],
+  [204, 154, 44, false],
+  [166, 134, 40, false],
+  [208, 114, 36, true],
+  [172, 94, 34, false],
+  [206, 74, 30, false],
+  [180, 54, 30, true],
 ];
 
+/**
+ * The tower as an architect's elevation: a hairline shaft, floors stepping up it (gold at
+ * the checkpoints), a floor scale down the side, a red sun behind, and one dot climbing.
+ */
 export function SkyClimbCover() {
   return (
-    <div className="relative h-full min-h-64 overflow-hidden rounded-2xl bg-[linear-gradient(0deg,#cde9fb_0%,#5fb2f2_25%,#f2b27a_48%,#a674b8_66%,#2c3652_82%,#070b24_100%)] md:min-h-80">
-      {/* Stars at the top of the sky. */}
-      {[12, 30, 62, 78, 90, 46].map((x, i) => (
-        <span key={x} aria-hidden className="absolute h-1 w-1 animate-twinkle rounded-full bg-white" style={{ left: `${x}%`, top: `${4 + (i % 3) * 5}%`, animationDelay: `${i * 0.4}s` }} />
-      ))}
-      {/* The column. */}
-      <div aria-hidden className="absolute inset-y-0 left-[38%] w-[12%] bg-gradient-to-b from-[#3d4a6b] via-[#b0754d] to-[#8a5a3a] opacity-70" />
-      {STEPS.map(([left, bottom, width, color], i) => (
-        <div
-          key={i}
-          aria-hidden
-          className="absolute h-[5%] animate-drift rounded-md shadow-[0_8px_16px_-8px_rgba(0,0,0,0.6)]"
-          style={{
-            left: `${left}%`,
-            bottom: `${bottom}%`,
-            width: `${width}%`,
-            background: `linear-gradient(180deg, ${color} 0 45%, #b87149 45% 100%)`,
-            animationDelay: `${i * 0.35}s`,
-          }}
-        />
-      ))}
-      <span aria-hidden className="absolute bottom-[48%] left-[55%] animate-drift text-3xl drop-shadow-lg [animation-delay:1.4s]">
-        🧗
-      </span>
-      <span aria-hidden className="absolute bottom-[93%] left-[60%] text-2xl">
-        🏁
-      </span>
-      <span className="absolute top-4 left-4 rounded-full bg-stone-950/80 px-3 py-1 text-xs font-medium text-stone-100 ring-1 ring-white/10 backdrop-blur">
-        New · Daily tower
-      </span>
-      <span className="absolute top-4 right-4 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-ink">3D</span>
-    </div>
+    <CoverFrame number="02" title="Sky Climb" meta="Daily tower" caption="100 floors · meadow to stars">
+      <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet" className="h-full w-full" aria-hidden="true">
+        <circle cx="292" cy="120" r="46" fill="#d9582c" />
+        {/* The shaft. */}
+        <rect x="140" y="30" width="120" height="196" fill="none" stroke="#2a2216" strokeOpacity="0.3" strokeWidth="1" />
+        <line x1="200" y1="30" x2="200" y2="226" stroke="#2a2216" strokeOpacity="0.12" strokeWidth="1" strokeDasharray="2 4" />
+        {/* Floors. */}
+        {FLOORS_ART.map(([x, y, w, checkpoint], i) => (
+          <rect key={i} x={x} y={y} width={w} height="4" fill={checkpoint ? "#cc922f" : "#2a2216"} />
+        ))}
+        {/* The flag at the top. */}
+        <line x1="196" y1="54" x2="196" y2="34" stroke="#2a2216" strokeWidth="1.4" />
+        <path d="M196 34 L210 38.5 L196 43 Z" fill="#cc922f" />
+        {/* The floor scale. */}
+        <line x1="112" y1="40" x2="112" y2="216" stroke="#2a2216" strokeOpacity="0.4" strokeWidth="1" />
+        {[
+          [216, "1"],
+          [172, "25"],
+          [128, "50"],
+          [84, "75"],
+          [40, "100"],
+        ].map(([y, label]) => (
+          <g key={label}>
+            <line x1="106" y1={y} x2="112" y2={y} stroke="#2a2216" strokeOpacity="0.5" strokeWidth="1" />
+            <text x="100" y={Number(y) + 3} textAnchor="end" fontFamily="Azeret Mono, monospace" fontSize="8" letterSpacing="1" fill="#2a2216" fillOpacity="0.55">
+              {label}
+            </text>
+          </g>
+        ))}
+        {/* The climber. */}
+        <circle className="cover-climb" cx="186" cy="204" r="5" fill="#2f8a73" />
+      </svg>
+    </CoverFrame>
   );
 }
 

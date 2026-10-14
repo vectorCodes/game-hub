@@ -1,6 +1,6 @@
 // What's laid over the board: the top bar (moves, time, pairs), the "Memorize!" peek
 // banner, combo pops, and the results card.
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { formatDuration } from "../../../lib/format";
 import { useSound } from "../../../lib/sound";
@@ -10,38 +10,18 @@ import { levelUnlocked } from "../guest";
 import { useAuth } from "../../../auth/store";
 import { elapsedSeconds, pairPopTitle, usePairPop, type PairPopResult } from "../store";
 
-/** Stacked text shadows: letters with depth, like they're cut from candy. */
-export const EXTRUDE = "0 1px 0 #c9b8ff, 0 2px 0 #b29dff, 0 3px 0 #9a82f5, 0 4px 0 #8466e8, 0 5px 0 #6d4fd6, 0 10px 18px rgba(30,10,90,0.45)";
-
-const TONES = {
-  sun: "bg-gradient-to-b from-[#ffe17a] to-[#ffb627] text-[#4a2600] shadow-[0_5px_0_#d07a00,0_10px_20px_rgba(208,122,0,0.35)] active:shadow-[0_2px_0_#d07a00]",
-  grape: "bg-gradient-to-b from-[#a48bff] to-[#7a5cff] text-white shadow-[0_5px_0_#4f32c9,0_10px_20px_rgba(79,50,201,0.35)] active:shadow-[0_2px_0_#4f32c9]",
-  glass: "bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md shadow-[0_4px_0_rgba(20,8,70,0.45)] active:shadow-[0_1px_0_rgba(20,8,70,0.45)] hover:bg-white/25",
-};
-
-/** A chunky button that presses down. */
-export function CandyButton({ tone = "sun", className = "", children, ...rest }: { tone?: keyof typeof TONES } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-display font-bold tracking-tight transition-[transform,box-shadow,background-color] duration-100 select-none hover:-translate-y-0.5 active:translate-y-[3px] disabled:pointer-events-none disabled:opacity-50 ${TONES[tone]} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-}
+/** HUD controls: square glass buttons with a hairline, as on every GameHub game screen. */
+const ICON_BUTTON =
+  "glass grid h-10 w-10 shrink-0 place-items-center text-base text-stone-100 transition-[transform,background-color] duration-200 ease-mirai hover:-translate-y-0.5 hover:bg-stone-800/80 sm:h-11 sm:w-11 sm:text-lg";
 
 function Pill({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex max-w-[6.5rem] min-w-0 flex-1 basis-0 flex-col items-center rounded-xl bg-white/12 px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_3px_0_rgba(20,8,70,0.35)] ring-1 ring-white/20 backdrop-blur-md sm:rounded-2xl sm:px-3 sm:py-1.5 sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_0_rgba(20,8,70,0.35)]">
-      <span className="text-[9px] font-semibold tracking-[0.1em] text-white/70 uppercase sm:text-[10px] sm:tracking-[0.14em]">{label}</span>
-      <span className="font-display text-base leading-tight font-bold text-white tabular-nums sm:text-xl">{children}</span>
+    <div className="glass flex max-w-[6.5rem] min-w-0 flex-1 basis-0 flex-col items-center px-1.5 py-1 sm:px-3 sm:py-1.5">
+      <span className="label-mono text-[9px] text-stone-400 sm:text-[10px]">{label}</span>
+      <span className="font-display text-base leading-tight font-medium text-stone-50 tabular-nums sm:text-xl">{children}</span>
     </div>
   );
 }
-
-const ICON_BUTTON = `grid h-10 w-10 shrink-0 place-items-center rounded-xl text-base transition-transform active:translate-y-[3px] sm:h-11 sm:w-11 sm:rounded-2xl sm:text-lg ${TONES.glass}`;
 
 function Clock() {
   const startedAt = usePairPop((s) => s.startedAt);
@@ -92,7 +72,7 @@ function TopBar() {
         <Link to={PAIR_POP_HOME} aria-label="Back" className={`pointer-events-auto ${ICON_BUTTON}`}>
           ←
         </Link>
-        <span className="hidden shrink-0 font-display text-xl font-extrabold text-white md:inline" style={{ textShadow: EXTRUDE }}>
+        <span className="hidden shrink-0 font-display text-xl font-light text-stone-50 uppercase md:inline">
           {pairPopTitle(mode)}
         </span>
 
@@ -112,15 +92,15 @@ function TopBar() {
         </button>
       </div>
 
-      {/* Pairs found, as a candy progress bar. */}
-      <div className="mx-auto mt-2 flex max-w-md items-center gap-2.5 px-1 sm:mt-3">
-        <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[#1d0f55]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)] ring-1 ring-white/20 sm:h-3.5">
+      {/* Pairs found: a hairline track filling with gold. */}
+      <div className="mx-auto mt-2.5 flex max-w-md items-center gap-2.5 px-1 sm:mt-3">
+        <div className="relative h-1.5 flex-1 overflow-hidden bg-white/12 sm:h-2">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#ffd84d] via-[#ff9a5c] to-[#ff6fae] shadow-[inset_0_2px_0_rgba(255,255,255,0.45)] transition-[width] duration-500 ease-[cubic-bezier(0.3,1.4,0.5,1)]"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-lamp-500 to-ember-500 transition-[width] duration-500 ease-mirai"
             style={{ width: `${(matches / pairs) * 100}%` }}
           />
         </div>
-        <span className="shrink-0 text-xs font-bold text-white/80 tabular-nums">
+        <span className="shrink-0 label-mono text-stone-300 tabular-nums">
           {matches}/{pairs}
         </span>
       </div>
@@ -145,12 +125,11 @@ function PeekBanner() {
   if (phase === "peek")
     return (
       <div className="pointer-events-none absolute inset-x-0 top-2.5 flex justify-center sm:top-4">
-        <div key={round} className="animate-pop rounded-2xl bg-white/15 px-5 py-2 text-center shadow-[0_5px_0_rgba(20,8,70,0.4)] ring-1 ring-white/25 backdrop-blur-md sm:rounded-3xl sm:px-7 sm:py-3">
-          <div className="font-display text-2xl font-extrabold text-white sm:text-3xl" style={{ textShadow: EXTRUDE }}>
-            Memorize!
-          </div>
-          <div className="mx-auto mt-1.5 h-2 w-32 overflow-hidden rounded-full bg-black/25 sm:mt-2 sm:w-40">
-            <div className="h-full origin-left rounded-full bg-gradient-to-r from-[#ffd84d] to-[#ff9a5c]" style={{ animation: `pp-drain ${peek}s linear both` }} />
+        <div key={round} className="glass animate-pop px-5 py-2.5 text-center sm:px-7 sm:py-3">
+          <div className="label-mono text-lamp-300">Peek</div>
+          <div className="font-display text-2xl font-light text-stone-50 uppercase sm:text-3xl">Memorize</div>
+          <div className="mx-auto mt-2 h-1 w-32 overflow-hidden bg-white/12 sm:w-40">
+            <div className="h-full origin-left bg-lamp-400" style={{ animation: `pp-drain ${peek}s linear both` }} />
           </div>
         </div>
       </div>
@@ -158,9 +137,7 @@ function PeekBanner() {
   if (go)
     return (
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="animate-pop font-display text-6xl font-black text-[#ffe17a] sm:text-8xl" style={{ textShadow: "0 2px 0 #ffb627, 0 4px 0 #f59e0b, 0 6px 0 #d97706, 0 8px 0 #b45309, 0 16px 30px rgba(60,20,0,0.45)" }}>
-          Go!
-        </div>
+        <div className="animate-pop font-display text-7xl font-light text-lamp-300 uppercase text-legible sm:text-9xl">Go</div>
       </div>
     );
   return null;
@@ -179,12 +156,8 @@ function ComboPop() {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[30%] flex justify-center px-4">
       <div key={pop.id} className="animate-pop text-center" style={{ rotate: pop.id % 2 ? "-4deg" : "4deg" }}>
-        <div className="font-display text-4xl font-black text-white sm:text-6xl" style={{ textShadow: EXTRUDE }}>
-          Combo ×{pop.combo}
-        </div>
-        <div className="mt-1 font-display text-xl font-extrabold text-[#ffe17a] sm:text-2xl" style={{ textShadow: "0 3px 0 #c76a00, 0 8px 14px rgba(0,0,0,0.3)" }}>
-          +{pop.points}
-        </div>
+        <div className="font-display text-4xl font-light text-stone-50 uppercase text-legible sm:text-6xl">Combo ×{pop.combo}</div>
+        <div className="mt-1 font-mono text-lg font-semibold text-lamp-300 text-legible sm:text-xl">+{pop.points}</div>
       </div>
     </div>
   );
@@ -194,21 +167,15 @@ function Star({ on, delay, big }: { on: boolean; delay: number; big?: boolean })
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`${big ? "h-16 w-16 -translate-y-2.5 sm:h-20 sm:w-20 sm:-translate-y-3" : "h-11 w-11 sm:h-14 sm:w-14"} animate-pop drop-shadow-[0_6px_0_rgba(20,8,70,0.35)]`}
+      className={`${big ? "h-14 w-14 -translate-y-2 sm:h-16 sm:w-16" : "h-10 w-10 sm:h-12 sm:w-12"} animate-pop`}
       style={{ animationDelay: `${delay}s` }}
       aria-hidden
     >
-      <defs>
-        <linearGradient id={`star-${on}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={on ? "#fff1a1" : "#8d7fc9"} />
-          <stop offset="1" stopColor={on ? "#ffb627" : "#5a4a9e"} />
-        </linearGradient>
-      </defs>
       <path
         d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-        fill={`url(#star-${on})`}
-        stroke={on ? "#e08a00" : "#3d2f80"}
-        strokeWidth="1.2"
+        fill={on ? "#cc922f" : "none"}
+        stroke={on ? "#8a5a16" : "#c8b48f"}
+        strokeWidth="1"
         strokeLinejoin="round"
       />
     </svg>
@@ -218,7 +185,7 @@ function Star({ on, delay, big }: { on: boolean; delay: number; big?: boolean })
 /** Where the score went: saving, saved (with today's rank), or only kept in this browser. */
 function SaveLine({ result, daily, signedIn, canSignIn, onSignIn }: { result: PairPopResult; daily: boolean; signedIn: boolean; canSignIn: boolean; onSignIn: () => Promise<void> }) {
   const board = (
-    <Link to="/leaderboard?game=pair-pop" className="font-bold text-[#5b3fd6] underline decoration-2 underline-offset-2 hover:text-[#3b2290]">
+    <Link to="/leaderboard?game=pair-pop" className="font-semibold text-ember-400 underline underline-offset-2 hover:text-ember-300">
       Leaderboard
     </Link>
   );
@@ -226,12 +193,12 @@ function SaveLine({ result, daily, signedIn, canSignIn, onSignIn }: { result: Pa
   if (result.saved === "saving") line = <span className="animate-pulse">Saving your score…</span>;
   else if (result.saved === "local") line = <>Couldn't reach the server: saved on this device.</>;
   else if (daily && result.replay) line = <>Saved. Only your first finish today counts · {board}</>;
-  else if (daily && result.rank) line = <>🏆 You're <b className="text-[#3b2290]">#{result.rank}</b> of {result.players} today · {board}</>;
+  else if (daily && result.rank) line = <>You're <b className="text-stone-50">#{result.rank}</b> of {result.players} today · {board}</>;
   else if (daily && !signedIn)
     line = canSignIn ? (
       <>
         Saved.{" "}
-        <button type="button" onClick={() => void onSignIn()} className="font-bold text-[#5b3fd6] underline decoration-2 underline-offset-2 hover:text-[#3b2290]">
+        <button type="button" onClick={() => void onSignIn()} className="font-semibold text-ember-400 underline underline-offset-2 hover:text-ember-300">
           Sign in
         </button>{" "}
         to get on the {board}
@@ -240,7 +207,7 @@ function SaveLine({ result, daily, signedIn, canSignIn, onSignIn }: { result: Pa
       <>Saved · {board}</>
     );
   else line = <>✓ Score saved{daily ? <> · {board}</> : null}</>;
-  return <p className="mt-3 text-xs font-medium text-[#6c5aa8] sm:text-sm">{line}</p>;
+  return <p className="mt-4 font-serif text-sm text-stone-400">{line}</p>;
 }
 
 function Results() {
@@ -271,58 +238,55 @@ function Results() {
 
   return (
     // Scrolls when it can't fit (a phone on its side); centred otherwise.
-    <div className="absolute inset-0 animate-fade overflow-y-auto overscroll-contain bg-[#12073a]/55 backdrop-blur-[3px]">
-      <div className="flex min-h-full items-center justify-center px-3 pt-14 pb-6 [perspective:900px] sm:px-4">
-        <div className="pp-card-in relative w-full max-w-[26rem] rounded-[1.75rem] sm:rounded-[2rem] bg-gradient-to-b from-[#8f74ff] to-[#5b3fd6] p-1.5 shadow-[0_14px_0_#35209a,0_30px_60px_rgba(10,0,50,0.55)]">
-          <div className="rounded-[1.4rem] bg-gradient-to-b from-[#fdfbff] to-[#efe8ff] px-4 pt-4 pb-5 text-center sm:rounded-[1.65rem] sm:px-6 sm:pt-5 sm:pb-6">
-            <div className="-mt-11 flex sm:-mt-14 items-end justify-center gap-1">
+    <div className="absolute inset-0 animate-fade overflow-y-auto overscroll-contain bg-stone-950/60 backdrop-blur-[3px]">
+      <div className="flex min-h-full items-center justify-center px-3 pt-10 pb-6 [perspective:900px] sm:px-4">
+        <div className="theme-paper paper-ground pp-card-in relative w-full max-w-[26rem] rounded-sm px-5 pt-6 pb-6 text-center text-stone-100 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.75)] sm:px-7 sm:pt-7">
+          <div>
+            <div className="flex items-end justify-center gap-1">
               <Star on={result.stars >= 1} delay={0.25} />
               <Star on={result.stars >= 2} delay={0.45} big />
               <Star on={result.stars >= 3} delay={0.65} />
             </div>
-            <h2 className="mt-1 font-display text-2xl font-black text-[#3b2290] sm:text-3xl">{headline}</h2>
-            <p className="mt-0.5 text-sm font-medium text-[#6c5aa8]">
+            <h2 className="mt-3 font-display text-3xl font-light uppercase sm:text-4xl">{headline}</h2>
+            <p className="mt-1 label-mono text-stone-500">
               {pairPopTitle(mode)} · {pairs} pairs
             </p>
 
-            <div className="mt-4 grid grid-cols-3 gap-1.5 sm:mt-5 sm:gap-2">
+            <div className="mt-5 grid grid-cols-3 border-y hairline">
               {[
                 ["Moves", result.moves],
                 ["Time", formatDuration(result.seconds)],
                 ["Combo", `×${result.bestCombo}`],
               ].map(([label, value]) => (
-                <div key={label} className="min-w-0 rounded-xl bg-white px-1.5 py-2 shadow-[0_4px_0_#ddd2ff] ring-1 ring-[#e6deff] sm:rounded-2xl sm:px-2 sm:py-2.5">
-                  <div className="text-[9px] font-bold tracking-[0.1em] text-[#8d7fc9] uppercase sm:text-[10px] sm:tracking-[0.12em]">{label}</div>
-                  <div className="truncate font-display text-lg font-extrabold text-[#3b2290] sm:text-xl">{value}</div>
+                <div key={label} className="min-w-0 px-1.5 py-3 not-first:border-l not-first:hairline">
+                  <div className="label-mono text-stone-500">{label}</div>
+                  <div className="mt-1 truncate font-serif text-xl font-semibold">{value}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-3 rounded-2xl bg-gradient-to-r from-[#ffe17a] to-[#ffb627] py-2.5 shadow-[0_4px_0_#d07a00]">
-              <div className="text-[10px] font-bold tracking-[0.14em] text-[#7a4300] uppercase">Score</div>
-              <div className="font-display text-2xl font-black text-[#4a2600] sm:text-3xl">{result.score}</div>
+            <div className="mt-4">
+              <div className="label-mono text-stone-500">Score</div>
+              <div className="font-display text-5xl font-light text-ember-500">{result.score}</div>
             </div>
             <SaveLine result={result} daily={mode.kind === "daily"} signedIn={signedIn} canSignIn={authEnabled} onSignIn={signIn} />
 
-            <div className="mt-5 flex flex-col gap-3 sm:mt-6">
+            <div className="mt-6 flex flex-col gap-2.5">
               {next !== null && levelUnlocked(next) ? (
-                <CandyButton
-                  className="w-full text-lg"
-                  onClick={() => navigate(`${PAIR_POP_PATH}?level=${next + 1}`)}
-                >
-                  Next level →
-                </CandyButton>
+                <button type="button" className="btn btn-primary w-full" onClick={() => navigate(`${PAIR_POP_PATH}?level=${next + 1}`)}>
+                  Next level <span aria-hidden>→</span>
+                </button>
               ) : mode.kind === "daily" ? (
-                <CandyButton className="w-full text-lg" onClick={share}>
+                <button type="button" className="btn btn-primary w-full" onClick={share}>
                   {copied ? "Copied!" : "Share result"}
-                </CandyButton>
+                </button>
               ) : null}
-              <div className="flex gap-3">
-                <CandyButton tone="grape" className="flex-1 px-3" onClick={start}>
+              <div className="flex gap-2.5">
+                <button type="button" className="btn btn-secondary flex-1 px-3" onClick={() => void start()}>
                   Play again
-                </CandyButton>
-                <CandyButton tone="grape" className="flex-1 px-3" onClick={() => navigate(PAIR_POP_HOME)}>
+                </button>
+                <button type="button" className="btn btn-secondary flex-1 px-3" onClick={() => navigate(PAIR_POP_HOME)}>
                   Levels
-                </CandyButton>
+                </button>
               </div>
             </div>
           </div>

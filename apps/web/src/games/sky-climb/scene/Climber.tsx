@@ -115,7 +115,7 @@ export function Climber() {
 }
 
 const POOL = 60;
-const CONFETTI = ["#f8cf72", "#8fc76a", "#ec7a5f", "#7ec8ff", "#d9a6ff", "#ffffff"];
+const CONFETTI = ["#eec266", "#5bb198", "#e8774f", "#7ec8ff", "#d9a6ff", "#ffffff"];
 
 interface Particle {
   life: number;
@@ -170,7 +170,7 @@ export function Bursts() {
       onSimEvent((e) => {
         if (e.type === "land" && e.speed > 5) spawn(Math.min(10, Math.round(e.speed / 2)), "#f3eee2", { speed: 2.2, up: 0.6, gravity: 0, size: 0.13, life: 0.45 });
         if (e.type === "jump") spawn(4, "#f3eee2", { speed: 1.2, up: 0.4, gravity: 0, size: 0.1, life: 0.35 });
-        if (e.type === "spring") spawn(8, "#f8cf72", { speed: 2.4, up: 1.5, gravity: 4, size: 0.1, life: 0.5 });
+        if (e.type === "spring") spawn(8, "#eec266", { speed: 2.4, up: 1.5, gravity: 4, size: 0.1, life: 0.5 });
         if (e.type === "airjump") spawn(8, "#d9b3ff", { speed: 2.2, up: 0.3, gravity: 0, size: 0.1, life: 0.4 });
         if (e.type === "powerup") spawn(14, POWERUPS[e.kind].color, { y: 0.6, speed: 2.2, up: 3, gravity: 4, size: 0.09, life: 0.7 });
         if (e.type === "shield") spawn(16, ["#9fd0ff", "#ffffff"], { y: 0.5, speed: 3.2, up: 1.5, gravity: 0, size: 0.12, life: 0.55 });
@@ -228,9 +228,9 @@ const TRAIL_POOL = 80;
 /** Each trail's look: colour for a particle (t = time), how it drifts, how big. */
 const TRAILS: Record<string, { color: (t: number, i: number) => string; rise: number; size: number; rate: number }> = {
   "trail:sparkle": { color: (_, i) => (i % 3 ? "#ffffff" : "#bcd0ff"), rise: 0.4, size: 0.07, rate: 40 },
-  "trail:ember": { color: (_, i) => (i % 2 ? "#ffb35c" : "#ec7a5f"), rise: 1.4, size: 0.08, rate: 45 },
+  "trail:ember": { color: (_, i) => (i % 2 ? "#ffb35c" : "#e8774f"), rise: 1.4, size: 0.08, rate: 45 },
   "trail:rainbow": { color: (t) => `hsl(${Math.round((t * 160) % 360)}, 90%, 65%)`, rise: 0.2, size: 0.09, rate: 50 },
-  "trail:gold": { color: (_, i) => (i % 2 ? "#ffe08a" : "#f8cf72"), rise: -0.3, size: 0.1, rate: 45 },
+  "trail:gold": { color: (_, i) => (i % 2 ? "#ffe08a" : "#eec266"), rise: -0.3, size: 0.1, rate: 45 },
 };
 
 /** The equipped trail: particles left behind while the climber moves. */

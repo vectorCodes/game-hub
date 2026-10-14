@@ -3,6 +3,7 @@
 // Kept free of three.js so the pages that show them stay light.
 import { Link } from "react-router";
 import type { DailyInfo } from "@shadow/shared";
+import { CoverFrame } from "../../components/CoverFrame";
 import { formatCountdown } from "../../lib/format";
 import { dailyCta, dailyDone, SHADOW_GUESS_PATH, useDaily, useNow } from "./useDaily";
 
@@ -19,32 +20,57 @@ function statusLine(info: DailyInfo): string {
   }
 }
 
-/** A chair's shadow on the lit wall, leaning as if its light were circling. */
+/** The chair, in local units: base at y = 0, up is negative. */
+const CHAIR = (
+  <>
+    <rect x="0" y="-84" width="7" height="84" />
+    <rect x="0" y="-40" width="44" height="7" />
+    <rect x="37" y="-40" width="7" height="40" />
+    <rect x="0" y="-76" width="7" height="5" />
+  </>
+);
+
+/**
+ * A red sun low on the right, a chair drawn in outline on the horizon, and its long ink
+ * shadow stretched across the floor toward us, leaning slowly as the light moves.
+ */
 function ShadowArt({ info }: { info: DailyInfo | null }) {
   return (
-    <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-2xl bg-wall md:aspect-auto md:h-full md:min-h-80">
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_50%_45%,#fffaf0,transparent_70%),radial-gradient(ellipse_90%_90%_at_50%_50%,transparent_55%,rgba(22,32,27,0.35))]"
-      />
-      <svg viewBox="0 0 100 100" className="relative h-36 w-36 origin-bottom animate-sway sm:h-44 sm:w-44" aria-hidden="true">
-        <g fill="#16201b" opacity="0.92">
-          <rect x="30" y="10" width="7" height="85" rx="1.5" />
-          <rect x="30" y="52" width="42" height="7" rx="1.5" />
-          <rect x="65" y="52" width="7" height="43" rx="1.5" />
-          <rect x="30" y="18" width="7" height="5" rx="1" />
+    <CoverFrame
+      number="01"
+      title="Shadow Guess"
+      meta={info ? `Daily #${info.puzzleNumber}` : "Daily"}
+      caption={info?.theme ? `${info.theme.name}` : "Name it from its shadow"}
+      className="aspect-[16/10] md:aspect-auto"
+    >
+      <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet" className="h-full w-full" aria-hidden="true">
+        {/* The sun and its ray to the chair. */}
+        <circle cx="318" cy="66" r="30" fill="#d9582c" />
+        <line x1="296" y1="84" x2="214" y2="112" stroke="#2a2216" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="3 4" />
+        {/* Horizon and floor rules. */}
+        <line x1="0" y1="156" x2="400" y2="156" stroke="#2a2216" strokeOpacity="0.35" strokeWidth="1" />
+        {[176, 200, 226].map((y) => (
+          <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#2a2216" strokeOpacity="0.08" strokeWidth="1" />
+        ))}
+        {/* The shadow on the floor, falling away from the sun. */}
+        <g transform="translate(170 156) matrix(1 0 0.9 -0.42 0 0)">
+          <g className="cover-sway" fill="#2a2216" fillOpacity="0.9">
+            {CHAIR}
+          </g>
         </g>
+        {/* The chair itself, in outline. */}
+        <g transform="translate(170 156)" fill="none" stroke="#2a2216" strokeWidth="1.6">
+          <rect x="0.8" y="-84" width="5.4" height="84" />
+          <rect x="0.8" y="-40" width="42.4" height="5.4" />
+          <rect x="37.8" y="-40" width="5.4" height="40" />
+        </g>
+        {/* Annotation, as on a technical plate. */}
+        <text x="18" y="148" fontFamily="Azeret Mono, monospace" fontSize="8" letterSpacing="1.2" fill="#2a2216" fillOpacity="0.55">
+          ANGLE 1 / 6
+        </text>
+        <circle cx="214" cy="112" r="2.5" fill="#cc922f" />
       </svg>
-      <span className="absolute top-4 left-4 rounded-full bg-stone-950/80 px-3 py-1 text-xs font-medium text-stone-100 ring-1 ring-white/10 backdrop-blur">
-        {info ? `Daily #${info.puzzleNumber}` : "Daily"}
-      </span>
-      {info?.theme && (
-        <span className="absolute bottom-4 left-4 rounded-full bg-lamp-300/90 px-3 py-1 text-xs font-semibold text-ink">
-          {info.theme.emoji} {info.theme.name}
-        </span>
-      )}
-      <span className="absolute top-4 right-4 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-ink">3D</span>
-    </div>
+    </CoverFrame>
   );
 }
 

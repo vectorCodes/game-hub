@@ -19,7 +19,7 @@ async function createRenderer() {
   renderer.setPixelRatio(1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight("#fff6e6", "#5a655a", 2.2));
+  scene.add(new THREE.HemisphereLight("#fff6e6", "#4a615b", 2.2));
   const key = new THREE.DirectionalLight("#ffffff", 2.4);
   key.position.set(1.2, 2, 2);
   scene.add(key);

@@ -127,11 +127,11 @@ function Board({ cols, rows }: { cols: number; rows: number }) {
   return (
     <group>
       <mesh geometry={geo} position-y={-0.15} receiveShadow>
-        <meshStandardMaterial color="#f3eaff" roughness={0.55} />
+        <meshStandardMaterial color="#f3ead9" roughness={0.7} />
       </mesh>
       {/* A lip of colour under the top. */}
       <mesh geometry={geo} position-y={-0.38} scale={[1.02, 0.6, 1.02]}>
-        <meshStandardMaterial color="#9b7bff" roughness={0.4} />
+        <meshStandardMaterial color="#cc922f" roughness={0.45} />
       </mesh>
     </group>
   );
@@ -187,7 +187,7 @@ function Lights({ span }: { span: number }) {
   }, [span]);
   return (
     <>
-      <hemisphereLight args={["#fff4ff", "#6b4fd8", 0.9]} />
+      <hemisphereLight args={["#fff6e6", "#17302c", 0.9]} />
       <directionalLight
         ref={sun}
         position={[3.5, 9, 5]}
@@ -198,11 +198,11 @@ function Lights({ span }: { span: number }) {
         shadow-normalBias={0.02}
         shadow-radius={5}
       />
-      <directionalLight position={[-6, 4, -3]} intensity={0.6} color="#9fd8ff" />
+      <directionalLight position={[-6, 4, -3]} intensity={0.6} color="#86cbb4" />
       <Environment resolution={256} frames={1}>
         <Lightformer form="rect" intensity={2.2} position={[0, 6, 4]} scale={[10, 4, 1]} color="#ffffff" onUpdate={(o) => o.lookAt(0, 0, 0)} />
-        <Lightformer form="ring" intensity={1.6} position={[-6, 3, 2]} scale={4} color="#ff9ad5" onUpdate={(o) => o.lookAt(0, 0, 0)} />
-        <Lightformer form="ring" intensity={1.6} position={[6, 3, -2]} scale={4} color="#7fd6ff" onUpdate={(o) => o.lookAt(0, 0, 0)} />
+        <Lightformer form="ring" intensity={1.6} position={[-6, 3, 2]} scale={4} color="#e8774f" onUpdate={(o) => o.lookAt(0, 0, 0)} />
+        <Lightformer form="ring" intensity={1.6} position={[6, 3, -2]} scale={4} color="#86cbb4" onUpdate={(o) => o.lookAt(0, 0, 0)} />
       </Environment>
     </>
   );
@@ -212,12 +212,12 @@ function Lights({ span }: { span: number }) {
 function Decor({ span }: { span: number }) {
   const shapes = useMemo(
     () => [
-      { pos: [-span - 1.6, -1.2, -1.5], color: "#ff8fc8", kind: "sphere", s: 0.55 },
-      { pos: [span + 1.8, -0.6, -2.4], color: "#ffd84d", kind: "torus", s: 0.5 },
-      { pos: [-span - 0.6, -2.2, span * 0.6], color: "#7ddc6f", kind: "cube", s: 0.45 },
-      { pos: [span + 1.1, -2.4, span * 0.7], color: "#55a8ff", kind: "sphere", s: 0.4 },
-      { pos: [-1.2, -1.6, -span - 2.2], color: "#ffb340", kind: "cube", s: 0.5 },
-      { pos: [2.2, -1.8, -span - 2.6], color: "#e07bff", kind: "torus", s: 0.45 },
+      { pos: [-span - 1.6, -1.2, -1.5], color: "#d9582c", kind: "sphere", s: 0.55 },
+      { pos: [span + 1.8, -0.6, -2.4], color: "#e2a940", kind: "torus", s: 0.5 },
+      { pos: [-span - 0.6, -2.2, span * 0.6], color: "#3c947d", kind: "cube", s: 0.45 },
+      { pos: [span + 1.1, -2.4, span * 0.7], color: "#f8f2e7", kind: "sphere", s: 0.4 },
+      { pos: [-1.2, -1.6, -span - 2.2], color: "#cc922f", kind: "cube", s: 0.5 },
+      { pos: [2.2, -1.8, -span - 2.6], color: "#c46a8a", kind: "torus", s: 0.45 },
     ],
     [span],
   );
@@ -231,7 +231,7 @@ function Decor({ span }: { span: number }) {
           </mesh>
         </Float>
       ))}
-      <Sparkles count={70} scale={[span * 4, 4, span * 4]} position-y={1} size={3.2} speed={0.35} opacity={0.75} color="#fff6c8" />
+      <Sparkles count={70} scale={[span * 4, 4, span * 4]} position-y={1} size={3.2} speed={0.35} opacity={0.7} color="#eec266" />
     </>
   );
 }

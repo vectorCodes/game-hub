@@ -279,10 +279,10 @@ function makeHat(id: string): Object3D | null {
       break;
     }
     case "hat:crown": {
-      g.add(part(new CylinderGeometry(0.18, 0.17, 0.1, 10, 1, true), mat("#f8cf72", true), 0, y + 0.03, 0));
+      g.add(part(new CylinderGeometry(0.18, 0.17, 0.1, 10, 1, true), mat("#eec266", true), 0, y + 0.03, 0));
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2;
-        g.add(part(new ConeGeometry(0.04, 0.09, 4), mat("#f8cf72", true), Math.sin(a) * 0.16, y + 0.12, Math.cos(a) * 0.16));
+        g.add(part(new ConeGeometry(0.04, 0.09, 4), mat("#eec266", true), Math.sin(a) * 0.16, y + 0.12, Math.cos(a) * 0.16));
       }
       g.add(part(new SphereGeometry(0.03, 6, 4), mat("#cf534f"), 0, y + 0.04, 0.18));
       break;

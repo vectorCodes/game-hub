@@ -8,7 +8,7 @@ import { levelUnlocked } from "./guest";
 import { useAuth } from "../../auth/store";
 import { usePairPopProgress } from "./progress";
 import { usePairPop } from "./store";
-import { EXTRUDE, Hud } from "./ui/Hud";
+import { Hud } from "./ui/Hud";
 
 const Game = lazy(() => import("./scene/Game"));
 
@@ -18,11 +18,10 @@ function Loader() {
   return (
     <div className="absolute inset-0 grid place-items-center px-6">
       <div className="text-center">
-        <div className="font-display text-2xl font-black text-white sm:text-3xl" style={{ textShadow: EXTRUDE }}>
-          Shuffling the pals…
-        </div>
-        <div className="mx-auto mt-5 h-3 w-48 overflow-hidden sm:w-56 rounded-full bg-black/25 ring-1 ring-white/20">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#ffd84d] to-[#ff6fae] transition-[width]" style={{ width: `${progress}%` }} />
+        <div className="label-mono text-lamp-300">Pair Pop</div>
+        <div className="mt-2 font-display text-2xl font-light text-stone-50 uppercase sm:text-3xl">Shuffling the pals…</div>
+        <div className="mx-auto mt-5 h-1 w-48 overflow-hidden bg-white/12 sm:w-56">
+          <div className="h-full bg-lamp-400 transition-[width]" style={{ width: `${progress}%` }} />
         </div>
       </div>
     </div>
@@ -57,7 +56,7 @@ export default function PairPopPage() {
   }, [param, synced, userId]);
 
   return (
-    <div className="relative h-dvh touch-manipulation overflow-hidden overscroll-none bg-[radial-gradient(ellipse_90%_70%_at_50%_15%,#9a7dff_0%,#6a4ae6_38%,#3a1f9e_72%,#1c0e5a_100%)] select-none">
+    <div className="relative h-dvh touch-manipulation overflow-hidden overscroll-none bg-[radial-gradient(ellipse_90%_70%_at_50%_10%,#2c4743_0%,#17302c_40%,#0c1f1e_75%,#081615_100%)] select-none">
       <Suspense fallback={null}>
         <Game />
       </Suspense>

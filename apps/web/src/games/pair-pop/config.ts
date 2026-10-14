@@ -16,7 +16,8 @@ export const TILE = {
   size: 1,
   gap: 0.16,
   thickness: 0.16,
-  radius: 0.1,
+  /** Nearly square, like the rest of GameHub. */
+  radius: 0.05,
   /** A pal's largest dimension, standing on its tile. */
   palSize: 0.62,
 };

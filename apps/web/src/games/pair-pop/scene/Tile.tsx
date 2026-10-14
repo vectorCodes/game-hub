@@ -21,7 +21,7 @@ function step(s: Spring, target: number, dt: number, stiffness = SPRING.stiffnes
 
 const smooth = (a: number, b: number, x: number) => MathUtils.smoothstep(x, a, b);
 const HALF = TILE.thickness / 2;
-const GOLD = new Color("#ffcf4a");
+const GOLD = new Color("#e2a940");
 const BLACK = new Color("#000000");
 const worldPos = new Vector3();
 
@@ -226,12 +226,12 @@ export function Tile({ index, position, delay, wave }: Props) {
     <group>
       <mesh ref={ring} position={[position[0], position[1] - HALF + 0.01, position[2]]} rotation-x={-Math.PI / 2} visible={false}>
         <ringGeometry args={[0.55, 0.68, 48]} />
-        <meshStandardMaterial ref={ringMat} color="#ffe27a" emissive="#ffcf4a" emissiveIntensity={1.2} transparent depthWrite={false} />
+        <meshStandardMaterial ref={ringMat} color="#eec266" emissive="#e2a940" emissiveIntensity={1.2} transparent depthWrite={false} />
       </mesh>
       <group ref={root} position={position}>
         <group ref={flipper} onPointerOver={over} onPointerOut={out} onClick={click}>
           <mesh geometry={tileGeometry} castShadow receiveShadow>
-            <meshStandardMaterial ref={body} color="#fbf7ff" roughness={0.35} metalness={0.05} />
+            <meshStandardMaterial ref={body} color="#f8f2e7" roughness={0.45} metalness={0.02} />
           </mesh>
           {/* The back, on top while face down. */}
           <mesh geometry={faceGeometry} position-y={HALF + 0.002}>

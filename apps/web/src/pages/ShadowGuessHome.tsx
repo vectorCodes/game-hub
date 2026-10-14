@@ -37,7 +37,7 @@ function ChapterLabel({ n, children, center = false }: { n: string; children: Re
   return (
     <p className={`eyebrow flex items-center gap-3 text-legible ${center ? "justify-center" : ""}`}>
       <span className="font-display text-lamp-300 tabular-nums">{n}</span>
-      <span className="h-px w-8 bg-moss-300/50" />
+      <span className="h-px w-8 bg-lamp-300/50" />
       {children}
     </p>
   );
@@ -105,7 +105,7 @@ function PromoVideo() {
   };
   return (
     <div ref={frame} className="relative">
-      <div className="overflow-hidden rounded-[1.75rem] bg-stone-950 p-1.5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.95)] ring-1 ring-white/10 sm:rounded-[2rem] sm:p-2">
+      <div className="overflow-hidden rounded-sm bg-stone-950 p-1.5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] ring-1 ring-white/15 sm:p-2">
         <video
           ref={video}
           src={near ? "/promo.mp4" : undefined}
@@ -117,7 +117,7 @@ function PromoVideo() {
           aria-label="Shadow Guess trailer"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
-          className="block aspect-video w-full rounded-[1.35rem] bg-stone-950 sm:rounded-3xl"
+          className="block aspect-video w-full rounded-xs bg-stone-950"
         />
       </div>
       <button
@@ -139,7 +139,7 @@ function PromoVideo() {
       <button
         onClick={toggleSound}
         aria-label={muted ? "Play trailer with sound" : "Mute trailer"}
-        className="glass absolute right-5 bottom-5 flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium text-white transition hover:bg-stone-900 sm:right-7 sm:bottom-7"
+        className="glass absolute right-5 bottom-5 flex h-11 items-center gap-2 rounded-full px-4 label-mono text-white transition hover:bg-stone-900 sm:right-7 sm:bottom-7"
       >
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M3 8v4h3l4 3.5v-11L6 8H3z" fill="currentColor" />
@@ -157,8 +157,8 @@ function Hero() {
   return (
     <Chapter className="items-start pt-[14svh]">
       <div className="relative mx-auto max-w-3xl text-center">
-        <div aria-hidden className="absolute -inset-x-24 -inset-y-16 -z-10 bg-[radial-gradient(ellipse_closest-side,rgba(14,20,17,0.62),transparent)]" />
-        <div className="inline-flex animate-rise items-center gap-2.5 rounded-full bg-stone-950/50 py-1.5 pr-4 pl-3 text-sm text-stone-200 ring-1 ring-white/10 backdrop-blur-md">
+        <div aria-hidden className="absolute -inset-x-24 -inset-y-16 -z-10 bg-[radial-gradient(ellipse_closest-side,rgba(12,31,30,0.62),transparent)]" />
+        <div className="inline-flex animate-rise items-center gap-2.5 rounded-full bg-stone-950/50 py-1.5 pr-4 pl-3 label-mono text-stone-200 ring-1 ring-white/15 backdrop-blur-md">
           <span className="relative flex h-2 w-2">
             <span className="absolute inset-0 animate-ping-soft rounded-full bg-moss-400" />
             <span className="relative h-2 w-2 rounded-full bg-moss-400" />
@@ -178,7 +178,7 @@ function Hero() {
         </div>
         <h1 className="mt-6 animate-rise text-display text-legible [animation-delay:80ms]">
           Can you name it from its{" "}
-          <span className="bg-gradient-to-r from-lamp-200 via-lamp-300 to-lamp-500 bg-clip-text text-transparent text-shadow-none">shadow</span>?
+          <span className="text-lamp-300">shadow</span>?
         </h1>
         <p className="mx-auto mt-5 max-w-xl animate-rise text-lead text-legible text-stone-300! [animation-delay:160ms]">
           A hidden 3D object casts its silhouette on the wall. Every miss turns the light and reveals a new angle.
@@ -192,11 +192,11 @@ function Hero() {
             Free play
           </Link>
         </div>
-        <p className="mt-4 animate-rise text-sm text-stone-400 text-legible [animation-delay:300ms]">Free to play · No sign-up needed · About 2 minutes</p>
+        <p className="mt-5 animate-rise label-mono text-stone-400 text-legible [animation-delay:300ms]">Free to play · No sign-up needed · About 2 minutes</p>
       </div>
 
       {/* Scroll cue. */}
-      <div className="absolute inset-x-0 bottom-8 flex animate-fade flex-col items-center gap-3 text-xs font-medium tracking-[0.2em] text-stone-400 uppercase [animation-delay:900ms]">
+      <div className="absolute inset-x-0 bottom-8 flex animate-fade flex-col items-center gap-3 label-mono text-stone-400 [animation-delay:900ms]">
         Scroll to explore
         <span className="relative h-10 w-6 rounded-full ring-1 ring-stone-400/60">
           <span className="absolute top-2 left-1/2 h-2 w-1 -translate-x-1/2 animate-scroll-cue rounded-full bg-lamp-300" />
@@ -225,23 +225,23 @@ function GuessChapter() {
   return (
     <Chapter>
       <div className="flex">
-        <Reveal className="glass w-full max-w-md rounded-4xl p-7 sm:p-9">
+        <Reveal className="glass w-full max-w-md p-7 sm:p-9">
           <ChapterLabel n="02">Guess</ChapterLabel>
           <h2 className="mt-5 text-section text-legible">Every miss turns the light.</h2>
           <p className="mt-5 text-lead text-legible text-stone-300!">
             Six angles, hardest first. Each wrong guess shows a new side, and costs you 15 points.
           </p>
-          <div className="mt-8 rounded-2xl bg-stone-950/60 p-5 ring-1 ring-white/8 sm:p-6">
+          <div className="mt-8 rounded-xs bg-stone-950/60 p-5 ring-1 ring-white/12 sm:p-6">
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Angle</div>
-                <div className="mt-1 font-display text-2xl font-bold tabular-nums">
+                <div className="label-mono text-stone-400">Angle</div>
+                <div className="mt-1 font-display text-2xl font-light tabular-nums">
                   3 <span className="text-stone-500">/ 6</span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-semibold tracking-[0.16em] text-stone-400 uppercase">Worth</div>
-                <div className="mt-1 font-display text-3xl font-bold text-moss-300 tabular-nums text-glow">70</div>
+                <div className="label-mono text-stone-400">Worth</div>
+                <div className="mt-1 font-display text-3xl font-light text-lamp-300 tabular-nums">70</div>
               </div>
             </div>
             <ul className="mt-4 divide-y divide-white/[0.08] text-sm">
@@ -290,13 +290,13 @@ function GladeChapter() {
           <p className="mt-4 text-lead text-legible text-stone-300!">Chairs, cacti, snowmen, spaceships. Every one hand-picked to cast a tricky shadow.</p>
         </Reveal>
         <Reveal delay={120}>
-          <dl className="glass mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-3xl md:grid-cols-4">
+          <dl className="glass mt-10 grid grid-cols-2 divide-white/12 overflow-hidden md:grid-cols-4 md:divide-x">
             {STATS.map((s) => (
               <div key={s.label} className="px-6 py-7 text-center">
                 <dt className="sr-only">{s.label}</dt>
                 <dd>
-                  <div className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{s.value}</div>
-                  <div className="mt-2 text-sm text-stone-400">{s.label}</div>
+                  <div className="font-display text-4xl font-light tracking-tight sm:text-5xl">{s.value}</div>
+                  <div className="mt-2 label-mono text-stone-400">{s.label}</div>
                 </dd>
               </div>
             ))}
@@ -330,7 +330,7 @@ function FinaleChapter() {
 
       <div className="mt-24 space-y-5">
         <Reveal>
-          <article className="glass rounded-3xl p-3 sm:p-4">
+          <article className="glass p-3 sm:p-4">
             <ShadowGuessHubCard />
           </article>
         </Reveal>
@@ -342,8 +342,8 @@ function FinaleChapter() {
             <div className="mx-auto h-12 w-12 md:mx-0">
               <Icon />
             </div>
-            <h3 className="mt-5 font-display text-lg font-semibold tracking-tight text-legible">{title}</h3>
-            <p className="mt-2 leading-relaxed text-stone-300 text-legible">{body}</p>
+            <h3 className="mt-5 font-display text-lg font-medium tracking-tight uppercase text-legible">{title}</h3>
+            <p className="mt-2 font-serif leading-relaxed text-stone-300 text-legible">{body}</p>
           </Reveal>
         ))}
       </div>
@@ -366,7 +366,7 @@ function Landing() {
   return (
     <div ref={root} className="relative">
       {/* The 3D world sits fixed behind every chapter; the camera follows the scroll. */}
-      <div aria-hidden className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_70%_60%_at_50%_30%,#1d2c23,#0e1411_70%)]">
+      <div aria-hidden className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_70%_60%_at_50%_30%,#1f3c37,#0c1f1e_75%)]">
         <Suspense fallback={null}>
           <World />
         </Suspense>

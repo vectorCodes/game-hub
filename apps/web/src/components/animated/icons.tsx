@@ -13,9 +13,9 @@ export function ShadowIcon() {
       <rect x="6" y="8" width="52" height="46" rx="10" fill="#f4ecd8" />
       <circle cx="32" cy="30" r="22" fill="#fffaf0" className="animate-beam" />
       <g className="animate-sway" style={origin(30, 50)}>
-        <path d="M23 16 h4 v34 h-4 z M23 33 h18 v4 h-18 z M37 33 h4 v17 h-4 z" fill="#16201b" />
+        <path d="M23 16 h4 v34 h-4 z M23 33 h18 v4 h-18 z M37 33 h4 v17 h-4 z" fill="#2a2216" />
       </g>
-      <circle cx="12" cy="14" r="2.5" fill="#f8cf72" className="animate-twinkle" style={origin(12, 14)} />
+      <circle cx="12" cy="14" r="2.5" fill="#eec266" className="animate-twinkle" style={origin(12, 14)} />
     </svg>
   );
 }
@@ -24,11 +24,11 @@ export function ShadowIcon() {
 export function GuessIcon() {
   return (
     <svg viewBox="0 0 64 64" className={box} aria-hidden="true">
-      <rect x="4" y="20" width="56" height="24" rx="12" fill="#263029" stroke="#5a655a" />
-      <rect x="13" y="29" width="24" height="6" rx="3" fill="#ddd8c8" className="animate-type" style={origin(13, 32)} />
-      <rect x="39" y="27" width="2" height="10" rx="1" fill="#e9a03a" className="animate-caret" />
+      <rect x="4" y="20" width="56" height="24" rx="12" fill="#1b3532" stroke="#4a615b" />
+      <rect x="13" y="29" width="24" height="6" rx="3" fill="#ddd4bf" className="animate-type" style={origin(13, 32)} />
+      <rect x="39" y="27" width="2" height="10" rx="1" fill="#cc922f" className="animate-caret" />
       <g className="animate-miss" style={origin(52, 14)}>
-        <circle cx="52" cy="14" r="9" fill="#ec7a5f" />
+        <circle cx="52" cy="14" r="9" fill="#e8774f" />
         <path d="M48.5 10.5 l7 7 M55.5 10.5 l-7 7" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
       </g>
     </svg>
@@ -42,8 +42,8 @@ export function PointsIcon() {
     <svg viewBox="0 0 64 64" className={box} aria-hidden="true">
       <defs>
         <linearGradient id={star} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#b3d993" />
-          <stop offset="1" stopColor="#6dad4b" />
+          <stop offset="0" stopColor="#86cbb4" />
+          <stop offset="1" stopColor="#3c947d" />
         </linearGradient>
       </defs>
       <g className="animate-drift" style={origin(32, 34)}>
@@ -53,8 +53,8 @@ export function PointsIcon() {
           strokeLinejoin="round"
         />
       </g>
-      <path d="M10 14 l2 -5 2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 z" fill="#f8cf72" className="animate-twinkle" style={origin(12, 16)} />
-      <path d="M52 46 l1.5 -4 1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 z" fill="#b3d993" className="animate-twinkle" style={{ ...origin(53.5, 47.5), animationDelay: "-1.2s" }} />
+      <path d="M10 14 l2 -5 2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 z" fill="#eec266" className="animate-twinkle" style={origin(12, 16)} />
+      <path d="M52 46 l1.5 -4 1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 z" fill="#86cbb4" className="animate-twinkle" style={{ ...origin(53.5, 47.5), animationDelay: "-1.2s" }} />
     </svg>
   );
 }
@@ -66,7 +66,7 @@ export function FlameIcon() {
     <svg viewBox="0 0 64 64" className={box} aria-hidden="true">
       <defs>
         <linearGradient id={flame} x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#ec7a5f" />
+          <stop offset="0" stopColor="#e8774f" />
           <stop offset="1" stopColor="#fbbf24" />
         </linearGradient>
       </defs>
@@ -82,9 +82,9 @@ export function FlameIcon() {
 export function PodiumIcon() {
   return (
     <svg viewBox="0 0 64 64" className={box} aria-hidden="true">
-      <rect x="8" y="30" width="14" height="24" rx="3" fill="#9ea596" className="animate-grow" style={{ ...origin(15, 54), animationDelay: "-0.3s" }} />
-      <rect x="25" y="16" width="14" height="38" rx="3" fill="#6dad4b" className="animate-grow" style={origin(32, 54)} />
-      <rect x="42" y="36" width="14" height="18" rx="3" fill="#e9a03a" className="animate-grow" style={{ ...origin(49, 54), animationDelay: "-0.6s" }} />
+      <rect x="8" y="30" width="14" height="24" rx="3" fill="#9a9f90" className="animate-grow" style={{ ...origin(15, 54), animationDelay: "-0.3s" }} />
+      <rect x="25" y="16" width="14" height="38" rx="3" fill="#3c947d" className="animate-grow" style={origin(32, 54)} />
+      <rect x="42" y="36" width="14" height="18" rx="3" fill="#cc922f" className="animate-grow" style={{ ...origin(49, 54), animationDelay: "-0.6s" }} />
       <circle cx="32" cy="9" r="3" fill="#fbbf24" className="animate-twinkle" style={origin(32, 9)} />
     </svg>
   );
@@ -94,10 +94,10 @@ export function PodiumIcon() {
 export function ClockIcon() {
   return (
     <svg viewBox="0 0 64 64" className={box} aria-hidden="true">
-      <circle cx="32" cy="34" r="22" fill="#263029" stroke="#b3d993" strokeWidth="3" />
-      <rect x="29" y="6" width="6" height="6" rx="2" fill="#b3d993" />
-      <path d="M32 34 V20" stroke="#ddd8c8" strokeWidth="3" strokeLinecap="round" className="animate-tick" style={origin(32, 34)} />
-      <circle cx="32" cy="34" r="3" fill="#e9a03a" />
+      <circle cx="32" cy="34" r="22" fill="#1b3532" stroke="#86cbb4" strokeWidth="3" />
+      <rect x="29" y="6" width="6" height="6" rx="2" fill="#86cbb4" />
+      <path d="M32 34 V20" stroke="#ddd4bf" strokeWidth="3" strokeLinecap="round" className="animate-tick" style={origin(32, 34)} />
+      <circle cx="32" cy="34" r="3" fill="#cc922f" />
     </svg>
   );
 }

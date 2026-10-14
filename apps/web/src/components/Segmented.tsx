@@ -11,19 +11,19 @@ interface Props<T extends string> {
   className?: string;
 }
 
-/** Pill toggle with a sliding highlight. */
+/** Tab toggle: a hairline frame with a sliding gold block under the current tab. */
 export function Segmented<T extends string>({ options, value, onChange, label, className = "" }: Props<T>) {
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   return (
     <div
       role="tablist"
       aria-label={label}
-      className={`relative grid rounded-full bg-white/5 p-1 text-sm ring-1 ring-white/10 ${className}`}
+      className={`relative grid rounded-xs p-1 label-mono ring-1 ring-white/15 ${className}`}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(244,185,78,0.7)] transition-transform duration-300 ease-out"
+        className="absolute inset-y-1 left-1 rounded-xs bg-gold transition-transform duration-300 ease-mirai"
         style={{
           width: `calc((100% - 0.5rem) / ${options.length})`,
           transform: `translateX(${index * 100}%)`,
@@ -35,7 +35,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
           role="tab"
           aria-selected={o.value === value}
           onClick={() => o.value !== value && onChange(o.value)}
-          className={`relative z-10 rounded-full px-4 py-1.5 font-medium whitespace-nowrap transition-colors ${
+          className={`relative z-10 min-h-9 px-3 py-1.5 whitespace-nowrap transition-colors sm:px-4 ${
             o.value === value ? "text-ink" : "text-stone-400 hover:text-stone-200"
           }`}
         >

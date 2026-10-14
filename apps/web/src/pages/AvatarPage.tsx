@@ -254,7 +254,7 @@ export default function AvatarPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <div className="relative aspect-square overflow-hidden rounded-3xl bg-[radial-gradient(ellipse_70%_60%_at_50%_40%,#2a3a2f,#0e1411_75%)] ring-1 ring-white/10 md:sticky md:top-20 md:self-start">
+        <div className="relative aspect-square overflow-hidden rounded-3xl bg-[radial-gradient(ellipse_70%_60%_at_50%_40%,#2c4743,#0c1f1e_75%)] ring-1 ring-white/10 md:sticky md:top-20 md:self-start">
           <Suspense fallback={<div className="absolute inset-0 animate-pulse bg-white/[0.02]" />}>
             <AvatarStage config={draft} />
           </Suspense>

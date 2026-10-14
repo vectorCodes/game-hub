@@ -210,7 +210,7 @@ export default function ShadowGuessPage() {
   return (
     <div className="mx-auto grid min-h-dvh max-w-7xl grid-rows-[minmax(min(20rem,45dvh),1fr)_auto] gap-3 p-3 sm:gap-4 sm:p-4 md:h-dvh md:grid-cols-[minmax(0,1fr)_19rem] md:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_23rem] lg:p-5">
       {/* Stage: the lit wall and the shadow. */}
-      <section className="relative min-h-0 overflow-hidden rounded-2xl bg-wall sm:rounded-3xl ring-1 ring-lamp-300/20 shadow-[0_0_90px_-30px_rgba(244,185,78,0.45)]">
+      <section className="relative min-h-0 overflow-hidden rounded-2xl bg-wall sm:rounded-3xl ring-1 ring-lamp-300/20 shadow-[0_0_90px_-30px_rgba(204,146,47,0.45)]">
         {session && (
           <ShadowScene
             sessionKey={session.sessionId}
@@ -242,7 +242,7 @@ export default function ShadowGuessPage() {
           <div key={`won-${sessionId}`}>
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(233,160,58,0.5),rgba(244,185,78,0.25)_40%,transparent_65%)]"
+              className="pointer-events-none absolute inset-0 animate-glow bg-[radial-gradient(circle_at_50%_50%,rgba(233,160,58,0.5),rgba(204,146,47,0.25)_40%,transparent_65%)]"
             />
             <Sparks />
           </div>

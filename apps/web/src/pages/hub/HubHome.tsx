@@ -40,30 +40,28 @@ function Hero() {
   useEffect(preloadLandingModels, []);
 
   return (
-    <section ref={ref} className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_60%_at_65%_45%,#1d2c23,#0e1411_70%)]">
+    <section ref={ref} className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-b hairline">
+      {/* The scene's edges fade into the page, so the 3D floor and the paper are one surface. */}
+      <div aria-hidden className="absolute inset-0 -z-10 bg-paper [mask-image:radial-gradient(ellipse_70%_75%_at_62%_55%,black_50%,transparent_100%)]">
         <Suspense fallback={null}>
           <HubWorld active={visible} />
         </Suspense>
       </div>
-      <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-linear-to-t from-stone-950 to-transparent" />
 
       <div className="container-page self-start pt-[12svh] md:self-center md:pt-0">
         <div className="max-w-xl text-center md:text-left">
-          <div className="inline-flex animate-rise items-center gap-2.5 rounded-full bg-stone-950/50 py-1.5 pr-4 pl-3 text-sm text-stone-200 ring-1 ring-white/10 backdrop-blur-md">
+          <div className="inline-flex animate-rise items-center gap-2.5 rounded-full bg-stone-950/50 py-1.5 pr-4 pl-3 label-mono text-stone-200 ring-1 ring-white/15 backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="absolute inset-0 animate-ping-soft rounded-full bg-moss-400" />
               <span className="relative h-2 w-2 rounded-full bg-moss-400" />
             </span>
             {games.length} {games.length === 1 ? "game" : "games"} live <span className="text-stone-400">· more on the way</span>
           </div>
-          <h1 className="mt-6 animate-rise text-display text-legible [animation-delay:80ms]">
+          <h1 className="mt-6 animate-rise text-display [animation-delay:80ms]">
             Tiny games.{" "}
-            <span className="bg-linear-to-r from-lamp-200 via-lamp-300 to-lamp-500 bg-clip-text text-transparent text-shadow-none">
-              Daily wins.
-            </span>
+            <span className="text-ember-500">Daily wins.</span>
           </h1>
-          <p className="mt-5 max-w-md animate-rise text-lead text-legible text-stone-300! [animation-delay:160ms] max-md:mx-auto">
+          <p className="mt-5 max-w-md animate-rise text-lead [animation-delay:160ms] max-md:mx-auto">
             GameHub is a home for quick, clever games. A fresh challenge every day, a few minutes each, and a
             leaderboard to climb.
           </p>
@@ -76,7 +74,7 @@ function Hero() {
               Browse games
             </a>
           </div>
-          <p className="mt-4 animate-rise text-sm text-stone-400 text-legible [animation-delay:300ms]">
+          <p className="mt-5 animate-rise label-mono text-stone-500 [animation-delay:300ms]">
             Free to play · No sign-up needed · New puzzles every day
           </p>
         </div>
@@ -89,16 +87,16 @@ function GameTile({ game }: { game: GameEntry }) {
   return (
     <Link
       to={game.path}
-      className="group glass flex flex-col overflow-hidden rounded-4xl p-3 transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-30px_rgba(244,185,78,0.35)] sm:p-4"
+      className="group surface flex flex-col overflow-hidden p-3 transition duration-300 ease-mirai hover:-translate-y-1 hover:shadow-[0_28px_70px_-30px_rgba(60,45,20,0.45)] sm:p-4"
     >
       <div className="relative min-h-64 flex-1 [&>div]:h-full">
         <game.Cover />
       </div>
       <div className="flex flex-col gap-4 px-2 pt-5 pb-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h3 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{game.title}</h3>
-          <p className="mt-1.5 text-stone-400">{game.tagline}</p>
-          <p className="mt-3 text-sm text-stone-400">
+          <h3 className="font-display text-2xl font-light tracking-tight uppercase sm:text-3xl">{game.title}</h3>
+          <p className="mt-1.5 font-serif text-stone-400">{game.tagline}</p>
+          <p className="mt-3 label-mono text-stone-500">
             <game.Status />
           </p>
         </div>
@@ -116,9 +114,8 @@ function GameTile({ game }: { game: GameEntry }) {
 /** A locked slot for a game that's still being built. */
 function ComingSoonTile({ n }: { n: number }) {
   return (
-    <div className="relative flex min-h-36 flex-col justify-between gap-4 overflow-hidden rounded-4xl border md:col-span-2 md:flex-row md:items-center md:justify-start md:gap-6 border-dashed border-white/15 p-6 [background:repeating-linear-gradient(135deg,rgba(255,255,255,0.025)_0_12px,transparent_12px_24px)]">
-      <div aria-hidden className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-lamp-400/10 blur-3xl" />
-      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+    <div className="relative flex min-h-36 flex-col justify-between gap-4 overflow-hidden rounded-sm border border-dashed border-white/25 p-6 md:col-span-2 md:flex-row md:items-center md:justify-start md:gap-6">
+      <div className="relative grid h-14 w-14 place-items-center rounded-full ring-1 ring-white/25">
         <svg viewBox="0 0 24 24" className="h-6 w-6 text-stone-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="5" y="11" width="14" height="9" rx="2" />
           <path d="M8 11V8a4 4 0 0 1 8 0v3" />
@@ -126,8 +123,8 @@ function ComingSoonTile({ n }: { n: number }) {
       </div>
       <div className="relative">
         <p className="eyebrow text-stone-500!">Game {String(games.length + n).padStart(2, "0")}</p>
-        <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-300">Coming soon</h3>
-        <p className="mt-1 text-sm text-stone-500">In the workshop. Check back soon.</p>
+        <h3 className="mt-2 font-display text-xl font-light tracking-tight text-stone-300 uppercase">Coming soon</h3>
+        <p className="mt-1 font-serif text-sm text-stone-500">In the workshop. Check back soon.</p>
       </div>
     </div>
   );
@@ -164,12 +161,12 @@ function Features() {
       </Reveal>
       <div className="mt-14 grid gap-x-10 gap-y-12 md:grid-cols-3">
         {FEATURES.map(({ Icon, title, body }, i) => (
-          <Reveal key={title} delay={i * 90} className="surface p-7 text-center md:text-left">
+          <Reveal key={title} delay={i * 90} className="border-t hairline pt-7 text-center md:text-left">
             <div className="mx-auto h-12 w-12 md:mx-0">
               <Icon />
             </div>
-            <h3 className="mt-5 font-display text-lg font-semibold tracking-tight">{title}</h3>
-            <p className="mt-2 leading-relaxed text-stone-400">{body}</p>
+            <h3 className="mt-5 font-display text-lg font-medium tracking-tight uppercase">{title}</h3>
+            <p className="mt-2 font-serif leading-relaxed text-stone-400">{body}</p>
           </Reveal>
         ))}
       </div>
@@ -181,8 +178,9 @@ function Finale() {
   const [first] = games;
   return (
     <section className="container-page pb-28">
-      <Reveal className="relative overflow-hidden rounded-4xl px-6 py-16 text-center ring-1 ring-white/10 sm:py-20">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(244,185,78,0.18),transparent_70%)]" />
+      <Reveal className="relative isolate overflow-hidden border-y hairline px-6 py-16 text-center sm:py-20">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(217,88,44,0.16),transparent_55%)]" />
+        <span aria-hidden className="mx-auto mb-6 block h-10 w-10 rounded-full bg-sun" />
         <h2 className="text-section">Today&rsquo;s puzzle is waiting.</h2>
         <p className="mx-auto mt-4 max-w-md text-lead">Start with {first.title}. More games are on the way.</p>
         <Link to={first.path} className="btn btn-primary mt-8">

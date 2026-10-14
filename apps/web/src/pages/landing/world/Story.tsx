@@ -107,15 +107,15 @@ export function ShadowWall() {
       {/* Stone wall with a lit parchment face. */}
       <mesh position={[wx, wy, wz - 0.45]}>
         <boxGeometry args={[WALL.width + 0.8, WALL.height + 0.6, 0.8]} />
-        <meshStandardMaterial color="#363d35" roughness={1} />
+        <meshStandardMaterial color="#2c3f3a" roughness={1} />
       </mesh>
       <mesh position={[wx, wy, wz]} receiveShadow>
         <planeGeometry args={[WALL.width, WALL.height]} />
-        <meshStandardMaterial color="#e9dfc6" roughness={1} />
+        <meshStandardMaterial color="#f3ead9" roughness={1} />
       </mesh>
       <mesh position={[wx, wy + WALL.height / 2 + 0.38, wz - 0.4]}>
         <boxGeometry args={[WALL.width + 1, 0.22, 1]} />
-        <meshStandardMaterial color="#3f6234" roughness={1} />
+        <meshStandardMaterial color="#cc922f" roughness={0.6} />
       </mesh>
 
       {/* The lantern that throws the shadow. */}
@@ -156,11 +156,11 @@ function Exhibit({ name, position, spin }: { name: string; position: V3; spin: n
     <group position={position}>
       <mesh position={[0, 0.4, 0]}>
         <cylinderGeometry args={[0.85, 1, 0.8, 10]} />
-        <meshStandardMaterial color="#2f362f" roughness={1} flatShading />
+        <meshStandardMaterial color="#efe6d4" roughness={0.75} flatShading />
       </mesh>
       <mesh position={[0, 0.82, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.72, 0.035, 8, 48]} />
-        <meshStandardMaterial color={[1.4, 2.4, 0.9]} emissive={[0.7, 1.4, 0.4]} toneMapped={false} />
+        <meshStandardMaterial color={[2.2, 1.6, 0.6]} emissive={[1.2, 0.85, 0.3]} toneMapped={false} />
       </mesh>
       <Float speed={journey.still ? 0 : 1.6} rotationIntensity={0.2} floatIntensity={0.6} floatingRange={[0.1, 0.4]}>
         <group ref={turn} position={[0, 2, 0]}>

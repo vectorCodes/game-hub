@@ -1,52 +1,167 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
+/*
+ * GameHub design tokens, after Neo-Mirai: warm paper and ink for pages, deep teal night for
+ * the games, gold and sun for accents, hairlines and square corners throughout.
+ *
+ * The colour names the UI uses (stone, lamp, moss, ember, white, black) point at scheme
+ * variables, so one class reads right on both: `.theme-paper` (pages) and `.theme-night`
+ * (game screens and the 3D night sections). In paper, the neutral scale runs the other way:
+ * stone-950 is the paper, stone-100 the ink, and white is "towards the ink".
+ *
+ * Hand-written CSS must use the scheme variables (--n-*, --gold-*, --jade-*, --sun-*, and
+ * --surface/--hairline/--glass), never var(--color-stone-*): those resolve once at :root
+ * (paper), so they'd stay paper inside a night section.
+ */
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-display: "Chakra Petch", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Zen Old Mincho", "Hiragino Mincho ProN", ui-serif, Georgia, serif;
+  --font-mono: "Azeret Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  /*
-   * Lamplight Forest: a night forest lit by one warm lamp. Neutrals lean green so every
-   * stone-* class follows the theme; text is cream rather than white.
-   */
-  --color-stone-50: #f6f3ea;
-  --color-stone-100: #efeadc;
-  --color-stone-200: #ddd8c8;
-  --color-stone-300: #c2c3b1;
-  --color-stone-400: #9ea596;
-  --color-stone-500: #7b8576;
-  --color-stone-600: #5a655a;
-  --color-stone-700: #3d473f;
-  --color-stone-800: #263029;
-  --color-stone-900: #172019;
-  --color-stone-950: #0e1411;
+  --color-stone-50: var(--n-50);
+  --color-stone-100: var(--n-100);
+  --color-stone-200: var(--n-200);
+  --color-stone-300: var(--n-300);
+  --color-stone-400: var(--n-400);
+  --color-stone-500: var(--n-500);
+  --color-stone-600: var(--n-600);
+  --color-stone-700: var(--n-700);
+  --color-stone-800: var(--n-800);
+  --color-stone-900: var(--n-900);
+  --color-stone-950: var(--n-950);
+  --color-white: var(--n-max);
+  --color-black: var(--n-min);
 
-  /* Lamplight: the primary accent (buttons, highlights, the light itself). */
-  --color-lamp-100: #fdf1d3;
-  --color-lamp-200: #fbe3a8;
-  --color-lamp-300: #f8cf72;
-  --color-lamp-400: #f4b94e;
-  --color-lamp-500: #e9a03a;
-  --color-lamp-600: #c97f26;
-  --color-lamp-700: #9a5f1c;
+  /* Gold: the primary accent (buttons, highlights). */
+  --color-lamp-100: var(--gold-100);
+  --color-lamp-200: var(--gold-200);
+  --color-lamp-300: var(--gold-300);
+  --color-lamp-400: var(--gold-400);
+  --color-lamp-500: var(--gold-500);
+  --color-lamp-600: var(--gold-600);
+  --color-lamp-700: var(--gold-700);
 
-  /* Moss: the secondary accent (scores, success, labels). */
-  --color-moss-100: #e8f4dc;
-  --color-moss-200: #d1eab9;
-  --color-moss-300: #b3d993;
-  --color-moss-400: #8fc76a;
-  --color-moss-500: #6dad4b;
-  --color-moss-600: #548c38;
+  /* Jade: the secondary accent (scores, success, labels). */
+  --color-moss-100: var(--jade-100);
+  --color-moss-200: var(--jade-200);
+  --color-moss-300: var(--jade-300);
+  --color-moss-400: var(--jade-400);
+  --color-moss-500: var(--jade-500);
+  --color-moss-600: var(--jade-600);
 
-  /* Ember: misses and errors. */
-  --color-ember-200: #f9c9bb;
-  --color-ember-300: #f4a08a;
-  --color-ember-400: #ec7a5f;
-  --color-ember-500: #d95c42;
+  /* Sun: misses, errors, and the occasional warm highlight. */
+  --color-ember-200: var(--sun-200);
+  --color-ember-300: var(--sun-300);
+  --color-ember-400: var(--sun-400);
+  --color-ember-500: var(--sun-500);
 
-  /* The lit wall the shadows fall on (matches the 3D scene), and the shadow itself. */
+  /* Fixed, whatever the scheme. */
+  --color-paper: #f3ead9;
+  --color-paper-soft: #ece0c9;
+  --color-night: #0c1f1e;
+  --color-night-soft: #17302c;
+  --color-gold: #cc922f;
+  --color-sun: #d9582c;
+  --color-jade: #2f8a73;
+  --color-rice: #f8f2e7;
+  /* The lit wall the shadows fall on (matches the 3D scene), and dark text on gold. */
   --color-wall: #f4ecd8;
-  --color-ink: #16201b;
+  --color-ink: #2a2216;
 
+  /* Corners: nearly square, like printed matter. Full circles stay for dots and seals. */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+  --radius-4xl: 10px;
+
+  --ease-mirai: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root,
+.theme-paper {
+  color-scheme: light;
+  --font-body: var(--font-serif);
+  --n-min: #f3ead9;
+  --n-950: #f3ead9; /* paper */
+  --n-900: #ece0c9; /* paper-soft */
+  --n-800: #dfcfb2; /* paper-deep */
+  --n-700: #c8b48f; /* line */
+  --n-600: #a5926f;
+  --n-500: #857660; /* ash */
+  --n-400: #65594a;
+  --n-300: #4a3f31; /* ink-soft */
+  --n-200: #3a3125;
+  --n-100: #2a2216; /* ink */
+  --n-50: #1d170f;
+  --n-max: #2a2216;
+  --gold-100: #6e4a12;
+  --gold-200: #8f6115;
+  --gold-300: #b07a1c;
+  --gold-400: #c68b28;
+  --gold-500: #d89a33;
+  --gold-600: #8a5a16;
+  --gold-700: #6b4412;
+  --jade-100: #0f3d35;
+  --jade-200: #134a40;
+  --jade-300: #1a5e51;
+  --jade-400: #237262;
+  --jade-500: #2f8a73;
+  --jade-600: #3c9e85;
+  --sun-200: #8f2f13;
+  --sun-300: #a93b19;
+  --sun-400: #c24a22;
+  --sun-500: #d9582c;
+  --surface: rgb(42 34 22 / 0.035);
+  --hairline: rgb(42 34 22 / 0.16);
+  --glass: rgb(243 234 217 / 0.86);
+  --shadow: 0 28px 90px -30px rgb(60 45 20 / 0.35);
+}
+
+.theme-night {
+  color-scheme: dark;
+  --font-body: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+  --n-min: #0c1f1e;
+  --n-950: #0c1f1e; /* night */
+  --n-900: #122826;
+  --n-800: #1b3532; /* night-soft */
+  --n-700: #2c4743;
+  --n-600: #4a615b;
+  --n-500: #6f7f76;
+  --n-400: #9a9f90;
+  --n-300: #c3bea9;
+  --n-200: #ddd4bf;
+  --n-100: #efe6d4;
+  --n-50: #f8f2e7; /* rice */
+  --n-max: #fbf6ec;
+  --gold-100: #fbecc9;
+  --gold-200: #f5d898;
+  --gold-300: #eec266;
+  --gold-400: #e2a940;
+  --gold-500: #cc922f;
+  --gold-600: #a8721f;
+  --gold-700: #7c5316;
+  --jade-100: #d7efe6;
+  --jade-200: #b2e0cf;
+  --jade-300: #86cbb4;
+  --jade-400: #5bb198;
+  --jade-500: #3c947d;
+  --jade-600: #2a7765;
+  --sun-200: #f8c6b0;
+  --sun-300: #f29c7a;
+  --sun-400: #e8774f;
+  --sun-500: #d9582c;
+  --surface: rgb(248 242 231 / 0.035);
+  --hairline: rgb(248 242 231 / 0.12);
+  --glass: rgb(12 31 30 / 0.78);
+  --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
+}
+
+@theme {
   --animate-shake: shake 0.4s ease-in-out;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-pop: pop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
@@ -194,85 +309,114 @@
   }
 }
 
-/* Type scale. */
+/* Type scale. Display and section titles: Chakra Petch, light and uppercase. */
 @utility text-display {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-  font-size: clamp(2.5rem, 1.6rem + 4.2vw, 5.25rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.96;
+  font-size: clamp(2.75rem, 1.6rem + 5vw, 6.25rem);
   text-wrap: balance;
 }
 @utility text-section {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  font-size: clamp(1.875rem, 1.4rem + 1.8vw, 3rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  font-size: clamp(1.9rem, 1.3rem + 2.2vw, 3.1rem);
   text-wrap: balance;
 }
 @utility text-lead {
-  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  font-family: var(--font-serif);
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.3rem);
   line-height: 1.6;
-  color: var(--color-stone-400);
+  color: var(--n-300);
   text-wrap: pretty;
 }
+/* Labels, kickers, stats captions: small mono capitals. */
 @utility eyebrow {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-moss-300);
+  color: var(--gold-300);
+}
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* Buttons: one height and radius; primary is the gradient pill defined above. */
+/* Buttons: square, mono capitals, a lift on hover. Primary is gold (defined below). */
 @utility btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  height: 3rem;
-  padding-inline: 1.5rem;
-  border-radius: 9999px;
-  font-weight: 600;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding-inline: 1.35rem;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   white-space: nowrap;
-  transition: filter 0.2s, transform 0.15s, background-color 0.2s, box-shadow 0.2s;
-  &:active {
-    transform: scale(0.98);
+  transition:
+    background-color 180ms var(--ease-mirai),
+    color 180ms var(--ease-mirai),
+    transform 240ms var(--ease-mirai),
+    box-shadow 240ms var(--ease-mirai);
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0);
   }
   &:focus-visible {
-    outline: 2px solid var(--color-lamp-300);
-    outline-offset: 3px;
+    outline: 3px solid var(--color-sun);
+    outline-offset: 4px;
   }
 }
 @utility btn-secondary {
-  background: rgb(255 255 255 / 0.06);
-  color: var(--color-stone-100);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
-  &:hover {
-    background: rgb(255 255 255 / 0.1);
+  background: transparent;
+  color: var(--n-100);
+  box-shadow: inset 0 0 0 1px var(--n-100);
+  &:hover:not(:disabled) {
+    background: var(--n-100);
+    color: var(--n-950);
   }
 }
 
-/* Text laid over the 3D world: a soft dark halo keeps it crisp on any background. */
+/* Text laid over a 3D scene: a soft halo keeps it crisp on any background. */
 @utility text-legible {
   text-shadow:
-    0 1px 2px rgb(14 20 17 / 0.7),
-    0 4px 32px rgb(14 20 17 / 0.85);
+    0 1px 2px rgb(12 31 30 / 0.7),
+    0 4px 32px rgb(12 31 30 / 0.85);
 }
 
-/* Card surface: one fill, one hairline, one radius. */
+/* Card surface: one fill, one hairline, nearly square. */
 @utility surface {
-  border-radius: 1.5rem;
-  background: rgb(255 255 255 / 0.03);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 @utility glass {
-  background: rgb(23 32 25 / 0.75);
+  border-radius: var(--radius-sm);
+  background: var(--glass);
   box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.1),
-    0 20px 50px -20px rgb(0 0 0 / 0.7);
+    inset 0 0 0 1px var(--hairline),
+    var(--shadow);
   backdrop-filter: blur(16px);
+}
+/* A hairline rule, the system's main divider. */
+@utility hairline {
+  border-color: var(--hairline);
 }
 
 /* Scroll reveal: sections rise in once they enter the viewport (see useReveal). */
@@ -289,21 +433,34 @@
   transform: none;
 }
 
-/* Primary action: a warm lamplight pill with dark ink text and a soft glow. */
+/* Primary action: solid gold with ink capitals; turns sun (with rice capitals) on hover. */
 @utility btn-primary {
-  background-image: linear-gradient(180deg, var(--color-lamp-300), var(--color-lamp-500));
+  background: var(--color-gold);
   color: var(--color-ink);
-  font-weight: 600;
-  box-shadow: 0 0 32px -10px rgb(244 185 78 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.45);
-  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 0 0 0 transparent;
   &:hover:not(:disabled) {
-    filter: brightness(1.06);
-    box-shadow: 0 0 44px -8px rgb(244 185 78 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.45);
+    background: var(--color-sun);
+    color: var(--color-rice);
+    box-shadow: 0 18px 52px -14px rgb(217 88 44 / 0.45);
   }
 }
 
 @utility text-glow {
-  text-shadow: 0 0 20px rgb(143 199 106 / 0.5);
+  text-shadow: 0 0 20px rgb(204 146 47 / 0.45);
+}
+
+/* Paper pages: a faint printed grid and a warm sun-glow at the top. */
+.theme-paper.paper-ground,
+body.theme-paper {
+  background:
+    radial-gradient(circle at 66% 0%, rgb(232 196 120 / 0.45), transparent 22rem),
+    linear-gradient(90deg, rgb(42 34 22 / 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(42 34 22 / 0.028) 1px, transparent 1px),
+    var(--color-paper);
+  background-size: auto, 112px 112px, 112px 112px, auto;
+}
+body.theme-night {
+  background: var(--color-night);
 }
 
 html,
@@ -313,8 +470,42 @@ body,
 }
 
 ::selection {
-  background: rgb(244 185 78 / 0.35);
+  background: rgb(204 146 47 / 0.35);
 }
+
+:focus-visible {
+  outline-color: var(--color-sun);
+}
+
+/*
+ * Page and panel titles everywhere: Chakra Petch, light, uppercase. One rule, so a heading
+ * written as `font-display font-bold` anywhere still reads as part of the system.
+ */
+:is(h1, h2).font-display {
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+}
+
+/* Hub covers: slow, small motions, like a print that's barely alive. */
+@keyframes cover-sway {
+  0%, 100% { transform: skewX(-7deg); }
+  50% { transform: skewX(7deg); }
+}
+@keyframes cover-climb {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(-150px); opacity: 0; }
+}
+@keyframes cover-flip {
+  0%, 35% { transform: scaleX(1); }
+  45% { transform: scaleX(0); }
+  55%, 100% { transform: scaleX(1); }
+}
+.cover-sway { animation: cover-sway 7s ease-in-out infinite; transform-box: fill-box; transform-origin: 0 100%; }
+.cover-climb { animation: cover-climb 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.cover-flip { animation: cover-flip 4s var(--ease-mirai) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
 
 /* Pair Pop: the peek timer, the results card swinging in, and the landing's flipping tiles. */
 @keyframes pp-drain {

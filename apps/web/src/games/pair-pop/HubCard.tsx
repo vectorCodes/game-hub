@@ -1,35 +1,52 @@
-// Pair Pop's tile on the GameHub page: a few memory tiles flipping in a candy sky (no
-// three.js, so the hub stays light) and a line of status.
+// Pair Pop's tile on the GameHub page: a board of tiles drawn as a print (SVG, no three.js,
+// so the hub stays light) and a line of status.
 import { useEffect } from "react";
+import { CoverFrame } from "../../components/CoverFrame";
 import { dailyNumber } from "./deck";
 import { savedDaily } from "./guest";
 import { usePairPopProgress } from "./progress";
 
-const TILES: [string, string, number, number][] = [
-  // [face, colour, left %, top %]
-  ["🐼", "#7ddc6f", 14, 26],
-  ["🍩", "#ff8fc8", 40, 16],
-  ["🐼", "#7ddc6f", 66, 30],
-  ["🦊", "#ffb340", 26, 58],
-  ["🐝", "#ffd84d", 54, 56],
-];
+/** A 4 × 3 board: two pairs found (sun circles, jade triangles), one tile turning, the rest face down. */
+const FOUND: Record<number, "sun" | "jade"> = { 1: "sun", 10: "sun", 4: "jade", 7: "jade" };
+const TURNING = 6;
+const TILE = 50;
+const GAP = 12;
+const LEFT = (400 - (4 * TILE + 3 * GAP)) / 2;
+const TOP = (240 - (3 * TILE + 2 * GAP)) / 2;
 
 export function PairPopCover() {
   return (
-    <div className="relative h-full min-h-64 overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_50%_10%,#a48bff_0%,#6a4ae6_45%,#2f1a86_100%)] md:min-h-80">
-      {TILES.map(([face, color, left, top], i) => (
-        <div key={i} aria-hidden className="absolute w-[20%] [perspective:500px]" style={{ left: `${left}%`, top: `${top}%`, animation: `pp-bob ${5 + i * 0.6}s ease-in-out ${-i}s infinite` }}>
-          <div className="relative aspect-square [transform-style:preserve-3d]" style={{ animation: `pp-flip 5s cubic-bezier(0.5,0,0.2,1.3) ${i * 0.45}s infinite` }}>
-            <div className="absolute inset-0 grid place-items-center rounded-2xl bg-gradient-to-br from-[#7c6cff] to-[#38c8e8] text-2xl font-black text-white shadow-[0_6px_0_#3a2a9e] [backface-visibility:hidden]">?</div>
-            <div className="absolute inset-0 grid place-items-center rounded-2xl text-3xl shadow-[0_6px_0_rgba(0,0,0,0.25)] [backface-visibility:hidden] [transform:rotateY(180deg)]" style={{ background: color }}>
-              {face}
-            </div>
-          </div>
-        </div>
-      ))}
-      <span className="absolute top-4 left-4 rounded-full bg-stone-950/80 px-3 py-1 text-xs font-medium text-stone-100 ring-1 ring-white/10 backdrop-blur">New · Memory game</span>
-      <span className="absolute top-4 right-4 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-ink">3D</span>
-    </div>
+    <CoverFrame number="03" title="Pair Pop" meta={`Daily #${dailyNumber()}`} caption="Memory · find the twins">
+      <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet" className="h-full w-full" aria-hidden="true">
+        {Array.from({ length: 12 }, (_, i) => {
+          const x = LEFT + (i % 4) * (TILE + GAP);
+          const y = TOP + Math.floor(i / 4) * (TILE + GAP);
+          const found = FOUND[i];
+          const cx = x + TILE / 2;
+          const cy = y + TILE / 2;
+          if (found)
+            return (
+              <g key={i}>
+                <rect x={x} y={y} width={TILE} height={TILE} fill={found === "sun" ? "#d9582c" : "#2f8a73"} />
+                {found === "sun" ? (
+                  <circle cx={cx} cy={cy} r="11" fill="#f8f2e7" />
+                ) : (
+                  <path d={`M${cx} ${cy - 12} L${cx + 12} ${cy + 9} L${cx - 12} ${cy + 9} Z`} fill="#f8f2e7" />
+                )}
+                <circle cx={x + TILE - 6} cy={y + 6} r="2.2" fill="#cc922f" />
+              </g>
+            );
+          return (
+            <g key={i} className={i === TURNING ? "cover-flip" : undefined}>
+              <rect x={x + 0.5} y={y + 0.5} width={TILE - 1} height={TILE - 1} fill={i === TURNING ? "#cc922f" : "#f3ead9"} stroke="#2a2216" strokeOpacity="0.3" strokeWidth="1" />
+              <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Chakra Petch, sans-serif" fontWeight="300" fontSize="16" fill="#2a2216" fillOpacity={i === TURNING ? 0.9 : 0.35}>
+                ?
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </CoverFrame>
   );
 }
 

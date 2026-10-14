@@ -20,7 +20,7 @@ const FADE = 0.14;
 const ONCE = new Set(["jump", "die"]);
 
 const LOOK: Record<RiderKind, { opacity: number; glow: string | null; label: string }> = {
-  me: { opacity: 0.4, glow: "#f8cf72", label: "bg-lamp-300/90 text-ink" },
+  me: { opacity: 0.4, glow: "#eec266", label: "bg-lamp-300/90 text-ink" },
   ghost: { opacity: 0.4, glow: "#9fc4ff", label: "bg-sky-300/85 text-stone-950" },
   challenge: { opacity: 0.5, glow: "#ff8fa3", label: "bg-rose-400/90 text-stone-950" },
   live: { opacity: 0.9, glow: null, label: "bg-moss-400/90 text-stone-950" },

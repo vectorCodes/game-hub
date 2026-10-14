@@ -141,7 +141,7 @@ export function GuessInput({ names, tried, disabled, onGuess, onSkip }: Props) {
             ))}
           </ul>
         )}
-        <div className="flex items-center gap-2 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 transition focus-within:bg-white/[0.06] focus-within:ring-lamp-400/70 focus-within:shadow-[0_0_30px_-10px_rgba(244,185,78,0.9)]">
+        <div className="flex items-center gap-2 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 transition focus-within:bg-white/[0.06] focus-within:ring-lamp-400/70 focus-within:shadow-[0_0_30px_-10px_rgba(204,146,47,0.9)]">
           <input
             value={text}
             onChange={(e) => {

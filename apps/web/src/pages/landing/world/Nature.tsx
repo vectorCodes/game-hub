@@ -42,9 +42,9 @@ export function Sky() {
         depthWrite: false,
         fog: false,
         uniforms: {
-          uTop: { value: new Color("#06100c") },
-          uHorizon: { value: new Color("#1d2c23") },
-          uGlow: { value: new Color("#3a3524") },
+          uTop: { value: new Color("#061615") },
+          uHorizon: { value: new Color("#21413b") },
+          uGlow: { value: new Color("#5c4622") },
         },
         vertexShader: /* glsl */ `
           varying vec3 vDir;
@@ -121,7 +121,7 @@ export function Mountains() {
       {peaks.map((p, i) => (
         <mesh key={i} position={[p.x, p.h / 2 - 2, p.z]}>
           <coneGeometry args={[p.r, p.h, 5]} />
-          <meshBasicMaterial color="#0f1a14" />
+          <meshBasicMaterial color="#0f2522" />
         </mesh>
       ))}
     </group>
@@ -145,10 +145,10 @@ export function Ground() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -60]} receiveShadow>
         <planeGeometry args={[400, 400]} />
-        <meshStandardMaterial color="#111a14" roughness={1} />
+        <meshStandardMaterial color="#122824" roughness={1} />
       </mesh>
       <mesh geometry={path} position={[0, 0.01, 0]} receiveShadow>
-        <meshStandardMaterial color="#2e2c22" roughness={1} />
+        <meshStandardMaterial color="#3b3428" roughness={1} />
       </mesh>
     </group>
   );
@@ -173,9 +173,9 @@ export function Grass({ count, density = 1 }: { count: number; density?: number 
         uniforms: UniformsUtils.merge([
           UniformsLib.fog,
           {
-            uBase: { value: new Color("#0d1710") },
-            uTip: { value: new Color("#5d8a45") },
-            uWarm: { value: new Color("#f4b94e") },
+            uBase: { value: new Color("#0c201c") },
+            uTip: { value: new Color("#3f8a74") },
+            uWarm: { value: new Color("#e2a940") },
             uLamps: { value: LAMPS.map((l) => new Vector3(...l)) },
           },
         ]),
@@ -282,7 +282,7 @@ export function Forest({ count, density = 1 }: { count: number; density?: number
   useLayoutEffect(() => {
     const rand = seeded(11);
     const dummy = new Object3D();
-    const shades = ["#1c2e22", "#223826", "#1a2a1f", "#2a4430", "#173024"].map((c) => new Color(c));
+    const shades = ["#17322c", "#1d3c34", "#142b27", "#24493f", "#183631"].map((c) => new Color(c));
     let placed = 0;
     for (let tries = 0; placed < count && tries < count * 6; tries++) {
       const x = -48 + rand() * 96;
@@ -336,7 +336,7 @@ export function Rocks() {
     <group>
       {rocks.map((r, i) => (
         <mesh key={i} geometry={geometry} position={[r.x, r.s * 0.4, r.z]} scale={[r.s * 1.3, r.s, r.s]} rotation={[0, r.r, 0]}>
-          <meshStandardMaterial color="#3a4239" roughness={1} flatShading />
+          <meshStandardMaterial color="#3a4b45" roughness={1} flatShading />
         </mesh>
       ))}
     </group>

@@ -43,7 +43,7 @@ function Distribution({ stats }: { stats: StatsView }) {
             <span className="w-4 text-right text-stone-400 tabular-nums">{i + 1}</span>
             <div className="h-7 flex-1 rounded-lg bg-white/[0.03]">
               <div
-                className={`flex h-full items-center justify-end rounded-lg px-2 transition-[width] duration-700 ease-out ${count && i === best ? "bg-gradient-to-r from-lamp-300 to-lamp-500 shadow-[0_0_18px_-6px_rgba(233,160,58,0.7)]" : count ? "bg-stone-600" : ""
+                className={`flex h-full items-center justify-end rounded-lg px-2 transition-[width] duration-700 ease-out ${count && i === best ? "bg-gold" : count ? "bg-stone-600" : ""
                   }`}
                 style={{
                   width: grown ? `${count ? Math.max(8, (count / max) * 100) : 0}%` : "0%",

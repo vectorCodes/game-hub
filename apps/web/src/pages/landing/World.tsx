@@ -75,10 +75,10 @@ export default function World() {
             onDecline={() => setLevel((l) => Math.min(PERFORMANCE_LEVELS.length - 1, l + 1))}
             onFallback={() => setLevel(PERFORMANCE_LEVELS.length - 1)}
           />
-          <color attach="background" args={["#0e1411"]} />
-          <fog attach="fog" args={["#0e1411", 16, 95]} />
+          <color attach="background" args={["#0c1f1e"]} />
+          <fog attach="fog" args={["#0c1f1e", 16, 95]} />
           {/* Weak devices have no lamp lights, so the fill does a little more. */}
-          <hemisphereLight args={["#5e7a66", "#0e1411", weak ? 0.75 : 0.55]} />
+          <hemisphereLight args={["#8fbab0", "#0c1f1e", weak ? 1.05 : 0.85]} />
           <directionalLight position={[10, 30, -110]} color="#cfd8ff" intensity={0.25} />
 
           <WindClock />
@@ -103,7 +103,7 @@ export default function World() {
           {settings.bloom && (
             <EffectComposer multisampling={4}>
               <Bloom mipmapBlur intensity={0.9} luminanceThreshold={0.75} luminanceSmoothing={0.2} />
-              <Vignette offset={0.25} darkness={0.75} />
+              <Vignette offset={0.35} darkness={0.45} />
             </EffectComposer>
           )}
         </QualityContext>

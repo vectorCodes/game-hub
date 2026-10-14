@@ -35,11 +35,11 @@ const GEAR_ICONS: Record<string, string> = {
 
 /** How each trail looks in the shop. */
 export const TRAIL_SWATCH: Record<string, string> = {
-  "trail:none": "linear-gradient(135deg, #2a352d, #1a221c)",
-  "trail:sparkle": "radial-gradient(circle at 30% 30%, #ffffff, #fdf1d3 30%, #9fb4ff 80%)",
-  "trail:ember": "radial-gradient(circle at 40% 60%, #ffd27a, #ec7a5f 45%, #8a2b1a 90%)",
-  "trail:rainbow": "conic-gradient(#ec7a5f, #f8cf72, #8fc76a, #7ec8ff, #d9a6ff, #ec7a5f)",
-  "trail:gold": "radial-gradient(circle at 35% 35%, #fff6d2, #f8cf72 40%, #c97f26 90%)",
+  "trail:none": "linear-gradient(135deg, #203a36, #1a221c)",
+  "trail:sparkle": "radial-gradient(circle at 30% 30%, #ffffff, #fbecc9 30%, #9fb4ff 80%)",
+  "trail:ember": "radial-gradient(circle at 40% 60%, #ffd27a, #e8774f 45%, #8a2b1a 90%)",
+  "trail:rainbow": "conic-gradient(#e8774f, #eec266, #5bb198, #7ec8ff, #d9a6ff, #e8774f)",
+  "trail:gold": "radial-gradient(circle at 35% 35%, #fff6d2, #eec266 40%, #a8721f 90%)",
 };
 
 const ERRORS: Record<string, string> = {

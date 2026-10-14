@@ -23,7 +23,7 @@ export function Cannons() {
 const WOOD = "#8a5a35";
 const WOOD_DARK = "#5e3b20";
 const IRON = "#3b4150";
-const GOLD = "#f4b94e";
+const GOLD = "#e2a940";
 
 function CannonView({ c }: { c: Cannon }) {
   const sim = useSim();

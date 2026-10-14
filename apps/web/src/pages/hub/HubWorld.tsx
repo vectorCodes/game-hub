@@ -1,10 +1,10 @@
-// GameHub's hero scene: the logo's lamp hovering over a turntable of objects. They circle
+// GameHub's hero scene: a red sun hovering over a turntable of objects on paper. They circle
 // under the light and their shadows sweep across the floor. Lazy-loaded so the page's text
 // renders before three.js.
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, Sparkles, useGLTF } from "@react-three/drei";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Box3, Vector3, type Group, type Mesh, type PerspectiveCamera } from "three";
 import { GLADE_MODELS, landingModel, WALL_MODEL } from "../landing/assets";
 import { detectWeakDevice } from "../landing/world/quality";
@@ -41,8 +41,8 @@ function Exhibit({ name, angle, size = 1.2 }: { name: string; angle: number; siz
   return (
     <group position={[Math.cos(angle) * RING, 0, Math.sin(angle) * RING]}>
       <mesh position={[0, 0.07, 0]} receiveShadow>
-        <cylinderGeometry args={[0.56, 0.64, 0.14, 40]} />
-        <meshStandardMaterial color="#2a352d" roughness={0.85} />
+        <cylinderGeometry args={[0.56, 0.6, 0.14, 40]} />
+        <meshStandardMaterial color="#dfcfb2" roughness={0.8} />
       </mesh>
       <Float enabled={!still} speed={1.3} floatIntensity={0.5} rotationIntensity={0.1} floatingRange={[0.3, 0.6]}>
         <group ref={spin} position={[0, 0.3, 0]} rotation={[0, angle, 0]}>
@@ -79,20 +79,20 @@ function Die() {
   return (
     <group>
       <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[0.95, 1.1, 0.6, 48]} />
-        <meshStandardMaterial color="#263029" roughness={0.8} />
+        <cylinderGeometry args={[0.95, 1.02, 0.6, 48]} />
+        <meshStandardMaterial color="#dfcfb2" roughness={0.8} />
       </mesh>
       <Float enabled={!still} speed={1.6} floatIntensity={0.8} rotationIntensity={0} floatingRange={[0.2, 0.5]}>
         <mesh ref={die} position={[0, 1.45, 0]} castShadow>
           <icosahedronGeometry args={[0.55, 0]} />
-          <meshStandardMaterial color="#efe6d2" roughness={0.55} flatShading />
+          <meshStandardMaterial color="#cc922f" roughness={0.35} metalness={0.25} flatShading />
         </mesh>
       </Float>
     </group>
   );
 }
 
-/** The logo's lamp: a warm orb that lights the scene and casts every shadow. */
+/** The sun: a red orb (the logo's sun) that lights the scene and casts every shadow. */
 function Lamp({ weak }: { weak: boolean }) {
   return (
     <>
@@ -100,20 +100,20 @@ function Lamp({ weak }: { weak: boolean }) {
         <group position={[0, LAMP_HEIGHT, 0]}>
           <mesh>
             <sphereGeometry args={[0.38, 48, 48]} />
-            <meshStandardMaterial color="#fdf1d3" emissive="#f4b94e" emissiveIntensity={weak ? 1.6 : 4} toneMapped={false} />
+            <meshStandardMaterial color="#e8774f" emissive="#d9582c" emissiveIntensity={weak ? 1.4 : 2.4} toneMapped={false} />
           </mesh>
           <mesh scale={2.4}>
             <sphereGeometry args={[0.38, 32, 32]} />
-            <meshBasicMaterial color="#f4b94e" transparent opacity={0.07} depthWrite={false} />
+            <meshBasicMaterial color="#d9582c" transparent opacity={0.08} depthWrite={false} />
           </mesh>
-          <pointLight color="#f8cf72" intensity={18} distance={16} decay={2} />
+          <pointLight color="#ffe6cf" intensity={10} distance={16} decay={2} />
         </group>
       </Float>
       {/* The shadow caster: one spotlight straight down keeps it to a single shadow map. */}
       <spotLight
         position={[0, LAMP_HEIGHT, 0]}
-        color="#f8cf72"
-        intensity={90}
+        color="#fff6ea"
+        intensity={60}
         angle={1.15}
         penumbra={0.7}
         decay={2}
@@ -132,12 +132,12 @@ function Floor() {
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[40, 64]} />
-        <meshStandardMaterial color="#18211b" roughness={1} />
+        <meshStandardMaterial color="#efe3cc" roughness={1} />
       </mesh>
-      {/* The turntable's rim: a faint moss line the exhibits ride on. */}
+      {/* The turntable's rim: a fine gold line the exhibits ride on. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
         <ringGeometry args={[RING - 0.02, RING + 0.02, 128]} />
-        <meshBasicMaterial color="#8fc76a" transparent opacity={0.35} toneMapped={false} />
+        <meshBasicMaterial color="#cc922f" transparent opacity={0.7} toneMapped={false} />
       </mesh>
     </>
   );
@@ -187,9 +187,10 @@ export default function HubWorld({ active }: { active: boolean }) {
         gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={() => setReady(true)}
       >
-        <color attach="background" args={["#0e1411"]} />
-        <fog attach="fog" args={["#0e1411", 13, 30]} />
-        <hemisphereLight args={["#5e7a66", "#0e1411", 0.45]} />
+        <color attach="background" args={["#f3ead9"]} />
+        <fog attach="fog" args={["#f3ead9", 14, 30]} />
+        <hemisphereLight args={["#fff8ec", "#c8b48f", 1.5]} />
+        <directionalLight position={[8, 6, 6]} intensity={0.5} color="#fff1dc" />
         <CameraRig />
         <Lamp weak={weak} />
         <Floor />
@@ -197,11 +198,10 @@ export default function HubWorld({ active }: { active: boolean }) {
         <Suspense fallback={null}>
           <Turntable />
         </Suspense>
-        <Sparkles count={weak ? 40 : 90} scale={[16, 6, 16]} position={[0, 3, 0]} size={2.5} speed={still ? 0 : 0.3} color="#f8cf72" opacity={0.6} />
+        <Sparkles count={weak ? 40 : 90} scale={[16, 6, 16]} position={[0, 3, 0]} size={2.5} speed={still ? 0 : 0.3} color="#cc922f" opacity={0.5} />
         {!weak && (
           <EffectComposer multisampling={4}>
-            <Bloom mipmapBlur intensity={0.8} luminanceThreshold={0.8} luminanceSmoothing={0.2} />
-            <Vignette offset={0.25} darkness={0.7} />
+            <Bloom mipmapBlur intensity={0.6} luminanceThreshold={1.05} luminanceSmoothing={0.1} />
           </EffectComposer>
         )}
       </Canvas>

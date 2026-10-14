@@ -45,11 +45,11 @@ export function LampPost({ lantern, light = true }: { lantern: V3; light?: boole
     <group>
       <mesh position={[x, y / 2 - 0.2, z]}>
         <cylinderGeometry args={[0.06, 0.09, y - 0.4, 8]} />
-        <meshStandardMaterial color="#1a1f1b" roughness={0.6} metalness={0.4} />
+        <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
       </mesh>
       <mesh position={[x, 0.15, z]}>
         <cylinderGeometry args={[0.22, 0.28, 0.3, 8]} />
-        <meshStandardMaterial color="#1a1f1b" roughness={0.6} metalness={0.4} />
+        <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
       </mesh>
       <group position={lantern}>
         <mesh>
@@ -60,16 +60,16 @@ export function LampPost({ lantern, light = true }: { lantern: V3; light?: boole
         {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => (
           <mesh key={`${sx}${sz}`} position={[sx * 0.13, 0, sz * 0.13]}>
             <boxGeometry args={[0.035, 0.42, 0.035]} />
-            <meshStandardMaterial color="#1a1f1b" roughness={0.6} metalness={0.4} />
+            <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
           </mesh>
         ))}
         <mesh position={[0, -0.22, 0]}>
           <boxGeometry args={[0.32, 0.04, 0.32]} />
-          <meshStandardMaterial color="#1a1f1b" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
         </mesh>
         <mesh position={[0, 0.3, 0]} rotation={[0, Math.PI / 4, 0]}>
           <coneGeometry args={[0.26, 0.2, 4]} />
-          <meshStandardMaterial color="#1a1f1b" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
         </mesh>
         {light && !weak && <pointLight color="#ffc978" intensity={18} distance={16} decay={1.6} />}
         {weak && (
@@ -120,7 +120,7 @@ export function Moths({ around, count = 7 }: { around: V3; count?: number }) {
         <group key={i} ref={(g) => void (moths.current[i] = g)} scale={0.9}>
           {[1, -1].map((side) => (
             <mesh key={side} geometry={wing} scale={[side, 1, 1]}>
-              <meshStandardMaterial color="#f6ead0" emissive="#f4b94e" emissiveIntensity={0.6} side={DoubleSide} />
+              <meshStandardMaterial color="#f6ead0" emissive="#e2a940" emissiveIntensity={0.6} side={DoubleSide} />
             </mesh>
           ))}
         </group>
@@ -242,7 +242,7 @@ function FireflySwarm({ count, center, spread, color, size }: { count: number; c
 const SWARMS: { center: V3; spread: V3; color: string; size: number; count: number }[] = [
   { center: [0, 2.6, -40], spread: [44, 5, 120], color: "#f8e08a", size: 9, count: 200 },
   { center: [0, 2.6, 2], spread: [12, 4, 12], color: "#ffd27a", size: 11, count: 50 },
-  { center: [0, 2.6, -60], spread: [18, 5, 18], color: "#c9f29a", size: 11, count: 70 },
+  { center: [0, 2.6, -60], spread: [18, 5, 18], color: "#eec266", size: 11, count: 70 },
 ];
 
 export function Fireflies({ dense }: { dense: boolean }) {

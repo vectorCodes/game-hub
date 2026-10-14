@@ -14,68 +14,74 @@ function canvas(size: number, draw: (g: CanvasRenderingContext2D, size: number) 
   return tex;
 }
 
-/** The back: a candy gradient, confetti specks, and a chunky "?" with a drop shadow. */
-export const backTexture = canvas(512, (g, s) => {
+/** The back: GameHub gold, a fine inner rule, a few sun and jade specks, and a light "?". */
+const drawBack = (g: CanvasRenderingContext2D, s: number) => {
   const bg = g.createLinearGradient(0, 0, s, s);
-  bg.addColorStop(0, "#7c6cff");
-  bg.addColorStop(0.55, "#5a8dff");
-  bg.addColorStop(1, "#38c8e8");
+  bg.addColorStop(0, "#e2a940");
+  bg.addColorStop(1, "#c08424");
   g.fillStyle = bg;
   g.fillRect(0, 0, s, s);
 
   // A soft light from the top left.
-  const glow = g.createRadialGradient(s * 0.3, s * 0.25, 0, s * 0.3, s * 0.25, s * 0.8);
-  glow.addColorStop(0, "rgba(255,255,255,0.35)");
-  glow.addColorStop(1, "rgba(255,255,255,0)");
+  const glow = g.createRadialGradient(s * 0.3, s * 0.22, 0, s * 0.3, s * 0.22, s * 0.85);
+  glow.addColorStop(0, "rgba(255,248,230,0.4)");
+  glow.addColorStop(1, "rgba(255,248,230,0)");
   g.fillStyle = glow;
   g.fillRect(0, 0, s, s);
 
-  // Confetti, placed by a fixed pattern so every back looks the same.
-  const specks = ["#ffd84d", "#ff7a8a", "#7ddc6f", "#ffffff", "#ffb340"];
-  let r = 7;
-  const rand = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
-  for (let i = 0; i < 46; i++) {
-    g.save();
-    g.translate(rand() * s, rand() * s);
-    g.rotate(rand() * Math.PI);
-    g.globalAlpha = 0.55 + rand() * 0.4;
-    g.fillStyle = specks[i % specks.length];
-    if (i % 3 === 0) {
-      g.beginPath();
-      g.arc(0, 0, 5 + rand() * 4, 0, Math.PI * 2);
-      g.fill();
-    } else {
-      g.fillRect(-9, -3.5, 18, 7);
-    }
-    g.restore();
+  // A printed grid, like the pages.
+  g.strokeStyle = "rgba(42,34,22,0.08)";
+  g.lineWidth = 2;
+  for (let x = 64; x < s; x += 64) {
+    g.beginPath();
+    g.moveTo(x, 0);
+    g.lineTo(x, s);
+    g.moveTo(0, x);
+    g.lineTo(s, x);
+    g.stroke();
   }
-  g.globalAlpha = 1;
 
-  // Inner border.
-  g.strokeStyle = "rgba(255,255,255,0.55)";
-  g.lineWidth = 10;
+  // Inner rule, and a dot seal in two corners.
+  g.strokeStyle = "rgba(42,34,22,0.55)";
+  g.lineWidth = 5;
+  g.strokeRect(34, 34, s - 68, s - 68);
+  g.fillStyle = "#d9582c";
   g.beginPath();
-  g.roundRect(26, 26, s - 52, s - 52, 54);
-  g.stroke();
+  g.arc(70, 70, 13, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = "#2f8a73";
+  g.beginPath();
+  g.arc(s - 70, s - 70, 13, 0, Math.PI * 2);
+  g.fill();
 
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.font = `900 ${s * 0.56}px "Bricolage Grotesque", "Arial Black", system-ui, sans-serif`;
-  g.fillStyle = "rgba(20,10,70,0.35)";
-  g.fillText("?", s / 2 + 8, s / 2 + 22);
-  g.fillStyle = "#ffffff";
-  g.fillText("?", s / 2, s / 2 + 10);
+  g.font = `300 ${s * 0.6}px "Chakra Petch", "Arial", system-ui, sans-serif`;
+  g.fillStyle = "#2a2216";
+  g.fillText("?", s / 2, s / 2 + 12);
+};
+export const backTexture = canvas(512, drawBack);
+// Drawn before the display font may have loaded: redraw once it's in.
+void document.fonts?.load(`300 300px "Chakra Petch"`).then(() => {
+  drawBack((backTexture.image as HTMLCanvasElement).getContext("2d")!, 512);
+  backTexture.needsUpdate = true;
 });
 
-/** The sky behind the board, painted into the scene so the canvas can be opaque. */
+/** The night sky behind the board, painted into the scene so the canvas can be opaque. */
 export const skyTexture = (() => {
   const tex = canvas(512, (g, s) => {
-    const sky = g.createRadialGradient(s / 2, s * 0.15, 0, s / 2, s * 0.15, s * 0.95);
-    sky.addColorStop(0, "#9a7dff");
-    sky.addColorStop(0.38, "#6a4ae6");
-    sky.addColorStop(0.72, "#3a1f9e");
-    sky.addColorStop(1, "#1c0e5a");
+    const sky = g.createRadialGradient(s / 2, s * 0.12, 0, s / 2, s * 0.12, s * 0.95);
+    sky.addColorStop(0, "#2c4743");
+    sky.addColorStop(0.4, "#17302c");
+    sky.addColorStop(0.75, "#0c1f1e");
+    sky.addColorStop(1, "#081615");
     g.fillStyle = sky;
+    g.fillRect(0, 0, s, s);
+    // A gold sun-glow above the board.
+    const sun = g.createRadialGradient(s * 0.5, s * 0.05, 0, s * 0.5, s * 0.05, s * 0.45);
+    sun.addColorStop(0, "rgba(204,146,47,0.35)");
+    sun.addColorStop(1, "rgba(204,146,47,0)");
+    g.fillStyle = sun;
     g.fillRect(0, 0, s, s);
   });
   tex.anisotropy = 1;

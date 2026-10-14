@@ -42,16 +42,16 @@ export default function SkyClimbHome() {
           <p className="eyebrow animate-rise">{daily ? `Tower #${daily.number} · next in ${formatCountdown(daily.nextAt, now)}` : "A new tower every day"}</p>
           <h1 className="mt-4 animate-rise text-display [animation-delay:80ms]">
             Sky{" "}
-            <span className="bg-gradient-to-r from-lamp-200 via-lamp-300 to-lamp-500 bg-clip-text text-transparent">Climb</span>
+            <span className="text-ember-400">Climb</span>
           </h1>
           <p className="mx-auto mt-5 max-w-md animate-rise text-lead [animation-delay:160ms] md:mx-0">
             One tower a day. Don&rsquo;t look down. Jump from meadow to storm to the stars: {FLOORS} floors, harder the higher you go.
           </p>
           {twist && (
-            <p className="mt-5 inline-flex animate-rise items-center gap-2 rounded-full bg-violet-400/15 px-4 py-1.5 text-sm font-medium text-violet-100 ring-1 ring-violet-300/30 [animation-delay:200ms]">
+            <p className="mt-5 inline-flex animate-rise flex-wrap items-center gap-2 border-y hairline px-1 py-2 font-serif text-sm text-stone-300 [animation-delay:200ms]">
               <span className="text-lg">{TWISTS[twist].emoji}</span>
               Today&rsquo;s twist: {TWISTS[twist].name}
-              <span className="text-violet-200/70">· {TWISTS[twist].blurb}</span>
+              <span className="text-stone-500">· {TWISTS[twist].blurb}</span>
             </p>
           )}
           <div className="mt-8 flex animate-rise flex-col gap-3 [animation-delay:240ms] sm:flex-row max-md:justify-center">

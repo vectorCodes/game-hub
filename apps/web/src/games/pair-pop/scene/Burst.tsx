@@ -6,7 +6,8 @@ import { Color, DynamicDrawUsage, Euler, Matrix4, Quaternion, Vector3, type Inst
 
 const COUNT = 420;
 const GRAVITY = 9;
-const PALETTE = ["#ffd84d", "#ff7a8a", "#7ddc6f", "#55a8ff", "#e07bff", "#ffffff"];
+// GameHub accents: gold, sun, jade, rice, and a little plum.
+const PALETTE = ["#e2a940", "#d9582c", "#3c947d", "#f8f2e7", "#c46a8a", "#eec266"];
 
 interface Piece {
   life: number;

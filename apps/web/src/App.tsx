@@ -13,6 +13,9 @@ import { games, playPath } from "./games/registry";
 const Album = lazy(() => import("./games/shadow-guess/album/AlbumPage"));
 const AvatarPage = lazy(() => import("./pages/AvatarPage"));
 
+/** Pages that are a single night scene end to end (Shadow Guess's scrolling 3D story). */
+const NIGHT_PAGES = new Set(["/games/shadow-guess"]);
+
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;
 
@@ -21,26 +24,37 @@ function NavItem({ to, children }: { to: string; children: ReactNode }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `shrink-0 rounded-full px-2.5 py-2 whitespace-nowrap transition-colors sm:px-3.5 ${
-          isActive ? "bg-white/10 text-white" : "text-stone-400 hover:bg-white/5 hover:text-white"
+        `group relative inline-flex min-h-11 shrink-0 items-center px-2 whitespace-nowrap transition-colors sm:px-3 ${
+          isActive ? "text-stone-50" : "text-stone-400 hover:text-stone-50"
         }`
       }
     >
-      {children}
+      {({ isActive }) => (
+        <>
+          {children}
+          {/* A dot under the current page, as in print navigation. */}
+          <span
+            aria-hidden
+            className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-current transition-[opacity,transform] duration-200 ${
+              isActive ? "opacity-100" : "translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"
+            }`}
+          />
+        </>
+      )}
     </NavLink>
   );
 }
 
 function Header() {
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-stone-950/75 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b hairline bg-stone-950/85 backdrop-blur-xl">
       <nav className="container-page flex h-16 items-center justify-between gap-3">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <Logo />
-          <span className="hidden md:inline">GameHub</span>
+          <span className="hidden font-mono text-xs leading-none font-semibold tracking-[0.12em] uppercase md:inline">Game&nbsp;Hub</span>
         </Link>
         {/* Phones: the links scroll sideways if they ever don't fit, the account menu stays put. */}
-        <div className="flex min-w-0 items-center gap-0.5 text-[13px] sm:gap-1 sm:text-sm">
+        <div className="flex min-w-0 items-center gap-0.5 font-mono text-[10px] font-medium tracking-[0.12em] uppercase sm:gap-1 sm:text-[11px]">
           <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden">
             {/* Short names until there's room for every full title (tablets get the short ones). */}
             {games.map((g) => (
@@ -66,13 +80,13 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] bg-stone-950/85 backdrop-blur-xl">
-      <div className="container-page flex flex-col items-center justify-between gap-4 py-8 text-sm text-stone-500 sm:flex-row">
-        <Link to="/" className="flex items-center gap-2.5 font-display font-semibold text-stone-300">
+    <footer className="border-t hairline">
+      <div className="container-page flex flex-col items-center justify-between gap-5 py-10 text-stone-500 sm:flex-row">
+        <Link to="/" className="flex items-center gap-2.5 font-mono text-xs font-semibold tracking-[0.12em] text-stone-300 uppercase">
           <Logo />
-          GameHub
+          Game Hub
         </Link>
-        <nav className="flex items-center gap-6">
+        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 label-mono">
           {games.map((g) => (
             <Link key={g.id} to={g.path} className="transition-colors hover:text-stone-200">
               {g.title}
@@ -85,7 +99,7 @@ function Footer() {
             Leaderboard
           </Link>
         </nav>
-        <p>A new puzzle every day.</p>
+        <p className="font-serif text-sm">A new puzzle every day.</p>
       </div>
     </footer>
   );
@@ -94,7 +108,7 @@ function Footer() {
 function PageLoader() {
   return (
     <div className="grid min-h-[50vh] place-items-center">
-      <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-lamp-400" />
+      <span className="h-8 w-8 animate-spin rounded-full border border-white/15 border-t-lamp-400" />
     </div>
   );
 }
@@ -108,17 +122,17 @@ export default function App() {
   // own sections; other pages sit in a centered column.
   const game = games.some((g) => pathname === playPath(g));
   const landing = pathname === "/" || games.some((g) => pathname === g.path);
+  // Paper for pages, night for game screens and for pages that are one night scene.
+  const scheme = game || NIGHT_PAGES.has(pathname) ? "night" : "paper";
+  useEffect(() => {
+    const { classList } = document.body;
+    classList.toggle("theme-night", scheme === "night");
+    classList.toggle("theme-paper", scheme === "paper");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", scheme === "night" ? "#0c1f1e" : "#f3ead9");
+  }, [scheme]);
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[42rem] bg-[radial-gradient(ellipse_45%_55%_at_15%_-5%,rgba(244,185,78,0.16),transparent),radial-gradient(ellipse_40%_45%_at_90%_0%,rgba(109,173,75,0.14),transparent)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)] bg-[size:56px_56px]"
-      />
+    <div className={`theme-${scheme} relative flex min-h-dvh flex-col text-stone-100`}>
       {/* Games take the whole screen; each has its own way back. */}
       {!game && <Header />}
       <main

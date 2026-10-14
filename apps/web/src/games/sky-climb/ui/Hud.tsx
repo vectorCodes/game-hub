@@ -13,12 +13,12 @@ import { towerTwist } from "../twists";
 import { RaceClock, RaceStandings } from "./Race";
 
 const ZONE_COLORS: Record<string, string> = {
-  meadow: "#8fc76a",
+  meadow: "#5bb198",
   treetops: "#4fa86a",
-  cliffs: "#e9a03a",
+  cliffs: "#cc922f",
   snow: "#cfd6ff",
   storm: "#6d78a8",
-  summit: "#f8cf72",
+  summit: "#eec266",
 };
 
 function Clock({ startedAt, endedAt }: { startedAt: number; endedAt: number | null }) {
@@ -288,7 +288,7 @@ function TouchControls() {
       <button
         aria-label="Jump"
         style={{ bottom: "calc(1.75rem + env(safe-area-inset-bottom))", right: "calc(1.75rem + env(safe-area-inset-right))" }}
-        className="absolute grid h-20 w-20 touch-none sm:h-24 sm:w-24 place-items-center rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 font-display text-lg font-bold text-ink shadow-[0_0_30px_-6px_rgba(244,185,78,0.8)] select-none active:scale-95"
+        className="absolute grid h-20 w-20 touch-none sm:h-24 sm:w-24 place-items-center rounded-full bg-gradient-to-b from-lamp-300 to-lamp-500 font-display text-lg font-bold text-ink shadow-[0_0_30px_-6px_rgba(204,146,47,0.8)] select-none active:scale-95"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           pressJump(true);

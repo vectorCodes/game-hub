@@ -39,11 +39,14 @@ export const PAIR_POP_DAILY_LEVEL: PairPopLevel = { cols: 5, rows: 4, peek: 2, d
 /** Daily #1. */
 export const PAIR_POP_LAUNCH_DATE = "2026-10-14";
 
-/** Face colours, one per pair: bright candy tones that the pals pop against. */
+/**
+ * Face colours, one per pair: the GameHub palette (gold, sun, jade) widened with earthy
+ * neighbours at a similar depth, so every pair is distinct and none of them shouts.
+ */
 export const PAIR_POP_COLORS = [
-  "#ff7a8a", "#ffb340", "#ffd84d", "#7ddc6f", "#4fd1c5", "#55a8ff", "#8e7cff", "#e07bff",
-  "#ff8fc8", "#ff9d5c", "#b6e35a", "#3ec7a0", "#6fc3ff", "#a68bff", "#ff6b6b", "#f9c74f",
-  "#90be6d", "#43aa8b",
+  "#d9582c", "#cc922f", "#2f8a73", "#3d6f8f", "#8c4a6b", "#6b8f3a", "#c46a8a", "#e2a940",
+  "#4f7a72", "#a8492a", "#5a6fb0", "#b8863a", "#7a5aa0", "#3c947d", "#d27a4a", "#86cbb4",
+  "#e8c27a", "#9a3b3b",
 ];
 
 /** The quickest a pair of flips can honestly be made (ms); faster games are clamped up to it. */

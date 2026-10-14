@@ -42,9 +42,10 @@ const BLURBS: Record<Game, Record<LeaderboardPeriod, string>> = {
 };
 
 const MEDALS = [
-  { ring: "ring-amber-300", text: "text-amber-300", bg: "from-amber-400/25", height: "h-28 sm:h-32", label: "1st" },
-  { ring: "ring-stone-300", text: "text-stone-200", bg: "from-stone-300/15", height: "h-20 sm:h-24", label: "2nd" },
-  { ring: "ring-orange-400", text: "text-orange-300", bg: "from-orange-500/20", height: "h-16 sm:h-20", label: "3rd" },
+  // Gold, ink and sun: the GameHub palette, readable on paper and on night.
+  { ring: "ring-lamp-400", text: "text-lamp-300", bg: "from-lamp-400/25", height: "h-28 sm:h-32", label: "1st" },
+  { ring: "ring-stone-400", text: "text-stone-200", bg: "from-stone-400/15", height: "h-20 sm:h-24", label: "2nd" },
+  { ring: "ring-ember-400", text: "text-ember-300", bg: "from-ember-400/20", height: "h-16 sm:h-20", label: "3rd" },
 ];
 
 function detail(entry: LeaderboardEntry, period: LeaderboardPeriod, game: Game) {
