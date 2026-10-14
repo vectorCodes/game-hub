@@ -1,7 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { ShadowGuessCover, ShadowGuessStatus } from "./shadow-guess/HubCard";
 import { SkyClimbCover, SkyClimbStatus } from "./sky-climb/HubCard";
-import { PuttIslesCover, PuttIslesStatus } from "./putt-isles/HubCard";
+import { PairPopCover, PairPopStatus } from "./pair-pop/HubCard";
 
 export interface GameEntry {
   id: string;
@@ -46,14 +46,14 @@ export const games: GameEntry[] = [
     Status: SkyClimbStatus,
   },
   {
-    id: "putt-isles",
-    title: "Putt Isles",
-    shortTitle: "Putt",
-    tagline: "Mini-golf on floating islands. Bank it, ride the hills, sink it.",
-    path: "/games/putt-isles",
-    Landing: lazy(() => import("./putt-isles/PuttIslesHome")),
-    Component: lazy(() => import("./putt-isles/PuttIslesPage")),
-    Cover: PuttIslesCover,
-    Status: PuttIslesStatus,
+    id: "pair-pop",
+    title: "Pair Pop",
+    shortTitle: "Pairs",
+    tagline: "A 3D memory game. Flip the tiles, find the twin pals, pop the board.",
+    path: "/games/pair-pop",
+    Landing: lazy(() => import("./pair-pop/PairPopHome")),
+    Component: lazy(() => import("./pair-pop/PairPopPage")),
+    Cover: PairPopCover,
+    Status: PairPopStatus,
   },
 ];

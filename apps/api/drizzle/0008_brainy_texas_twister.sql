@@ -1,0 +1,1 @@
+DROP TABLE "putt_rounds" CASCADE;
