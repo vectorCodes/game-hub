@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { formatToPar, type LeaderboardEntry, type LeaderboardPeriod, type LeaderboardView } from "@shadow/shared";
+import { type LeaderboardEntry, type LeaderboardPeriod, type LeaderboardView } from "@shadow/shared";
 import { api } from "../api/client";
 import { GoogleIcon } from "../auth/AuthMenu";
 import { useAuth } from "../auth/store";
@@ -9,12 +9,12 @@ import { Avatar } from "../components/Avatar";
 import { Segmented } from "../components/Segmented";
 import { formatDuration } from "../lib/format";
 
-type Game = "shadow-guess" | "sky-climb" | "putt-isles";
+type Game = "shadow-guess" | "sky-climb" | "pair-pop";
 
 const GAMES: { value: Game; label: string }[] = [
   { value: "shadow-guess", label: "Shadow Guess" },
   { value: "sky-climb", label: "Sky Climb" },
-  { value: "putt-isles", label: "Putt Isles" },
+  { value: "pair-pop", label: "Pair Pop" },
 ];
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
@@ -34,10 +34,10 @@ const BLURBS: Record<Game, Record<LeaderboardPeriod, string>> = {
     weekly: "Floors climbed on the last 7 daily towers (each day's best climb).",
     all: "Floors climbed on every daily tower (each day's best climb).",
   },
-  "putt-isles": {
-    daily: "Points on today's course: 2 for par, one more for each stroke under. Ties go to fewer strokes.",
-    weekly: "Points over the last 7 daily courses.",
-    all: "Points over every daily course.",
+  "pair-pop": {
+    daily: "Score on today's board (your first finish). Ties go to the faster player.",
+    weekly: "Total score over the last 7 daily boards.",
+    all: "Total score over every daily board.",
   },
 };
 
@@ -48,10 +48,9 @@ const MEDALS = [
 ];
 
 function detail(entry: LeaderboardEntry, period: LeaderboardPeriod, game: Game) {
-  if (game === "putt-isles") {
-    const aces = entry.wins ? ` · ${entry.wins} ⭐` : "";
-    if (period === "daily") return `${formatToPar(entry.toPar ?? 0)} · ${formatDuration(entry.seconds)}${aces}`;
-    return `${entry.played} round${entry.played === 1 ? "" : "s"}${aces}`;
+  if (game === "pair-pop") {
+    if (period === "daily") return `${"★".repeat(entry.wins ? 3 : 0) || "✓"} · ${formatDuration(entry.seconds)}`;
+    return `${entry.played} board${entry.played === 1 ? "" : "s"} · ${entry.wins} ★★★`;
   }
   if (game === "sky-climb") {
     if (period === "daily") return `${entry.wins ? "🏁 " : ""}${formatDuration(entry.seconds)}`;
@@ -122,7 +121,7 @@ function Row({ entry, period, game, delay }: { entry: LeaderboardEntry; period: 
 export default function Leaderboard() {
   const { user, enabled, synced, signIn } = useAuth();
   const [period, setPeriod] = useState<LeaderboardPeriod>("daily");
-  // ?game=sky-climb (or putt-isles) opens a game's board directly (the game pages link here).
+  // ?game=sky-climb (or pair-pop) opens a game's board directly (the game pages link here).
   const [params, setParams] = useSearchParams();
   const game: Game = GAMES.find((g) => g.value === params.get("game"))?.value ?? "shadow-guess";
   const setGame = (g: Game) => setParams(g === "shadow-guess" ? {} : { game: g }, { replace: true });
@@ -187,9 +186,9 @@ export default function Leaderboard() {
           <p className="mt-1 text-sm text-stone-400">
             {game === "sky-climb"
               ? "Climb today's tower to take the top spot."
-              : game === "putt-isles"
-                ? "Finish today's course to take the top spot."
-                : period === "daily"
+              : game === "pair-pop"
+                ? "Clear today's board to take the top spot."
+              : period === "daily"
                 ? "Finish today's daily to take the top spot."
                 : "Finish a daily to get on the board."}
           </p>

@@ -11,7 +11,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { AvatarConfig, ClimbMode, ClimbStatus, GameMode, LightAngle, PuttMode, PuttStatus, SessionStatus } from "@shadow/shared";
+import type { AvatarConfig, ClimbMode, ClimbStatus, GameMode, LightAngle, PairPopMode, PairPopStatus, SessionStatus } from "@shadow/shared";
 
 // Every table has RLS enabled and no policies: the public Supabase REST API can't read
 // anything (answers included). The API connects as a privileged role and bypasses RLS.
@@ -178,31 +178,29 @@ export const climbGhosts = pgTable("climb_ghosts", {
 }).enableRLS();
 
 /**
- * Putt Isles rounds. The course is generated from `seed`; a round records the strokes on
- * each hole as it's played. Holes arrive one at a time and are checked against the
- * server's clock, so nobody can report a round faster than it could be putted.
+ * Pair Pop games. The board is dealt from `seed` and `layoutSeed`; a finished game's flips
+ * are replayed against it to score it, and its time is capped by the server's clock.
  */
-export const puttRounds = pgTable(
-  "putt_rounds",
+export const pairPopGames = pgTable(
+  "pair_pop_games",
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid(),
-    mode: text().$type<PuttMode>().notNull(),
-    seed: text().notNull(),
-    /** Daily only: the UTC date of the course. */
+    mode: text().$type<PairPopMode>().notNull(),
+    /** Level mode: which level (0-based). */
+    level: integer(),
+    /** Daily only: the UTC date of the board. */
     puzzleDate: date(),
-    /** Strokes on each hole played so far, in order. */
-    strokes: jsonb().$type<number[]>().notNull().default([]),
-    /** Stableford points, strokes against par and holes in one, over the holes played. */
-    points: integer().notNull().default(0),
-    toPar: integer().notNull().default(0),
-    aces: integer().notNull().default(0),
-    /** Milliseconds from the start to the last hole played. */
+    seed: text().notNull(),
+    layoutSeed: text().notNull(),
+    moves: integer().notNull().default(0),
+    bestCombo: integer().notNull().default(0),
+    score: integer().notNull().default(0),
+    stars: integer().notNull().default(0),
+    /** First flip to last match (ms). */
     timeMs: integer().notNull().default(0),
-    status: text().$type<PuttStatus>().notNull().default("playing"),
+    status: text().$type<PairPopStatus>().notNull().default("playing"),
     startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    /** When the last hole was reported: the next can't come sooner than it could be played. */
-    lastHoleAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp({ withTimezone: true }),
   },
   (t) => [index().on(t.puzzleDate, t.mode), index().on(t.userId)],
