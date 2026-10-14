@@ -157,7 +157,7 @@ function Hero() {
   return (
     <Chapter className="items-start pt-[14svh]">
       <div className="relative mx-auto max-w-3xl text-center">
-        <div aria-hidden className="absolute -inset-x-24 -inset-y-16 -z-10 bg-[radial-gradient(ellipse_closest-side,rgba(12,31,30,0.62),transparent)]" />
+        <div aria-hidden className="absolute -inset-x-24 -inset-y-16 -z-10 bg-[radial-gradient(ellipse_closest-side,rgba(243,234,217,0.75),transparent)]" />
         <div className="inline-flex animate-rise items-center gap-2.5 rounded-full bg-stone-950/50 py-1.5 pr-4 pl-3 label-mono text-stone-200 ring-1 ring-white/15 backdrop-blur-md">
           <span className="relative flex h-2 w-2">
             <span className="absolute inset-0 animate-ping-soft rounded-full bg-moss-400" />
@@ -178,7 +178,7 @@ function Hero() {
         </div>
         <h1 className="mt-6 animate-rise text-display text-legible [animation-delay:80ms]">
           Can you name it from its{" "}
-          <span className="text-lamp-300">shadow</span>?
+          <span className="text-ember-500">shadow</span>?
         </h1>
         <p className="mx-auto mt-5 max-w-xl animate-rise text-lead text-legible text-stone-300! [animation-delay:160ms]">
           A hidden 3D object casts its silhouette on the wall. Every miss turns the light and reveals a new angle.
@@ -366,7 +366,7 @@ function Landing() {
   return (
     <div ref={root} className="relative">
       {/* The 3D world sits fixed behind every chapter; the camera follows the scroll. */}
-      <div aria-hidden className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_70%_60%_at_50%_30%,#1f3c37,#0c1f1e_75%)]">
+      <div aria-hidden className="fixed inset-0 -z-10 bg-paper">
         <Suspense fallback={null}>
           <World />
         </Suspense>

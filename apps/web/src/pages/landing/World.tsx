@@ -2,12 +2,12 @@
 import { Suspense, useMemo, useState } from "react";
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { MathUtils, Vector3, type PerspectiveCamera } from "three";
 import { journey } from "./journey";
-import { LAMPS, STOPS } from "./world/layout";
-import { Forest, Grass, Ground, Moon, Mountains, NightSky, Rocks, Sky, WindClock } from "./world/Nature";
-import { Bats, Fireflies, Lamps, Moths } from "./world/Life";
+import { MOON, STOPS } from "./world/layout";
+import { Forest, Grass, Ground, Moon, Mountains, Rocks, Sky, WindClock } from "./world/Nature";
+import { Bats, Lamps } from "./world/Life";
 import { Glade, ShadowWall } from "./world/Story";
 import { detectWeakDevice, PERFORMANCE_LEVELS, QualityContext } from "./world/quality";
 
@@ -75,16 +75,15 @@ export default function World() {
             onDecline={() => setLevel((l) => Math.min(PERFORMANCE_LEVELS.length - 1, l + 1))}
             onFallback={() => setLevel(PERFORMANCE_LEVELS.length - 1)}
           />
-          <color attach="background" args={["#0c1f1e"]} />
-          <fog attach="fog" args={["#0c1f1e", 16, 95]} />
-          {/* Weak devices have no lamp lights, so the fill does a little more. */}
-          <hemisphereLight args={["#8fbab0", "#0c1f1e", weak ? 1.05 : 0.85]} />
-          <directionalLight position={[10, 30, -110]} color="#cfd8ff" intensity={0.25} />
+          {/* Daylight on paper: distance fades into a paper haze, like an ink-wash print. */}
+          <color attach="background" args={["#f3ead9"]} />
+          <fog attach="fog" args={["#f1e7d4", 22, 115]} />
+          <hemisphereLight args={["#fff8ec", "#b9a27c", weak ? 1.1 : 0.9]} />
+          <directionalLight position={MOON} color="#fff1dc" intensity={1.1} />
 
           <WindClock />
           <CameraRig />
           <Sky />
-          <NightSky />
           <Moon />
           <Mountains />
           <Ground />
@@ -92,9 +91,8 @@ export default function World() {
           <Forest count={weak ? 160 : 320} density={settings.density} />
           <Rocks />
           <Lamps />
-          <Moths around={LAMPS[0]} />
+          {/* Ink silhouettes against the paper sky: they read as birds by day. */}
           <Bats />
-          <Fireflies dense={!weak} />
           <Suspense fallback={null}>
             <ShadowWall />
             <Glade />
@@ -102,8 +100,8 @@ export default function World() {
 
           {settings.bloom && (
             <EffectComposer multisampling={4}>
-              <Bloom mipmapBlur intensity={0.9} luminanceThreshold={0.75} luminanceSmoothing={0.2} />
-              <Vignette offset={0.35} darkness={0.45} />
+              {/* Only the lanterns glow: the paper itself is bright, so the threshold sits above it. */}
+              <Bloom mipmapBlur intensity={0.6} luminanceThreshold={1.1} luminanceSmoothing={0.1} />
             </EffectComposer>
           )}
         </QualityContext>

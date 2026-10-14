@@ -13,8 +13,8 @@ import { games, playPath } from "./games/registry";
 const Album = lazy(() => import("./games/shadow-guess/album/AlbumPage"));
 const AvatarPage = lazy(() => import("./pages/AvatarPage"));
 
-/** Pages that are a single night scene end to end (Shadow Guess's scrolling 3D story). */
-const NIGHT_PAGES = new Set(["/games/shadow-guess"]);
+/** Pages that are a single night scene end to end. None today: the whole site is paper. */
+const NIGHT_PAGES = new Set<string>();
 
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;

@@ -1,8 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Stars } from "@react-three/drei";
 import {
-  AdditiveBlending,
   BackSide,
   CanvasTexture,
   Color,
@@ -42,9 +40,9 @@ export function Sky() {
         depthWrite: false,
         fog: false,
         uniforms: {
-          uTop: { value: new Color("#061615") },
-          uHorizon: { value: new Color("#21413b") },
-          uGlow: { value: new Color("#5c4622") },
+          uTop: { value: new Color("#e7d9be") },
+          uHorizon: { value: new Color("#f6eedf") },
+          uGlow: { value: new Color("#2a1408") },
         },
         vertexShader: /* glsl */ `
           varying vec3 vDir;
@@ -58,7 +56,7 @@ export function Sky() {
           void main() {
             float h = clamp(vDir.y, 0.0, 1.0);
             vec3 col = mix(uHorizon, uTop, pow(h, 0.55));
-            // Warm haze low on the horizon, towards the moon.
+            // Warm haze low on the horizon, towards the sun.
             col += uGlow * pow(1.0 - h, 6.0) * smoothstep(-0.2, 0.8, -vDir.z);
             gl_FragColor = vec4(col, 1.0);
             #include <colorspace_fragment>
@@ -78,34 +76,31 @@ function glowTexture() {
   c.width = c.height = 256;
   const g = c.getContext("2d")!;
   const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  r.addColorStop(0, "rgba(255,240,200,0.9)");
-  r.addColorStop(0.25, "rgba(255,225,160,0.35)");
-  r.addColorStop(1, "rgba(255,210,140,0)");
+  r.addColorStop(0, "rgba(217,88,44,0.35)");
+  r.addColorStop(0.3, "rgba(217,88,44,0.12)");
+  r.addColorStop(1, "rgba(217,88,44,0)");
   g.fillStyle = r;
   g.fillRect(0, 0, 256, 256);
   return new CanvasTexture(c);
 }
 
+/** The red sun where the moon used to hang: a flat disc, as on a print, with a faint haze. */
 export function Moon() {
   const glow = useMemo(glowTexture, []);
   return (
     <group position={MOON}>
       <mesh>
-        <sphereGeometry args={[5, 48, 48]} />
-        <meshBasicMaterial color={[1.9, 1.75, 1.35]} toneMapped={false} fog={false} />
+        <sphereGeometry args={[6, 48, 48]} />
+        <meshBasicMaterial color="#d9582c" toneMapped={false} fog={false} />
       </mesh>
-      <sprite scale={[46, 46, 1]}>
-        <spriteMaterial map={glow} transparent depthWrite={false} blending={AdditiveBlending} fog={false} opacity={0.55} />
+      <sprite scale={[40, 40, 1]}>
+        <spriteMaterial map={glow} transparent depthWrite={false} fog={false} />
       </sprite>
     </group>
   );
 }
 
-export function NightSky() {
-  return <Stars radius={160} depth={60} count={2600} factor={5} saturation={0} fade speed={journey.still ? 0 : 0.6} />;
-}
-
-/** Far ridges, as flat dark silhouettes in the fog. */
+/** Far ridges, as flat ink-wash silhouettes fading into the haze. */
 export function Mountains() {
   const peaks = useMemo(() => {
     const rand = seeded(7);
@@ -121,7 +116,7 @@ export function Mountains() {
       {peaks.map((p, i) => (
         <mesh key={i} position={[p.x, p.h / 2 - 2, p.z]}>
           <coneGeometry args={[p.r, p.h, 5]} />
-          <meshBasicMaterial color="#0f2522" />
+          <meshBasicMaterial color="#a39a84" />
         </mesh>
       ))}
     </group>
@@ -145,10 +140,10 @@ export function Ground() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -60]} receiveShadow>
         <planeGeometry args={[400, 400]} />
-        <meshStandardMaterial color="#122824" roughness={1} />
+        <meshStandardMaterial color="#dccaa6" roughness={1} />
       </mesh>
       <mesh geometry={path} position={[0, 0.01, 0]} receiveShadow>
-        <meshStandardMaterial color="#3b3428" roughness={1} />
+        <meshStandardMaterial color="#c3a979" roughness={1} />
       </mesh>
     </group>
   );
@@ -173,9 +168,9 @@ export function Grass({ count, density = 1 }: { count: number; density?: number 
         uniforms: UniformsUtils.merge([
           UniformsLib.fog,
           {
-            uBase: { value: new Color("#0c201c") },
-            uTip: { value: new Color("#3f8a74") },
-            uWarm: { value: new Color("#e2a940") },
+            uBase: { value: new Color("#9a9468") },
+            uTip: { value: new Color("#e2cf98") },
+            uWarm: { value: new Color("#3a2a10") },
             uLamps: { value: LAMPS.map((l) => new Vector3(...l)) },
           },
         ]),
@@ -275,14 +270,14 @@ export function Forest({ count, density = 1 }: { count: number; density?: number
            transformed.x += sway * max(transformed.y - 1.0, 0.0);`,
         );
     };
-    const trunkMaterial = new MeshStandardMaterial({ color: "#2a2119", roughness: 1 });
+    const trunkMaterial = new MeshStandardMaterial({ color: "#5a4a38", roughness: 1 });
     return { crownGeometry, trunkGeometry, crownMaterial, trunkMaterial };
   }, []);
 
   useLayoutEffect(() => {
     const rand = seeded(11);
     const dummy = new Object3D();
-    const shades = ["#17322c", "#1d3c34", "#142b27", "#24493f", "#183631"].map((c) => new Color(c));
+    const shades = ["#5f7d6c", "#6c8875", "#55705f", "#7a937d", "#4e6a5b"].map((c) => new Color(c));
     let placed = 0;
     for (let tries = 0; placed < count && tries < count * 6; tries++) {
       const x = -48 + rand() * 96;
@@ -336,7 +331,7 @@ export function Rocks() {
     <group>
       {rocks.map((r, i) => (
         <mesh key={i} geometry={geometry} position={[r.x, r.s * 0.4, r.z]} scale={[r.s * 1.3, r.s, r.s]} rotation={[0, r.r, 0]}>
-          <meshStandardMaterial color="#3a4b45" roughness={1} flatShading />
+          <meshStandardMaterial color="#aaa08a" roughness={1} flatShading />
         </mesh>
       ))}
     </group>

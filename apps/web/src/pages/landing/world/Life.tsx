@@ -2,23 +2,18 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   AdditiveBlending,
-  BufferAttribute,
   CanvasTexture,
-  BufferGeometry,
-  Color,
   DoubleSide,
-  PlaneGeometry,
   Shape,
   ShapeGeometry,
-  ShaderMaterial,
   type Group,
   type Mesh,
 } from "three";
 import { windTime } from "./Nature";
-import { LAMPS, seeded, type V3 } from "./layout";
+import { LAMPS, type V3 } from "./layout";
 import { useQuality } from "./quality";
 
-const LANTERN_GLOW: [number, number, number] = [4.2, 2.7, 1.1];
+const LANTERN_GLOW: [number, number, number] = [2.2, 1.45, 0.6];
 
 /** A wrought-iron lamp post with a glowing lantern (bloom picks up the emissive core). */
 /** A soft round glow, used in place of a real light on weaker devices. */
@@ -45,11 +40,11 @@ export function LampPost({ lantern, light = true }: { lantern: V3; light?: boole
     <group>
       <mesh position={[x, y / 2 - 0.2, z]}>
         <cylinderGeometry args={[0.06, 0.09, y - 0.4, 8]} />
-        <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
+        <meshStandardMaterial color="#2a2216" roughness={0.6} metalness={0.4} />
       </mesh>
       <mesh position={[x, 0.15, z]}>
         <cylinderGeometry args={[0.22, 0.28, 0.3, 8]} />
-        <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
+        <meshStandardMaterial color="#2a2216" roughness={0.6} metalness={0.4} />
       </mesh>
       <group position={lantern}>
         <mesh>
@@ -60,18 +55,18 @@ export function LampPost({ lantern, light = true }: { lantern: V3; light?: boole
         {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => (
           <mesh key={`${sx}${sz}`} position={[sx * 0.13, 0, sz * 0.13]}>
             <boxGeometry args={[0.035, 0.42, 0.035]} />
-            <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
+            <meshStandardMaterial color="#2a2216" roughness={0.6} metalness={0.4} />
           </mesh>
         ))}
         <mesh position={[0, -0.22, 0]}>
           <boxGeometry args={[0.32, 0.04, 0.32]} />
-          <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#2a2216" roughness={0.6} metalness={0.4} />
         </mesh>
         <mesh position={[0, 0.3, 0]} rotation={[0, Math.PI / 4, 0]}>
           <coneGeometry args={[0.26, 0.2, 4]} />
-          <meshStandardMaterial color="#16302b" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#2a2216" roughness={0.6} metalness={0.4} />
         </mesh>
-        {light && !weak && <pointLight color="#ffc978" intensity={18} distance={16} decay={1.6} />}
+        {light && !weak && <pointLight color="#ffc978" intensity={6} distance={12} decay={1.6} />}
         {weak && (
           <sprite scale={[2.6, 2.6, 1]}>
             <spriteMaterial map={glow} transparent depthWrite={false} blending={AdditiveBlending} />
@@ -92,44 +87,7 @@ export function Lamps() {
   );
 }
 
-/** Moths drawn to the clearing's lamp, fluttering on loose orbits. */
-export function Moths({ around, count = 7 }: { around: V3; count?: number }) {
-  const moths = useRef<(Group | null)[]>([]);
-  const wing = useMemo(() => new PlaneGeometry(0.1, 0.07).translate(0.05, 0, 0).rotateX(-Math.PI / 2), []);
-  const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({ r: 0.5 + (i % 3) * 0.25, s: 1.4 + i * 0.37, p: i * 1.3 })), [count]);
-  useFrame(() => {
-    const t = windTime.value;
-    seeds.forEach((m, i) => {
-      const g = moths.current[i];
-      if (!g) return;
-      const a = t * m.s + m.p;
-      g.position.set(
-        around[0] + Math.cos(a) * m.r + Math.sin(a * 2.3) * 0.12,
-        around[1] + Math.sin(a * 1.7) * 0.35,
-        around[2] + Math.sin(a) * m.r,
-      );
-      g.rotation.y = -a;
-      const flap = Math.sin(t * 38 + m.p) * 0.9;
-      (g.children[0] as Mesh).rotation.z = flap;
-      (g.children[1] as Mesh).rotation.z = -flap;
-    });
-  });
-  return (
-    <>
-      {seeds.map((_, i) => (
-        <group key={i} ref={(g) => void (moths.current[i] = g)} scale={0.9}>
-          {[1, -1].map((side) => (
-            <mesh key={side} geometry={wing} scale={[side, 1, 1]}>
-              <meshStandardMaterial color="#f6ead0" emissive="#e2a940" emissiveIntensity={0.6} side={DoubleSide} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-    </>
-  );
-}
-
-/** A bat silhouette: scalloped wings that flap, crossing the moonlit sky on long loops. */
+/** A bat silhouette: scalloped wings that flap on long loops; by day, ink birds against the paper sky. */
 function useBatWing() {
   return useMemo(() => {
     const s = new Shape();
@@ -185,71 +143,6 @@ export function Bats() {
             <meshBasicMaterial color="#070b09" side={DoubleSide} />
           </mesh>
         </group>
-      ))}
-    </>
-  );
-}
-
-/** Fireflies: soft additive points that drift, bob and pulse. */
-function FireflySwarm({ count, center, spread, color, size }: { count: number; center: V3; spread: V3; color: string; size: number }) {
-  const { geometry, material } = useMemo(() => {
-    const rand = seeded(count * 13 + Math.round(center[2]));
-    const pos = new Float32Array(count * 3);
-    const seed = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = center[0] + (rand() - 0.5) * spread[0];
-      pos[i * 3 + 1] = center[1] + (rand() - 0.5) * spread[1];
-      pos[i * 3 + 2] = center[2] + (rand() - 0.5) * spread[2];
-      seed[i] = rand() * 100;
-    }
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new BufferAttribute(pos, 3));
-    geometry.setAttribute("aSeed", new BufferAttribute(seed, 1));
-    const material = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: AdditiveBlending,
-      uniforms: { uTime: windTime, uColor: { value: new Color(color) }, uSize: { value: size } },
-      vertexShader: /* glsl */ `
-        uniform float uTime; uniform float uSize;
-        attribute float aSeed;
-        varying float vPulse;
-        void main() {
-          vec3 p = position;
-          p.x += sin(uTime * 0.5 + aSeed) * 0.8;
-          p.y += sin(uTime * 0.8 + aSeed * 1.7) * 0.5;
-          p.z += cos(uTime * 0.4 + aSeed * 0.6) * 0.8;
-          vPulse = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(uTime * 2.2 + aSeed * 3.0), 3.0);
-          vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          gl_PointSize = uSize * (0.6 + vPulse) * (20.0 / -mv.z);
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: /* glsl */ `
-        uniform vec3 uColor;
-        varying float vPulse;
-        void main() {
-          float d = length(gl_PointCoord - 0.5);
-          float glow = smoothstep(0.5, 0.0, d);
-          glow = glow * glow * 1.6 + smoothstep(0.12, 0.0, d);
-          gl_FragColor = vec4(uColor * glow * vPulse, 1.0);
-        }`,
-    });
-    return { geometry, material };
-  }, [count, center, spread, color, size]);
-  return <points geometry={geometry} material={material} frustumCulled={false} />;
-}
-
-const SWARMS: { center: V3; spread: V3; color: string; size: number; count: number }[] = [
-  { center: [0, 2.6, -40], spread: [44, 5, 120], color: "#f8e08a", size: 9, count: 200 },
-  { center: [0, 2.6, 2], spread: [12, 4, 12], color: "#ffd27a", size: 11, count: 50 },
-  { center: [0, 2.6, -60], spread: [18, 5, 18], color: "#eec266", size: 11, count: 70 },
-];
-
-export function Fireflies({ dense }: { dense: boolean }) {
-  return (
-    <>
-      {SWARMS.map((s, i) => (
-        <FireflySwarm key={i} {...s} count={dense ? s.count : Math.round(s.count * 0.4)} />
       ))}
     </>
   );

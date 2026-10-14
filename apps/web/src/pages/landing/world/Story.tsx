@@ -107,7 +107,7 @@ export function ShadowWall() {
       {/* Stone wall with a lit parchment face. */}
       <mesh position={[wx, wy, wz - 0.45]}>
         <boxGeometry args={[WALL.width + 0.8, WALL.height + 0.6, 0.8]} />
-        <meshStandardMaterial color="#2c3f3a" roughness={1} />
+        <meshStandardMaterial color="#6b5f4c" roughness={1} />
       </mesh>
       <mesh position={[wx, wy, wz]} receiveShadow>
         <planeGeometry args={[WALL.width, WALL.height]} />
@@ -183,7 +183,7 @@ export function Glade() {
         const pos: V3 = [cx + Math.sin(a) * GLADE.radius, 0, cz - Math.cos(a) * GLADE.radius * 0.75];
         return <Exhibit key={name} name={name} position={pos} spin={0.35 + (i % 3) * 0.12} />;
       })}
-      <pointLight position={[cx, 5, cz + 1]} color="#ffe0a0" intensity={40} distance={18} decay={1.5} />
+      <pointLight position={[cx, 5, cz + 1]} color="#fff0d8" intensity={14} distance={18} decay={1.5} />
     </group>
   );
 }
