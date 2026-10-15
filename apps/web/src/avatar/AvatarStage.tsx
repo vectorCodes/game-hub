@@ -39,7 +39,7 @@ function Figure({ config }: { config: AvatarConfig }) {
 export default function AvatarStage({ config }: { config: AvatarConfig }) {
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ fov: 32, position: [0.4, 1.3, 4.4] }}>
-      <hemisphereLight args={["#fff3dd", "#2c4743", 1.4]} />
+      <hemisphereLight args={["#fff6e6", "#b9a27c", 1.4]} />
       <directionalLight position={[2.5, 4, 3]} intensity={2.4} castShadow shadow-mapSize={1024} />
       <pointLight position={[-2, 1.6, -1.5]} color="#e2a940" intensity={6} />
       <Suspense fallback={null}>
@@ -49,7 +49,7 @@ export default function AvatarStage({ config }: { config: AvatarConfig }) {
         <circleGeometry args={[1.1, 48]} />
         <meshStandardMaterial color="#1b3532" roughness={0.9} />
       </mesh>
-      <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={3} blur={2.4} far={2} />
+      <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={3} blur={2.4} far={2} color="#2a2216" />
       <OrbitControls
         target={[0, 0.95, 0]}
         enablePan={false}
