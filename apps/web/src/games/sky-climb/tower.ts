@@ -232,15 +232,15 @@ export function generateTower(seed: string): Tower {
   const coins: Coin[] = [];
   const updrafts: Updraft[] = [];
   const floorTops: number[] = [];
-  const top = climbTop(seed);
+  const lastFloor = climbTop(seed);
   const v2 = version >= 2;
   // Cannon platforms and every floor a shot can land on are wide and plain.
-  const cannonFloors = v2 ? pickCannonFloors(seed, top) : [];
+  const cannonFloors = v2 ? pickCannonFloors(seed, lastFloor) : [];
   const cannonAt = new Set(cannonFloors);
   const landings = new Set(cannonFloors.flatMap((f) => CANNON_GRADES.map((g) => f + CANNON.lift[g])));
-  const setPieces = v2 ? SET_PIECES.filter((sp) => sp.to < top) : [];
+  const setPieces = v2 ? SET_PIECES.filter((sp) => sp.to < lastFloor) : [];
   // The checkpoint after each set-piece pays a bonus row of coins.
-  const bonusAt = new Set(setPieces.map((sp) => CHECKPOINTS.find((c) => c > sp.to)!).filter((c) => c < top));
+  const bonusAt = new Set(setPieces.map((sp) => CHECKPOINTS.find((c) => c > sp.to)!).filter((c) => c < lastFloor));
 
   let theta = 0;
   // Always the same way round: turning back at a zone border would wind the new floors
@@ -250,13 +250,13 @@ export function generateTower(seed: string): Tower {
   const coinOdds = rules.coins ?? { gap: 0.5, row: 0.35 };
   let prev: Platform | null = null;
 
-  for (let floor = 0; floor <= top; floor++) {
+  for (let floor = 0; floor <= lastFloor; floor++) {
     const zone = zoneOf(floor);
     const k = knobs(floor);
     const tempo = k.tempo * (rules.tempo ?? 1);
     const checkpoint = isCheckpoint(floor);
     const summit = floor === FLOORS;
-    const moon = floor === top && top > FLOORS;
+    const moon = floor === lastFloor && lastFloor > FLOORS;
 
     const sp = v2 ? setPieceAt(floor) : undefined;
     const step = sp ? SET_PIECE_STEPS[sp.id][floor - sp.from] : undefined;
@@ -513,7 +513,7 @@ export function generateTower(seed: string): Tower {
   return {
     seed,
     version,
-    top,
+    top: lastFloor,
     twist,
     platforms,
     hazards,
