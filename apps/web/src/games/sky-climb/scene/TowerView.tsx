@@ -1,9 +1,9 @@
 // Draws the tower from the simulation's state: the column, every platform with its
-// decorations, the saws and spikes, and the coins. Floors far from the climber are hidden.
+// decorations, the saws, spikes and meteors, and the coins. Floors far from the climber are hidden.
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Group } from "three";
-import { TOWER, ZONES, zoneOf } from "../config";
+import { AdditiveBlending, type Group, type Mesh, type MeshBasicMaterial } from "three";
+import { METEOR, TOWER, ZONES, zoneOf } from "../config";
 import type { HazardState, PlatformState } from "../sim";
 import { floorAt, type Deco, type Tower } from "../tower";
 import { materialsOf, useFloorRange, useKit, useSim } from "./shared";
@@ -150,7 +150,11 @@ export function Hazards() {
   const [lo, hi] = useFloorRange();
   return (
     <>
-      {sim.hazards.filter((hs) => hs.h.floor >= lo && hs.h.floor <= hi).map((hs) => (hs.h.type === "saw" ? <Saw key={hs.h.id} hs={hs} /> : <Spikes key={hs.h.id} hs={hs} />))}
+      {sim.hazards
+        .filter((hs) => hs.h.floor >= lo && hs.h.floor <= hi)
+        .map((hs) =>
+          hs.h.type === "saw" ? <Saw key={hs.h.id} hs={hs} /> : hs.h.type === "meteor" ? <Meteor key={hs.h.id} hs={hs} /> : <Spikes key={hs.h.id} hs={hs} />,
+        )}
     </>
   );
 }
@@ -190,6 +194,55 @@ function Spikes({ hs }: { hs: HazardState }) {
     <group ref={group} scale={S * 1.3}>
       <primitive object={model} />
     </group>
+  );
+}
+
+/** A red ring on the platform where it will land, the glowing rock with its tail, then a burst. */
+function Meteor({ hs }: { hs: HazardState }) {
+  const sim = useSim();
+  const ps = sim.platforms[hs.h.platform];
+  const rock = useRef<Group>(null);
+  const ring = useRef<Mesh>(null);
+  const burst = useRef<Mesh>(null);
+  useFrame(() => {
+    const r = rock.current;
+    const g = ring.current;
+    const b = burst.current;
+    if (!r || !g || !b) return;
+    r.visible = hs.falling;
+    r.position.set(hs.x, hs.y + METEOR.rock, hs.z);
+    r.children[0].rotation.set(hs.spin, hs.spin * 0.7, 0);
+    g.visible = hs.extend > 0;
+    g.position.set(hs.x, ps.top + 0.04, hs.z);
+    g.scale.setScalar(METEOR.radius * (0.45 + 0.55 * hs.extend));
+    // Blinks faster as it gets close.
+    (g.material as MeshBasicMaterial).opacity = 0.35 + 0.45 * hs.extend * (Math.sin(sim.t * (8 + hs.extend * 22)) > -0.3 ? 1 : 0.4);
+    b.visible = hs.flash > 0;
+    b.position.set(hs.x, ps.top + 0.15, hs.z);
+    b.scale.setScalar(METEOR.radius * (0.6 + (1 - hs.flash) * 0.9));
+    (b.material as MeshBasicMaterial).opacity = hs.flash * 0.85;
+  });
+  return (
+    <>
+      <mesh ref={ring} rotation-x={-Math.PI / 2} visible={false}>
+        <ringGeometry args={[0.72, 1, 36]} />
+        <meshBasicMaterial color="#ff4b3a" transparent depthWrite={false} />
+      </mesh>
+      <group ref={rock} visible={false}>
+        <mesh castShadow>
+          <icosahedronGeometry args={[METEOR.rock, 0]} />
+          <meshStandardMaterial color="#5a3b30" emissive="#ff6a2a" emissiveIntensity={1.6} flatShading roughness={1} />
+        </mesh>
+        <mesh position-y={1}>
+          <coneGeometry args={[METEOR.rock * 0.9, 2, 10, 1, true]} />
+          <meshBasicMaterial color="#ffb067" transparent opacity={0.55} blending={AdditiveBlending} depthWrite={false} />
+        </mesh>
+      </group>
+      <mesh ref={burst} visible={false}>
+        <sphereGeometry args={[1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshBasicMaterial color="#ffc27a" transparent blending={AdditiveBlending} depthWrite={false} />
+      </mesh>
+    </>
   );
 }
 

@@ -9,6 +9,7 @@ import {
   CANNON,
   CHECKPOINTS,
   FLOORS,
+  METEOR,
   PHYS,
   POWER,
   POWERUPS,
@@ -48,13 +49,21 @@ export interface HazardState {
   x: number;
   y: number;
   z: number;
-  /** Spikes: 0 hidden … 1 fully out (deadly from 0.6). */
+  /** Spikes: 0 hidden … 1 fully out (deadly from 0.6). Meteors: the warning ring, 0 none … 1 landing now. */
   extend: number;
   spin: number;
+  /** Meteors: the impact's burst, 1 as it lands fading to 0. */
+  flash: number;
+  /** Meteors: the rock is falling (visible). */
+  falling: boolean;
 }
 
 export type SimEvent =
   | { type: "jump" | "airjump" | "spring" | "die" | "respawn" | "summit" | "shield" }
+  /** Passing the summit on a tower that goes on to the Moon. */
+  | { type: "peak" }
+  /** A meteor landed near the climber. */
+  | { type: "impact" }
   | { type: "powerup"; kind: PowerupKind; id: number }
   | { type: "expire"; kind: PowerupKind }
   | { type: "land"; speed: number }
@@ -181,7 +190,7 @@ export class Sim {
       crumbleAt: null,
       springAt: -10,
     }));
-    this.hazards = tower.hazards.map((h) => ({ h, x: 0, y: 0, z: 0, extend: 0, spin: 0 }));
+    this.hazards = tower.hazards.map((h) => ({ h, x: 0, y: 0, z: 0, extend: 0, spin: 0, flash: 0, falling: false }));
     this.coins = tower.coins;
     this.powerups = tower.powerups;
     for (const c of tower.cannons) this.cannonAt.set(c.floor, c);
@@ -302,7 +311,9 @@ export class Sim {
     if (!pl.grounded && !lifted) {
       // Feather: while falling with jump held, gravity eases and the fall speed is capped.
       const float = this.effects.feather > 0 && input.jumpHeld && pl.vy < 0;
-      const gravity = float ? this.phys.gravity * POWER.featherGravity : this.phys.gravity;
+      // Thinner air past the summit, and less pull still in space.
+      const g = this.phys.gravity * (zoneOf(Math.floor(pl.height)).gravity ?? 1);
+      const gravity = float ? g * POWER.featherGravity : g;
       pl.vy = Math.max(pl.vy - gravity * dt, float ? -POWER.featherMaxFall : -this.phys.maxFall);
     }
     const prevFeet = pl.y;
@@ -455,7 +466,7 @@ export class Sim {
     const checkpoint = CHECKPOINTS.filter((c) => c <= floor).pop() ?? 0;
     if (checkpoint > pl.checkpoint) {
       pl.checkpoint = checkpoint;
-      if (checkpoint < FLOORS) this.events.push({ type: "checkpoint", floor: checkpoint });
+      if (checkpoint < this.tower.top) this.events.push({ type: "checkpoint", floor: checkpoint });
     }
     for (const sp of this.tower.setPieces) {
       if (floor >= sp.from && floor <= sp.to && !this.entered.has(sp.id)) {
@@ -466,9 +477,12 @@ export class Sim {
         this.events.push({ type: "cleared", id: sp.id });
       }
     }
-    if (floor === FLOORS) {
+    // `summit` ends the climb: at the top of the tower, whichever floor that is.
+    if (floor === this.tower.top) {
       pl.summit = true;
       this.events.push({ type: "summit" });
+    } else if (floor === FLOORS) {
+      this.events.push({ type: "peak" });
     }
   }
 
@@ -479,6 +493,12 @@ export class Sim {
       if (hs.h.type === "saw") {
         const d = Math.hypot(hs.x - pl.x, hs.y - (pl.y + 0.45), hs.z - pl.z);
         if (d < 0.62) return this.hit();
+      } else if (hs.h.type === "meteor") {
+        if (hs.falling && Math.hypot(hs.x - pl.x, hs.y - (pl.y + 0.45), hs.z - pl.z) < METEOR.rock + 0.25) return this.hit();
+        // The blast: standing (or just hopping) by the ring as it lands.
+        if (hs.flash > 1 - METEOR.blast / 0.6 && pl.y - hs.y < 0.7 && pl.y - hs.y > -0.3 && Math.hypot(hs.x - pl.x, hs.z - pl.z) < METEOR.radius) {
+          return this.hit();
+        }
       } else if (hs.extend > 0.6 && pl.grounded && pl.ground?.p.id === hs.h.platform) {
         if (Math.hypot(hs.x - pl.x, hs.z - pl.z) < 0.55) return this.hit();
       }
@@ -693,9 +713,10 @@ export class Sim {
       let z = p.z;
       if (p.motion) {
         const m = p.motion;
-        const s = Math.sin((2 * Math.PI * t) / m.period + m.phase) * m.amp;
+        const a = (2 * Math.PI * t) / m.period + m.phase;
+        const s = Math.sin(a) * m.amp;
         x += m.ax * s;
-        top += m.ay * s;
+        top += m.ay * (m.orbit ? Math.cos(a) * m.amp : s);
         z += m.az * s;
       }
       ps.dx = x - ps.x;
@@ -741,6 +762,20 @@ export class Sim {
         hs.y = ps.top + 0.5;
         hs.z = ps.z + az * s;
         hs.spin += dt * 12;
+      } else if (hs.h.type === "meteor") {
+        // Lands at `period × 0.8` into each cycle: the ring warns first, the rock drops in last.
+        const c = (t + hs.h.phase) % hs.h.period;
+        const until = hs.h.period * 0.8 - c;
+        hs.x = ps.x + ax * hs.h.amp;
+        hs.z = ps.z + az * hs.h.amp;
+        hs.extend = until > 0 && until < METEOR.warn ? 1 - until / METEOR.warn : 0;
+        hs.falling = until > 0 && until < METEOR.fall;
+        hs.y = ps.top + (hs.falling ? (until / METEOR.fall) ** 1.6 * METEOR.drop : 0);
+        hs.spin += dt * 4;
+        // The burst decays over 0.6 s; the first `blast` of it burns.
+        const landed = until <= 0 && -until < 0.6;
+        if (landed && hs.flash === 0 && Math.abs(hs.h.floor - this.player.height) < 2.5) this.events.push({ type: "impact" });
+        hs.flash = landed ? 1 + until / 0.6 : 0;
       } else {
         // Out for a third of the cycle, with a short warning poke before.
         const c = ((t + hs.h.phase) % hs.h.period) / hs.h.period;
@@ -752,10 +787,11 @@ export class Sim {
       }
     }
 
-    // Gusts in windy zones: a few seconds of wind every so often.
+    // Gusts in windy zones: a few seconds of wind every so often. Never from the summit up:
+    // no wind in space, whatever the twist.
     const floor = Math.floor(this.player.height);
     const windFrom = this.rules.windFrom;
-    if (zoneOf(floor).wind || (windFrom !== undefined && zoneIndexOf(floor) >= windFrom && zoneOf(floor).id !== "summit")) {
+    if (zoneOf(floor).wind || (windFrom !== undefined && zoneIndexOf(floor) >= windFrom && floor < FLOORS)) {
       const c = t % GUST.period;
       const target = c < GUST.length ? 1 : 0;
       this.gust += (target - this.gust) * Math.min(1, dt * 3);
@@ -765,7 +801,7 @@ export class Sim {
   }
 }
 
-export const nextCheckpointAfter = (floor: number) => CHECKPOINTS.find((c) => c > floor) ?? FLOORS;
+export const nextCheckpointAfter = (floor: number, top: number) => CHECKPOINTS.find((c) => c > floor && c <= top) ?? top;
 
 /** What the climber is doing, for its animation and for ghosts. */
 export function poseOf(pl: Sim["player"], cheering = false): GhostPose {

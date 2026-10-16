@@ -17,7 +17,7 @@ import { useClimb } from "../store";
 import { generateTower } from "../tower";
 import { Bursts, Climber, preloadCharacter, Trail } from "./Climber";
 import { Cannons, Updrafts } from "./Cannons";
-import { Clouds, Island, SkyAndLight, Stars, Weather } from "./Environment";
+import { Clouds, Island, SkyAndLight, SpaceBackdrop, Stars, Weather } from "./Environment";
 import { Ghosts } from "./Ghosts";
 import { PowerAuras, Pickups } from "./Powerups";
 import { emitSimEvent, onSimEvent, preloadKit, SimContext, useSim } from "./shared";
@@ -134,6 +134,14 @@ function Driver() {
           play("win");
           store.summit();
           break;
+        case "peak":
+          play("win");
+          recordCheer();
+          store.showToast({ title: "🏁 Summit!", subtitle: "The sky goes on: climb to the Moon", tone: "best" });
+          break;
+        case "impact":
+          play("thunder");
+          break;
         case "cannonLoad":
           play("cannonLoad");
           break;
@@ -156,11 +164,7 @@ function Driver() {
         case "cleared": {
           const sp = SET_PIECES.find((x) => x.id === e.id)!;
           play("cleared");
-          store.showToast({
-            title: `${sp.emoji} ${sp.name} cleared!`,
-            subtitle: sp.id === "lightning" ? "The summit is yours" : "Bonus coins on the checkpoint",
-            tone: "checkpoint",
-          });
+          store.showToast({ title: `${sp.emoji} ${sp.name} cleared!`, subtitle: sp.prize, tone: "checkpoint" });
           break;
         }
         case "strike":
@@ -278,6 +282,7 @@ export default function Game() {
           <Driver />
           <SkyAndLight shadowMap={q.shadowMap} />
           <Stars />
+          <SpaceBackdrop />
           <Weather weak={weak} />
           <CameraRig />
           <Suspense fallback={null}>

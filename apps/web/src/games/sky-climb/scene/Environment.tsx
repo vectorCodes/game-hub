@@ -1,5 +1,5 @@
 // Sky, light and weather. All of it follows the climber's height: a bright morning in the
-// meadow, golden hour on the cliffs, sunset on the snow, a storm, then a starry summit.
+// meadow, golden hour on the cliffs, sunset on the snow, a storm, a starry summit, then space.
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
@@ -8,10 +8,14 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DoubleSide,
   Fog,
   type DirectionalLight,
   type Group,
   type HemisphereLight,
+  type Mesh,
+  type MeshBasicMaterial,
+  type MeshStandardMaterial,
   type PointLight,
   type LineSegments,
   type Points,
@@ -22,7 +26,7 @@ import {
   type LineBasicMaterial,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { zoneOf } from "../config";
+import { FLOORS, zoneOf } from "../config";
 import { makeRng, type Tower } from "../tower";
 import { lookAt, newLook, onSimEvent, useKit, useSim } from "./shared";
 
@@ -229,6 +233,83 @@ export function Stars() {
   );
 }
 
+/** Fades in from a few floors below the summit, so space is there to see as you top out. */
+const spaceFade = (height: number, from = FLOORS - 6, over = 10) => Math.min(1, Math.max(0, (height - from) / over));
+
+/**
+ * Past the summit: a blue planet far below, a ringed giant off to one side, and the Moon
+ * growing overhead as you near it. All far away, so they move with the camera like the sky.
+ */
+export function SpaceBackdrop() {
+  const sim = useSim();
+  const camera = useThree((s) => s.camera);
+  const group = useRef<Group>(null);
+  const planet = useRef<Mesh>(null);
+  const halo = useRef<Mesh>(null);
+  const giant = useRef<Group>(null);
+  const moon = useRef<Mesh>(null);
+  const tall = sim.tower.top > FLOORS;
+
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    const h = sim.player.height;
+    const fade = spaceFade(h);
+    g.visible = tall && fade > 0.01;
+    if (!g.visible) return;
+    g.position.copy(camera.position);
+    (planet.current!.material as MeshStandardMaterial).opacity = fade;
+    (halo.current!.material as MeshBasicMaterial).opacity = fade * 0.35;
+    giant.current!.traverse((o) => {
+      const m = (o as Mesh).material as MeshStandardMaterial | undefined;
+      if (m) m.opacity = spaceFade(h, 118, 12) * (m.userData.alpha ?? 1);
+    });
+    giant.current!.rotation.y += 0.0004;
+    // The Moon swells as you climb to it.
+    const near = spaceFade(h, 125, sim.tower.top - 125);
+    moon.current!.scale.setScalar(0.6 + near * 0.9);
+    (moon.current!.material as MeshStandardMaterial).opacity = spaceFade(h, 108, 14);
+  });
+
+  if (!tall) return null;
+  return (
+    <group ref={group}>
+      <mesh ref={planet} position={[-140, -95, -160]}>
+        <sphereGeometry args={[95, 48, 24]} />
+        <meshStandardMaterial color="#3f7fd8" emissive="#0d2c63" emissiveIntensity={0.6} roughness={0.9} transparent fog={false} />
+      </mesh>
+      <mesh ref={halo} position={[-140, -95, -160]}>
+        <sphereGeometry args={[101, 48, 24]} />
+        <meshBasicMaterial color="#8fd0ff" transparent side={BackSide} blending={AdditiveBlending} depthWrite={false} fog={false} />
+      </mesh>
+      <group ref={giant} position={[150, 40, 70]} rotation={[0.35, 0, 0.25]}>
+        <mesh>
+          <sphereGeometry args={[26, 40, 20]} />
+          <meshStandardMaterial color="#e3a6d8" emissive="#4a1a52" emissiveIntensity={0.5} roughness={1} transparent opacity={0} fog={false} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[34, 50, 64]} />
+          <meshStandardMaterial
+            color="#f3d3ff"
+            emissive="#6a3a78"
+            emissiveIntensity={0.4}
+            side={DoubleSide}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            fog={false}
+            userData={{ alpha: 0.7 }}
+          />
+        </mesh>
+      </group>
+      <mesh ref={moon} position={[40, 70, -110]}>
+        <sphereGeometry args={[22, 40, 20]} />
+        <meshStandardMaterial color="#efeee6" emissive="#6d6b62" emissiveIntensity={0.55} roughness={1} transparent opacity={0} fog={false} />
+      </mesh>
+    </group>
+  );
+}
+
 const WEATHER_COUNT = 420;
 const BOX = { x: 34, y: 22, z: 34 };
 
@@ -264,8 +345,8 @@ export function Weather({ weak }: { weak: boolean }) {
     const kind = zone.weather;
     const c = camera.position;
     const t = sim.t;
-    const fall = kind === "snow" ? 1.6 : kind === "rain" ? 22 : kind === "dust" ? -0.15 : 0.7;
-    const sway = kind === "dust" ? 0.4 : kind === "rain" ? 0 : 1.1;
+    const fall = kind === "snow" ? 1.6 : kind === "rain" ? 22 : kind === "dust" ? -0.15 : kind === "stardust" ? -0.3 : 0.7;
+    const sway = kind === "dust" || kind === "stardust" ? 0.4 : kind === "rain" ? 0 : 1.1;
     const windX = sim.gust * 7;
 
     for (let i = 0; i < count; i++) {
@@ -288,8 +369,10 @@ export function Weather({ weak }: { weak: boolean }) {
         }
         pos.needsUpdate = true;
         const m = motes.current.material as PointsMaterial;
-        m.color.set(kind === "snow" ? "#ffffff" : kind === "petals" ? "#ffd1e3" : kind === "leaves" ? "#9ed36a" : "#ffd88a");
-        m.size = kind === "snow" ? 0.16 : kind === "dust" ? 0.08 : 0.13;
+        m.color.set(
+          kind === "snow" ? "#ffffff" : kind === "petals" ? "#ffd1e3" : kind === "leaves" ? "#9ed36a" : kind === "stardust" ? "#cdbcff" : "#ffd88a",
+        );
+        m.size = kind === "snow" ? 0.16 : kind === "dust" || kind === "stardust" ? 0.08 : 0.13;
       }
     }
     if (rain.current) {

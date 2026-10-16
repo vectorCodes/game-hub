@@ -1,10 +1,12 @@
 // Builds a tower from a seed. Same seed, same tower: everyone climbing today's daily gets
 // exactly the same platforms, hazards and coins.
-import { makeRng, towerVersion, type TwistId } from "@shadow/shared";
+import { climbTop, makeRng, towerVersion, type TwistId } from "@shadow/shared";
 import {
   CANNON,
   CHECKPOINTS,
   FLOORS,
+  METEOR,
+  ORBIT,
   PIECE_SIZE,
   POWERUP_MIN_FLOOR,
   POWERUP_SPACING,
@@ -17,6 +19,7 @@ import {
   setPieceAt,
   zoneOf,
   type CannonGrade,
+  type HazardType,
   type PowerupKind,
   type SetPieceId,
   type Special,
@@ -59,14 +62,20 @@ export interface Platform {
   yaw: number;
   kind: Kind;
   ice: boolean;
-  /** Offset = axis × amp × sin(2π·t / period + phase). */
-  motion?: { ax: number; ay: number; az: number; amp: number; period: number; phase: number };
+  /**
+   * Offset = axis × amp × sin(2π·t / period + phase). An orbiting asteroid circles instead:
+   * along (ax, az) with the sine, and up and down (ay of amp) with the cosine.
+   */
+  motion?: { ax: number; ay: number; az: number; amp: number; period: number; phase: number; orbit?: boolean };
   /** Solid for `on` seconds of every `period`. */
   vanish?: { period: number; on: number; phase: number };
   /** Conveyor speed along the platform's length (signed). */
   belt?: number;
   checkpoint: boolean;
+  /** Floor 100: the summit (the top of the tower, unless it goes on to the Moon). */
   summit: boolean;
+  /** The Moon: the top of a version 3 tower. */
+  moon: boolean;
   deco: Deco[];
   /** Collapsing bridge plank: falls this many seconds after the bridge starts to go. */
   chain?: number;
@@ -79,8 +88,11 @@ export interface Hazard {
   id: number;
   floor: number;
   platform: number;
-  type: "saw" | "spikes";
-  /** Saws sweep along the platform's length this far either side of its centre. */
+  type: HazardType;
+  /**
+   * Saws sweep along the platform's length this far either side of its centre. A meteor
+   * lands this far along it (signed).
+   */
   amp: number;
   period: number;
   phase: number;
@@ -142,8 +154,10 @@ export interface Updraft {
 
 export interface Tower {
   seed: string;
-  /** 1: the original towers. 2: twists, cannons and set-pieces. */
-  version: 1 | 2;
+  /** 1: the original towers. 2: twists, cannons and set-pieces. 3: on past the summit to the Moon. */
+  version: 1 | 2 | 3;
+  /** The last floor: the summit (100), or the Moon (150). */
+  top: number;
   twist: TwistId | null;
   platforms: Platform[];
   hazards: Hazard[];
@@ -193,10 +207,13 @@ export function cannonPoint(from: ArcEnd, to: ArcEnd, u: number, out: { x: numbe
 
 export const arcEnd = (p: Platform): ArcEnd => ({ theta: p.theta, r: Math.hypot(p.x, p.z), y: p.top });
 
-/** One cannon floor in each range, never on a checkpoint. Its own random stream. */
-function pickCannonFloors(seed: string): number[] {
+/**
+ * One cannon floor in each range the tower is tall enough for, never on a checkpoint. Its own
+ * random stream; the ranges past the summit come last, so they don't move the ones below.
+ */
+function pickCannonFloors(seed: string, top: number): number[] {
   const rng = makeRng(`${seed}:cannons`);
-  return CANNON.ranges.map(([a, b]) => {
+  return CANNON.ranges.filter(([, b]) => b + CANNON.lift.perfect < top).map(([a, b]) => {
     const options: number[] = [];
     for (let f = a; f <= b; f++) if (!isCheckpoint(f)) options.push(f);
     return options[Math.floor(rng() * options.length)];
@@ -215,14 +232,15 @@ export function generateTower(seed: string): Tower {
   const coins: Coin[] = [];
   const updrafts: Updraft[] = [];
   const floorTops: number[] = [];
-  const v2 = version === 2;
+  const top = climbTop(seed);
+  const v2 = version >= 2;
   // Cannon platforms and every floor a shot can land on are wide and plain.
-  const cannonFloors = v2 ? pickCannonFloors(seed) : [];
+  const cannonFloors = v2 ? pickCannonFloors(seed, top) : [];
   const cannonAt = new Set(cannonFloors);
   const landings = new Set(cannonFloors.flatMap((f) => CANNON_GRADES.map((g) => f + CANNON.lift[g])));
-  const setPieces = v2 ? SET_PIECES : [];
+  const setPieces = v2 ? SET_PIECES.filter((sp) => sp.to < top) : [];
   // The checkpoint after each set-piece pays a bonus row of coins.
-  const bonusAt = new Set(setPieces.map((sp) => CHECKPOINTS.find((c) => c > sp.to)!).filter((c) => c < FLOORS));
+  const bonusAt = new Set(setPieces.map((sp) => CHECKPOINTS.find((c) => c > sp.to)!).filter((c) => c < top));
 
   let theta = 0;
   // Always the same way round: turning back at a zone border would wind the new floors
@@ -232,12 +250,13 @@ export function generateTower(seed: string): Tower {
   const coinOdds = rules.coins ?? { gap: 0.5, row: 0.35 };
   let prev: Platform | null = null;
 
-  for (let floor = 0; floor <= FLOORS; floor++) {
+  for (let floor = 0; floor <= top; floor++) {
     const zone = zoneOf(floor);
     const k = knobs(floor);
     const tempo = k.tempo * (rules.tempo ?? 1);
     const checkpoint = isCheckpoint(floor);
     const summit = floor === FLOORS;
+    const moon = floor === top && top > FLOORS;
 
     const sp = v2 ? setPieceAt(floor) : undefined;
     const step = sp ? SET_PIECE_STEPS[sp.id][floor - sp.from] : undefined;
@@ -255,6 +274,7 @@ export function generateTower(seed: string): Tower {
     switch (kind) {
       case "moving":
       case "lift":
+      case "orbit":
         piece = "block-moving";
         size = "normal";
         break;
@@ -292,9 +312,10 @@ export function generateTower(seed: string): Tower {
       rise = step.rise;
       gap = step.gap;
     }
-    const moveAmp = kind === "moving" ? range(rng, 0.7, 1.05) * S : kind === "lift" ? range(rng, 0.55, 0.85) : 0;
+    const moveAmp =
+      kind === "moving" ? range(rng, 0.7, 1.05) * S : kind === "lift" ? range(rng, 0.55, 0.85) : kind === "orbit" ? range(rng, 0.55, 0.8) * S : 0;
     // A shuttle's far swing must still leave the normal gap at its near end.
-    if (kind === "moving") gap += moveAmp;
+    if (kind === "moving" || kind === "orbit") gap += moveAmp;
 
     let top = 0;
     if (prev) {
@@ -325,6 +346,7 @@ export function generateTower(seed: string): Tower {
       ice: (zone.ice || !!rules.ice) && !checkpoint && !step?.dry,
       checkpoint,
       summit,
+      moon,
       deco: [],
     };
 
@@ -332,6 +354,12 @@ export function generateTower(seed: string): Tower {
       p.motion = { ax, ay: 0, az, amp: moveAmp, period: range(rng, 3.4, 4.4) / tempo, phase: rng() * Math.PI * 2 };
     } else if (kind === "lift") {
       p.motion = { ax: 0, ay: 1, az: 0, amp: moveAmp, period: range(rng, 3.2, 4.2) / tempo, phase: rng() * Math.PI * 2 };
+    } else if (kind === "orbit") {
+      // The Asteroid Belt turns as one slow wave; loose asteroids each keep their own time.
+      const beltAt = step?.orbit;
+      const period = beltAt !== undefined ? ORBIT.period[1] / (rules.tempo ?? 1) : range(rng, ...ORBIT.period) / tempo;
+      const phase = beltAt !== undefined ? beltAt * Math.PI * 2 : rng() * Math.PI * 2;
+      p.motion = { ax, ay: ORBIT.rise, az, amp: moveAmp, period, phase, orbit: true };
     } else if (kind === "vanish") {
       const period = range(rng, 3.4, 4.2) / tempo;
       p.vanish = { period, on: period * 0.62, phase: rng() * period };
@@ -364,7 +392,7 @@ export function generateTower(seed: string): Tower {
     }
 
     // Decorations: on the inner half (local +z faces the column), clear of the walking line.
-    if (kind === "static" && !summit && !step && !cannonAt.has(floor) && (size === "big" || size === "long") && zone.deco.length) {
+    if (kind === "static" && !summit && !moon && !step && !cannonAt.has(floor) && (size === "big" || size === "long") && zone.deco.length) {
       const count = size === "big" ? 1 + Math.floor(rng() * 3) : Math.floor(rng() * 2);
       for (let i = 0; i < count; i++) {
         const tall = pick(rng, zone.deco);
@@ -379,8 +407,13 @@ export function generateTower(seed: string): Tower {
         });
       }
     }
-    if (checkpoint && !summit && floor > 0) {
+    if (checkpoint && !summit && !moon && floor > 0) {
       p.deco.push({ piece: "flag", x: w / 2 - 0.4, z: d / 2 - 0.4, yaw: -Math.PI / 2, scale: S * 1.2 });
+    }
+    if (moon) {
+      p.deco.push({ piece: "chest", x: 0, z: d / 2 - 0.55, yaw: Math.PI, scale: S * 1.8 });
+      p.deco.push({ piece: "star", x: -w / 2 + 0.45, z: d / 2 - 0.4, yaw: 0, scale: S * 1.4 });
+      p.deco.push({ piece: "flag", x: w / 2 - 0.4, z: d / 2 - 0.35, yaw: -Math.PI / 2, scale: S * 1.8 });
     }
     if (summit) {
       p.deco.push({ piece: "chest", x: 0, z: d / 2 - 0.55, yaw: Math.PI, scale: S * 1.6 });
@@ -392,9 +425,24 @@ export function generateTower(seed: string): Tower {
     if (step?.saw !== undefined) {
       const period = 2.4 / tempo;
       hazards.push({ id: hazards.length, floor, platform: p.id, type: "saw", amp: Math.max(0.2, w / 2 - 0.4), period, phase: step.saw * period });
+    } else if (step?.meteor) {
+      // The shower keeps one beat for every ledge (only the Turbo twist speeds it up).
+      const period = 3 / (rules.tempo ?? 1);
+      const along = step.meteor.along * (w / 2);
+      hazards.push({ id: hazards.length, floor, platform: p.id, type: "meteor", amp: along, period, phase: step.meteor.at * period });
     } else if (kind === "static" && !checkpoint && !forced && !step && floor > 2 && (size === "big" || size === "long") && rng() < k.hazard) {
       const type = weighted(rng, zone.hazards);
-      if (type) {
+      if (type === "meteor") {
+        hazards.push({
+          id: hazards.length,
+          floor,
+          platform: p.id,
+          type,
+          amp: range(rng, -1, 1) * Math.max(0.1, w / 2 - 0.5),
+          period: range(rng, ...METEOR.period) / tempo,
+          phase: rng() * 10,
+        });
+      } else if (type) {
         hazards.push({
           id: hazards.length,
           floor,
@@ -465,6 +513,7 @@ export function generateTower(seed: string): Tower {
   return {
     seed,
     version,
+    top,
     twist,
     platforms,
     hazards,
@@ -478,7 +527,7 @@ export function generateTower(seed: string): Tower {
 }
 
 /** Platforms that ask for something: a hazard, or a platform that moves, crumbles or vanishes. */
-const RISKY: readonly Kind[] = ["moving", "lift", "vanish", "crumble", "conveyor"];
+const RISKY: readonly Kind[] = ["moving", "lift", "vanish", "crumble", "conveyor", "orbit"];
 
 /**
  * Orbs go on a safe platform just before a risky one. They use their own random stream, so
@@ -494,7 +543,7 @@ function placePowerups(seed: string, platforms: Platform[], hazards: Hazard[]): 
     // doesn't reshuffle the rest of the tower.
     const roll = rng();
     const roll2 = rng();
-    if (p.floor < POWERUP_MIN_FLOOR || p.summit || p.floor - last < POWERUP_SPACING) continue;
+    if (p.floor < POWERUP_MIN_FLOOR || p.summit || p.moon || p.floor - last < POWERUP_SPACING) continue;
     if (!hazardous.has(p.id) && !RISKY.includes(p.kind)) continue;
     if (roll >= 0.7 + 0.2 * Math.min(1, p.floor / (FLOORS - 1))) continue;
     const kind = weighted(() => roll2, ZONE_POWERUPS[p.zone]);

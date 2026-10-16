@@ -1,8 +1,10 @@
 // Everything that tunes Sky Climb: movement physics, the zones, and how difficulty ramps
 // with height. Balancing the game should only ever mean editing this file.
-import { CLIMB_FLOORS } from "@shadow/shared";
+import { CLIMB_FLOORS, CLIMB_MOON_FLOOR } from "@shadow/shared";
 
+/** The summit. Version 3 towers go on past it to the Moon (`MOON`). */
 export const FLOORS = CLIMB_FLOORS;
+export const MOON = CLIMB_MOON_FLOOR;
 export const SKY_CLIMB_HOME = "/games/sky-climb";
 export const SKY_CLIMB_PATH = `${SKY_CLIMB_HOME}/play`;
 
@@ -37,9 +39,11 @@ export const TOWER = {
   pieceScale: 1.3,
 } as const;
 
-export type ZoneId = "meadow" | "treetops" | "cliffs" | "snow" | "storm" | "summit";
-export type Special = "moving" | "lift" | "spring" | "conveyor" | "crumble" | "vanish";
-export type Weather = "petals" | "leaves" | "dust" | "snow" | "rain" | "stars";
+export type ZoneId = "meadow" | "treetops" | "cliffs" | "snow" | "storm" | "summit" | "orbit" | "nebula" | "moon";
+/** `orbit`: an asteroid that circles round its spot, along the path and up and down. */
+export type Special = "moving" | "lift" | "spring" | "conveyor" | "crumble" | "vanish" | "orbit";
+export type Weather = "petals" | "leaves" | "dust" | "snow" | "rain" | "stars" | "stardust";
+export type HazardType = "saw" | "spikes" | "meteor";
 
 export interface SkyLook {
   top: string;
@@ -68,9 +72,11 @@ export interface Zone {
   deco: string[];
   /** Special platforms that can appear, with relative weights. */
   specials: Partial<Record<Special, number>>;
-  hazards: { saw: number; spikes: number };
+  hazards: Partial<Record<HazardType, number>>;
   ice: boolean;
   wind: boolean;
+  /** Multiplies gravity: jumps go higher and hang longer in thin air and space. */
+  gravity?: number;
   weather: Weather;
   sky: SkyLook;
 }
@@ -211,15 +217,16 @@ export const ZONES: Zone[] = [
     name: "Summit",
     emoji: "🏁",
     from: FLOORS,
-    blurb: "Above the storm, under the stars. You made it.",
+    blurb: "Above the storm, under the stars. The air thins: jumps carry further.",
     pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
     core: "block-snow-large-tall",
     tint: "#f2ead8",
-    deco: [],
-    specials: {},
-    hazards: { saw: 0, spikes: 0 },
+    deco: ["rocks"],
+    specials: { moving: 1, lift: 1 },
+    hazards: {},
     ice: false,
     wind: false,
+    gravity: 0.85,
     weather: "stars",
     sky: {
       top: "#061615",
@@ -232,7 +239,92 @@ export const ZONES: Zone[] = [
       hemiIntensity: 0.9,
     },
   },
+  // Past the summit (version 3 towers only): space.
+  {
+    id: "orbit",
+    name: "Low Orbit",
+    emoji: "🛰️",
+    from: 105,
+    blurb: "Low gravity, drifting asteroids and falling meteors.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#b9b4e8",
+    deco: ["rocks", "stones"],
+    specials: { orbit: 3, moving: 1, lift: 1, spring: 1 },
+    hazards: { meteor: 2 },
+    ice: false,
+    wind: false,
+    gravity: 0.8,
+    weather: "stardust",
+    sky: {
+      top: "#03040f",
+      bottom: "#1b1f4a",
+      fog: "#141838",
+      sun: "#fff1d6",
+      sunIntensity: 2.1,
+      hemiSky: "#7d86d8",
+      hemiGround: "#10122a",
+      hemiIntensity: 0.75,
+    },
+  },
+  {
+    id: "nebula",
+    name: "Nebula",
+    emoji: "🌌",
+    from: 128,
+    blurb: "Fading stars, meteor storms and the longest leaps of all.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-moving-blue", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#e3b3ec",
+    deco: ["rocks"],
+    specials: { orbit: 2, vanish: 3, crumble: 1, lift: 1 },
+    hazards: { saw: 1, meteor: 3 },
+    ice: false,
+    wind: false,
+    gravity: 0.72,
+    weather: "stardust",
+    sky: {
+      top: "#12041f",
+      bottom: "#5a1f62",
+      fog: "#3a1745",
+      sun: "#ffd8f4",
+      sunIntensity: 1.7,
+      hemiSky: "#d78be0",
+      hemiGround: "#1b0a24",
+      hemiIntensity: 0.85,
+    },
+  },
+  {
+    id: "moon",
+    name: "The Moon",
+    emoji: "🌕",
+    from: MOON,
+    blurb: "The very top of the sky. Plant your flag.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#ecebe4",
+    deco: [],
+    specials: {},
+    hazards: {},
+    ice: false,
+    wind: false,
+    gravity: 0.6,
+    weather: "stars",
+    sky: {
+      top: "#000000",
+      bottom: "#10131f",
+      fog: "#0d1019",
+      sun: "#ffffff",
+      sunIntensity: 2.2,
+      hemiSky: "#9aa3c0",
+      hemiGround: "#2a2a2a",
+      hemiIntensity: 0.85,
+    },
+  },
 ];
+
+/** The zones a tower climbs through, up to its top floor. */
+export const zonesUpTo = (top: number) => ZONES.filter((z) => z.from <= top);
 
 export function zoneIndexOf(floor: number): number {
   let i = 0;
@@ -278,6 +370,9 @@ export const ZONE_POWERUPS: Record<ZoneId, Partial<Record<PowerupKind, number>>>
   snow: { shield: 1, feather: 1 },
   storm: { shield: 2, doubleJump: 1, feather: 1 },
   summit: {},
+  orbit: { doubleJump: 2, feather: 1, shield: 1, magnet: 1 },
+  nebula: { shield: 2, doubleJump: 1, feather: 1 },
+  moon: {},
 };
 
 /** Orbs never appear below this floor, and are at least this many floors apart. */
@@ -297,6 +392,8 @@ export const CANNON = {
     [27, 32],
     [47, 56],
     [73, 84],
+    // Version 3 towers only: a shot through Low Orbit.
+    [106, 111],
   ] as [number, number][],
   lift: { weak: 2, good: 5, perfect: 8 } as Record<CannonGrade, number>,
   /** The meter sweeps 0 → 1 → 0 in this many seconds (divided by tempo). */
@@ -319,14 +416,19 @@ export const CANNON = {
   coins: 7,
 } as const;
 
-export type SetPieceId = "bridge" | "saws" | "canyon" | "lightning";
+export type SetPieceId = "bridge" | "saws" | "canyon" | "lightning" | "asteroids" | "meteors";
 
-/** Hand-built finales between two checkpoints (version 2 towers). */
-export const SET_PIECES: { id: SetPieceId; name: string; emoji: string; call: string; from: number; to: number }[] = [
-  { id: "bridge", name: "Collapsing Bridge", emoji: "🌉", call: "It's falling apart. RUN!", from: 21, to: 24 },
-  { id: "saws", name: "Saw Gauntlet", emoji: "🪚", call: "Find the rhythm, jump the blades", from: 41, to: 44 },
-  { id: "canyon", name: "Updraft Canyon", emoji: "🌪️", call: "Too far to jump: ride the wind", from: 66, to: 70 },
-  { id: "lightning", name: "Lightning Sprint", emoji: "⚡", call: "Chase the strikes to the summit", from: 94, to: 99 },
+/**
+ * Hand-built finales between two checkpoints (version 2 towers; the space ones on version 3).
+ * `prize` is what clearing one says.
+ */
+export const SET_PIECES: { id: SetPieceId; name: string; emoji: string; call: string; from: number; to: number; prize: string }[] = [
+  { id: "bridge", name: "Collapsing Bridge", emoji: "🌉", call: "It's falling apart. RUN!", from: 21, to: 24, prize: "Bonus coins on the checkpoint" },
+  { id: "saws", name: "Saw Gauntlet", emoji: "🪚", call: "Find the rhythm, jump the blades", from: 41, to: 44, prize: "Bonus coins on the checkpoint" },
+  { id: "canyon", name: "Updraft Canyon", emoji: "🌪️", call: "Too far to jump: ride the wind", from: 66, to: 70, prize: "Bonus coins on the checkpoint" },
+  { id: "lightning", name: "Lightning Sprint", emoji: "⚡", call: "Chase the strikes to the summit", from: 94, to: 99, prize: "The summit is yours" },
+  { id: "asteroids", name: "Asteroid Belt", emoji: "🪐", call: "Ride the circling rocks across", from: 123, to: 127, prize: "Bonus coins on the checkpoint" },
+  { id: "meteors", name: "Meteor Shower", emoji: "☄️", call: "Watch for the red rings. Keep moving!", from: 144, to: 149, prize: "The Moon is yours" },
 ];
 
 export const setPieceAt = (floor: number) => SET_PIECES.find((sp) => floor >= sp.from && floor <= sp.to);
@@ -334,8 +436,20 @@ export const setPieceAt = (floor: number) => SET_PIECES.find((sp) => floor >= sp
 /** Updraft columns: how hard they push up, and the top speed they lift to. */
 export const UPDRAFT = { accel: 45, maxRise: 9, radius: 1.4 } as const;
 
+/**
+ * Orbiting asteroids circle with this radius along the path (times a random 0.55…0.8 ×
+ * pieceScale); the up-and-down part of the circle is squashed to `rise` of it.
+ */
+export const ORBIT = { rise: 0.45, period: [3.6, 4.6] as [number, number] } as const;
+
+/**
+ * Meteors: a red ring warns `warn` seconds before one lands, the rock itself is seen for the
+ * last `fall` seconds of its drop, and the impact burns `radius` round the ring for `blast`.
+ */
+export const METEOR = { period: [3.4, 4.4] as [number, number], warn: 1.2, fall: 0.7, drop: 10, blast: 0.3, radius: 0.85, rock: 0.42 } as const;
+
 /** Respawn points: every 5 floors low down, every 7 or 8 higher up (where floors are harder). */
-export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS];
+export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS, 107, 114, 121, 128, 135, 142, MOON];
 
 export const isCheckpoint = (floor: number) => CHECKPOINTS.includes(floor);
 
@@ -347,6 +461,7 @@ const ease = (t: number) => t * t * (3 - 2 * t);
  * the meadow is a staircase, the storm asks for long, precise jumps.
  */
 export function knobs(floor: number) {
+  if (floor > FLOORS) return spaceKnobs(floor);
   const d = Math.min(1, floor / (FLOORS - 1));
   const e = ease(d);
   return {
@@ -364,6 +479,23 @@ export function knobs(floor: number) {
     tempo: lerp(0.75, 1.45, e),
     /** How far platforms stray in and out from the path. */
     wander: lerp(0.1, 0.45, d),
+  };
+}
+
+/**
+ * Past the summit gravity is lower (see the zones), so the jumps can be longer and higher
+ * for the same effort. A short breather after the summit, then it ramps again.
+ */
+function spaceKnobs(floor: number) {
+  const e = ease(Math.min(1, (floor - FLOORS) / (MOON - FLOORS)));
+  return {
+    rise: lerp(1.15, 1.45, e),
+    gap: lerp(2.05, 2.6, e),
+    sizes: { big: 0.06, long: 0.26, normal: 0.43, narrow: 0.25 },
+    special: lerp(0.55, 0.72, e),
+    hazard: lerp(0.5, 0.68, e),
+    tempo: lerp(1.25, 1.6, e),
+    wander: 0.45,
   };
 }
 

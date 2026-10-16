@@ -9,7 +9,7 @@ export interface StepSpec {
   size: Size;
   /** Overrides the zone's piece for this size. */
   piece?: string;
-  kind: "static" | "crumble" | "vanish";
+  kind: "static" | "crumble" | "vanish" | "orbit";
   rise: number;
   /** Horizontal gap from the previous platform, edge to edge. */
   gap: number;
@@ -23,6 +23,10 @@ export interface StepSpec {
   strike?: { period: number; on: number; at: number };
   /** An updraft column fills the gap before it. */
   updraft?: boolean;
+  /** Orbiting asteroid: this far through its circle (0…1) at the start, so the belt turns as a wave. */
+  orbit?: number;
+  /** A meteor lands on it, this far through the shower's cycle (0…1), this far along it (−1…1 of its half-length). */
+  meteor?: { at: number; along: number };
 }
 
 /** Bridge planks collapse one after another, this long apart, once the first is stepped on. */
@@ -55,5 +59,16 @@ export const SET_PIECE_STEPS: Record<SetPieceId, StepSpec[]> = {
     rise: 0.9,
     gap: 1.3,
     strike: { period: STRIKE * 6, on: STRIKE * 3, at: i * STRIKE },
+  })),
+  // Rocks circling a quarter-turn apart: each one swings near, then away. Hop on as it comes.
+  asteroids: [0, 1, 2, 3, 4].map((i) => ({ size: "normal", kind: "orbit", rise: 0.7, gap: 1.2, orbit: i * 0.27 })),
+  // Long ledges under a shower: the rings light up one ledge after another, so keep moving.
+  meteors: [0, 1, 2, 3, 4, 5].map((i) => ({
+    size: "long",
+    kind: "static",
+    rise: 0.75,
+    gap: 1.5,
+    dry: true,
+    meteor: { at: (i * 0.3) % 1, along: i % 2 ? 0.45 : -0.45 },
   })),
 };

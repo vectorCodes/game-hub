@@ -13,6 +13,9 @@ const CHORDS: number[][] = [
   [246.94, 293.66, 369.99], // Snow Peak: B minor
   [207.65, 246.94, 311.13], // Storm: G# diminished-ish
   [261.63, 392.0, 523.25], // Summit: open C
+  [196.0, 293.66, 587.33], // Low Orbit: open G, wide and floating
+  [233.08, 277.18, 349.23], // Nebula: B♭ minor, dreamy
+  [261.63, 392.0, 659.25], // The Moon: C major, wide open
 ];
 
 interface Pad {
@@ -127,9 +130,11 @@ function playChord(index: number) {
 export function updateAmbience(height: number, gust: number, zoneIndex: number) {
   if (!ac || !windGain || !windFilter) return;
   const t = ac.currentTime;
-  const level = 0.015 + Math.min(1, height / 100) * 0.09 + gust * 0.14;
+  // Space is quiet: the wind thins out past the summit.
+  const air = height > 100 ? Math.max(0.15, 1 - (height - 100) / 12) : 1;
+  const level = (0.015 + Math.min(1, height / 100) * 0.09) * air + gust * 0.14;
   windGain.gain.setTargetAtTime(level, t, 0.4);
-  windFilter.frequency.setTargetAtTime(320 + height * 7 + gust * 700, t, 0.4);
+  windFilter.frequency.setTargetAtTime(320 + Math.min(height, 100) * 7 + gust * 700, t, 0.4);
   if (zoneIndex !== zone) {
     zone = zoneIndex;
     playChord(zoneIndex);

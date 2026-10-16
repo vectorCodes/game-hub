@@ -231,6 +231,8 @@ const TRAILS: Record<string, { color: (t: number, i: number) => string; rise: nu
   "trail:ember": { color: (_, i) => (i % 2 ? "#ffb35c" : "#e8774f"), rise: 1.4, size: 0.08, rate: 45 },
   "trail:rainbow": { color: (t) => `hsl(${Math.round((t * 160) % 360)}, 90%, 65%)`, rise: 0.2, size: 0.09, rate: 50 },
   "trail:gold": { color: (_, i) => (i % 2 ? "#ffe08a" : "#eec266"), rise: -0.3, size: 0.1, rate: 45 },
+  "trail:stardust": { color: (_, i) => (i % 4 === 0 ? "#ffffff" : i % 2 ? "#b9a6ff" : "#7fb4ff"), rise: 0.1, size: 0.06, rate: 55 },
+  "trail:comet": { color: (_, i) => (i % 3 ? "#d8f3ff" : "#7fd8ff"), rise: -0.15, size: 0.12, rate: 70 },
 };
 
 /** The equipped trail: particles left behind while the climber moves. */

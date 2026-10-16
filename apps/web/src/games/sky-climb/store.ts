@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   climbItem,
+  climbTop,
   decodeGhost,
   encodeGhost,
   practiceSeed,
@@ -156,7 +157,7 @@ interface State {
   buy: (itemId: string) => Promise<string | null>;
   setLockerOpen: (open: boolean) => void;
   start: () => Promise<void>;
-  /** Ends the run (summit, or the player stops) and records it. */
+  /** Ends the run (the top of the tower, or the player stops) and records it. */
   finish: () => Promise<void>;
   backToMenu: () => void;
   reachFloor: (floor: number) => void;
@@ -372,8 +373,9 @@ export const useClimb = create<State>((set, get) => ({
   addFall: () => set((s) => ({ falls: s.falls + 1 })),
 
   summit: () => {
-    set({ phase: "summit", floor: FLOORS, endedAt: Date.now() });
-    if (get().race) sendRoomProgress(FLOORS);
+    const top = climbTop(get().seed);
+    set({ phase: "summit", floor: top, endedAt: Date.now() });
+    if (get().race) sendRoomProgress(top);
     // Let the celebration play before the results.
     setTimeout(() => void get().finish(), 3200);
   },

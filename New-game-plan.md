@@ -134,7 +134,7 @@ below ramps smoothly with height, not just at zone borders.
 | 46–70 | ❄️ Snow Peak | Snow blocks, pines, sunset | Slippery ice, crumbling platforms, wind gusts that push you. |
 | 71–99 | ⛈️ Storm | Dark clouds, rain, night | Spinning saws, spike blocks, vanishing platforms, short time windows. |
 | 100 | 🏁 Summit | Flag, chest, stars | Final jump; summit celebration. |
-| 100+ | ♾️ Endless (later) | Space sky | Random mix, still getting harder. |
+| 101–150 | 🚀 Beyond the Summit (Phase 4) | Space, then the Moon | Low gravity, orbiting asteroids, meteors. |
 
 Ramping parameters (each a function of floor): gap distance, platform size, mover speed,
 hazard density, how many paths branch, and checkpoint spacing (every 5 floors early, every
@@ -228,6 +228,26 @@ Original plan:
 - **Challenge link:** "Beat my climb" opens the same seed with the sender's ghost.
 - **Live climbs (stretch):** see other players climbing today's tower in real time
   (Supabase Realtime), each wearing their own avatar.
+
+## Phase 4: Beyond the Summit ✅
+
+Lots of players reached floor 100, so the tower goes on. Daily towers from `TOWER_V3_FROM`
+(and all new practice towers) are version 3: floors 0–100 are built exactly as before (old
+ghosts still fit), then the climb carries on through space to the Moon at floor 150.
+- **Zones:** the Summit (100–104, the air thins), 🛰️ Low Orbit (105–127), 🌌 Nebula (128–149),
+  🌕 The Moon (150). Each has its own gravity (0.85 → 0.8 → 0.72), so jumps are floatier
+  but the gaps (`spaceKnobs`) are longer.
+- **New mechanics:** orbiting asteroids (platforms that circle along the path and up and
+  down) and meteors (a red ring warns, the rock drops in, the impact burns round the ring;
+  the shield blocks it). No wind in space, even on a Gale day.
+- **Set-pieces:** 🪐 Asteroid Belt (123–127) and ☄️ Meteor Shower (144–149). One more cannon
+  (106–111). Checkpoints every 7 floors: 107, 114, 121, 128, 135, 142.
+- **Look and sound:** a blue planet below, a ringed giant, the Moon growing overhead,
+  stardust motes, a quieter wind and a chord per space zone.
+- **Rewards:** achievements 🚀 Lift-off (floor 105) and 🌕 Moonwalker (floor 150, unlocks the
+  Comet trail); a Stardust trail for 200 coins. Floor 100 still counts as a summit.
+- Room races stay version 2 (a race to the summit). The server caps a run's floor at its
+  tower's top (`climbTop`).
 
 ---
 

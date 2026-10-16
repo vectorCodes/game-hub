@@ -1,9 +1,9 @@
 // What's laid over the climb: floor and zone, time, coins, a height bar with the zones
 // (and where the ghosts and live climbers are), toasts (new zone, checkpoint, new best), the wind warning, and the touch controls.
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { TWISTS } from "@shadow/shared";
+import { climbTop, TWISTS } from "@shadow/shared";
 import { useSound } from "../../../lib/sound";
-import { CANNON, CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES } from "../config";
+import { CANNON, CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES, zonesUpTo } from "../config";
 import { riderMarks, type RiderKind, type RiderMark } from "../ghosts";
 import { pressJump, setStick } from "../input";
 import { liveCannon, liveEffects } from "../powerups";
@@ -19,6 +19,9 @@ const ZONE_COLORS: Record<string, string> = {
   snow: "#cfd6ff",
   storm: "#6d78a8",
   summit: "#eec266",
+  orbit: "#7d86d8",
+  nebula: "#c77ad6",
+  moon: "#ecebe4",
 };
 
 function Clock({ startedAt, endedAt }: { startedAt: number; endedAt: number | null }) {
@@ -63,34 +66,36 @@ function useRiderMarks(): RiderMark[] {
 }
 
 /** The whole tower as a thin bar: zones in colour, checkpoints as ticks, you as a dot. */
-function HeightBar({ floor, best }: { floor: number; best: number }) {
+function HeightBar({ floor, best, top }: { floor: number; best: number; top: number }) {
   const marks = useRiderMarks();
+  const zones = zonesUpTo(top);
+  const at = (f: number) => `${(Math.min(f, top) / top) * 100}%`;
   return (
     <div className="pointer-events-none absolute top-1/2 right-3 h-[52%] w-2 -translate-y-1/2 sm:right-5 [@media(max-height:500px)]:top-[42%] [@media(max-height:500px)]:h-[36%]" aria-hidden>
       <div className="relative h-full w-full overflow-hidden rounded-full ring-1 ring-white/15">
-        {ZONES.slice(0, -1).map((z, i) => {
-          const end = ZONES[i + 1].from;
+        {zones.slice(0, -1).map((z, i) => {
+          const end = zones[i + 1].from;
           return (
             <div
               key={z.id}
               className="absolute inset-x-0 opacity-70"
-              style={{ bottom: `${(z.from / FLOORS) * 100}%`, height: `${((end - z.from) / FLOORS) * 100}%`, background: ZONE_COLORS[z.id] }}
+              style={{ bottom: at(z.from), height: `${((end - z.from) / top) * 100}%`, background: ZONE_COLORS[z.id] }}
             />
           );
         })}
       </div>
-      {CHECKPOINTS.slice(1, -1).map((c) => (
-        <span key={c} className="absolute -left-0.5 h-px w-3 bg-white/60" style={{ bottom: `${(c / FLOORS) * 100}%` }} />
+      {CHECKPOINTS.filter((c) => c > 0 && c < top).map((c) => (
+        <span key={c} className="absolute -left-0.5 h-px w-3 bg-white/60" style={{ bottom: at(c) }} />
       ))}
-      {best > 0 && (
-        <span className="absolute -left-2 h-0.5 w-6 rounded bg-lamp-300" style={{ bottom: `${(best / FLOORS) * 100}%` }} title="Your best" />
-      )}
+      {/* The summit, halfway up a tower that goes on to the Moon. */}
+      {top > FLOORS && <span className="absolute left-3 translate-y-1/2 text-[10px]" style={{ bottom: at(FLOORS) }}>🏁</span>}
+      {best > 0 && <span className="absolute -left-2 h-0.5 w-6 rounded bg-lamp-300" style={{ bottom: at(best) }} title="Your best" />}
       {marks.map((m) => (
         <span
           key={m.id}
           title={m.name}
           className="absolute right-full mr-1.5 flex translate-y-1/2 items-center gap-1 transition-[bottom] duration-300"
-          style={{ bottom: `${(Math.min(m.floor, FLOORS) / FLOORS) * 100}%` }}
+          style={{ bottom: at(m.floor) }}
         >
           {m.kind === "challenge" && <span className="text-[10px] font-semibold whitespace-nowrap text-ember-300">{m.name}</span>}
           <span className={`h-2.5 w-2.5 rounded-full ring-1 ring-stone-950/60 ${MARK_COLORS[m.kind]}`} />
@@ -98,9 +103,9 @@ function HeightBar({ floor, best }: { floor: number; best: number }) {
       ))}
       <span
         className="absolute left-1/2 h-4 w-4 -translate-x-1/2 translate-y-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)] ring-2 ring-lamp-400 transition-[bottom] duration-300"
-        style={{ bottom: `${(floor / FLOORS) * 100}%` }}
+        style={{ bottom: at(floor) }}
       />
-      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm">🏁</span>
+      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm">{top > FLOORS ? "🌕" : "🏁"}</span>
     </div>
   );
 }
@@ -315,8 +320,10 @@ export function Hud({ touch }: { touch: boolean }) {
   const finish = useClimb((s) => s.finish);
   const race = useClimb((s) => s.race);
   const { muted, toggle } = useSound();
-  const next = nextCheckpointAfter(floor);
-  const twist = towerTwist(useClimb((s) => s.seed));
+  const seed = useClimb((s) => s.seed);
+  const top = climbTop(seed);
+  const next = nextCheckpointAfter(floor, top);
+  const twist = towerTwist(seed);
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -328,14 +335,14 @@ export function Hud({ touch }: { touch: boolean }) {
           <div className="text-[10px] font-semibold tracking-[0.16em] text-stone-400 uppercase sm:text-[11px]">Floor</div>
           <div className="font-display text-3xl leading-none font-bold tabular-nums sm:text-4xl">
             {floor}
-            <span className="text-base text-stone-500 sm:text-lg">/{FLOORS}</span>
+            <span className="text-base text-stone-500 sm:text-lg">/{top}</span>
           </div>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2 sm:gap-2">
           <Chip>
             {zone.emoji} {zone.name}
           </Chip>
-          {floor < FLOORS && (
+          {floor < top && (
             <Chip className="text-stone-300">
               🚩 <span className="hidden sm:inline">Next checkpoint:</span> {next}
             </Chip>
@@ -390,7 +397,7 @@ export function Hud({ touch }: { touch: boolean }) {
         </div>
       )}
 
-      <HeightBar floor={floor} best={best} />
+      <HeightBar floor={floor} best={best} top={top} />
       <Toasts />
       {phase === "playing" && <CannonGauge touch={touch} />}
 

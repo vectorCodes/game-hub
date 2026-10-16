@@ -7,6 +7,7 @@ import {
   FAST_SUMMIT_MS,
   TWISTED_FLOOR,
   climbItem,
+  climbTop,
   decodeGhost,
   evaluateAchievements,
   ownedItems,
@@ -218,11 +219,13 @@ export class SkyClimbService {
         coins: Math.max(run.coins, body.coins),
         falls: Math.max(run.falls, body.falls),
       };
-      if (body.floor > run.bestFloor) {
-        if (elapsedMs < body.floor * CLIMB_MIN_SECONDS_PER_FLOOR * 1000) throw new TooFastError("Climbed too fast");
-        update.bestFloor = body.floor;
+      // No higher than the tower goes (a summit-high tower stops at 100, the Moon at 150).
+      const floor = Math.min(body.floor, climbTop(run.seed));
+      if (floor > run.bestFloor) {
+        if (elapsedMs < floor * CLIMB_MIN_SECONDS_PER_FLOOR * 1000) throw new TooFastError("Climbed too fast");
+        update.bestFloor = floor;
         update.timeMs = elapsedMs;
-        if (body.falls === 0) update.cleanFloor = Math.max(run.cleanFloor, body.floor);
+        if (body.falls === 0) update.cleanFloor = Math.max(run.cleanFloor, floor);
         // The first floor of a daily climb keeps the streak alive.
         if (run.userId && run.mode === "daily" && run.puzzleDate && run.bestFloor === 0) {
           await recordClimbDay(tx, run.userId, run.puzzleDate);

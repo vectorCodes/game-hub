@@ -115,6 +115,7 @@ const KIT_PIECES = [
   "coin-gold",
   "flag",
   "chest",
+  "star",
   "tree",
   "flowers",
 ];

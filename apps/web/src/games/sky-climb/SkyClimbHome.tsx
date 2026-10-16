@@ -5,7 +5,7 @@ import { TWISTS } from "@shadow/shared";
 import { Reveal } from "../../components/Reveal";
 import { formatCountdown, formatDuration } from "../../lib/format";
 import { useNow } from "../shadow-guess/useDaily";
-import { FLOORS, SKY_CLIMB_PATH, ZONES } from "./config";
+import { FLOORS, MOON, SKY_CLIMB_PATH, ZONES } from "./config";
 import { SkyClimbCover } from "./HubCard";
 import { dailySeed, localBest, useClimb } from "./store";
 import { towerTwist } from "./twists";
@@ -45,7 +45,8 @@ export default function SkyClimbHome() {
             <span className="text-ember-400">Climb</span>
           </h1>
           <p className="mx-auto mt-5 max-w-md animate-rise text-lead [animation-delay:160ms] md:mx-0">
-            One tower a day. Don&rsquo;t look down. Jump from meadow to storm to the stars: {FLOORS} floors, harder the higher you go.
+            One tower a day. Don&rsquo;t look down. Jump from meadow to storm to the summit at floor {FLOORS}, then on through
+            space to the Moon at {MOON}. Harder the higher you go.
           </p>
           {twist && (
             <p className="mt-5 inline-flex animate-rise flex-wrap items-center gap-2 border-y hairline px-1 py-2 font-serif text-sm text-stone-300 [animation-delay:200ms]">
@@ -75,7 +76,10 @@ export default function SkyClimbHome() {
         <Reveal className="max-w-2xl">
           <p className="eyebrow">The tower</p>
           <h2 className="mt-4 text-section">Easy at the bottom. Brutal at the top.</h2>
-          <p className="mt-4 text-lead">Every zone changes the view and the rules. The jumps get longer, the platforms smaller, and the sky darker.</p>
+          <p className="mt-4 text-lead">
+            Every zone changes the view and the rules. The jumps get longer, the platforms smaller, and the sky darker. Past the
+            summit, gravity loosens its grip.
+          </p>
         </Reveal>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ZONES.map((z, i) => (
