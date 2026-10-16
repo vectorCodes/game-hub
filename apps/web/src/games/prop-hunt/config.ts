@@ -39,6 +39,9 @@ export const CAMERA = {
   maxPitch: 1.25,
   /** Radians per pixel of mouse movement. */
   sensitivity: 0.0026,
+  /** Arrow keys: turning and tilting speed (radians a second). */
+  keyTurn: 2.4,
+  keyTilt: 1.3,
   fov: 62,
   /** Resting tilt, and the tilt while going up or down stairs (looking up them, or down them). */
   pitch: 0.32,
@@ -46,7 +49,7 @@ export const CAMERA = {
   pitchDescending: 0.6,
   /** Follow cam: after this long without the mouse, the camera swings round behind you as you move. */
   followDelay: 0.8,
-  /** How fast it swings (radians a second at full speed, straight ahead). */
+  /** How fast it swings (radians a second at full speed); it swings faster the further round it has to go. */
   followRate: 2.4,
   /** How fast the tilt eases towards the stairs' tilt. */
   pitchRate: 2,

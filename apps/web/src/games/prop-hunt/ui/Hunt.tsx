@@ -86,7 +86,7 @@ export function SeekerBar({ touch }: { touch: boolean }) {
       <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 w-64 -translate-x-1/2 sm:bottom-6">
         <div className="glass px-4 py-2.5 text-xs text-stone-100">
           <div className="mb-1 flex justify-between">
-            <span>{dizzy ? `Dizzy! ${dizzyLeft} s` : touch ? "Tap Zap to zap" : "Click to zap · misses cost health"}</span>
+            <span>{dizzy ? `Dizzy! ${dizzyLeft} s` : touch ? "Tap Zap to zap" : "Click or Enter to zap · misses cost health"}</span>
             <span className="tabular-nums">{hp} HP</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-stone-100/15">

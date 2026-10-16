@@ -332,7 +332,7 @@ export default function PropHuntHome() {
               title="Seekers"
               line="Wait in the garage, then hunt. Every find grows your team."
               items={[
-                ["Click", <>Zap. A miss costs {HUNT_MISS_DAMAGE} health; ten and you're dizzy.</>],
+                ["Click", <>Zap (or Enter). A miss costs {HUNT_MISS_DAMAGE} health; ten and you're dizzy.</>],
                 ["R", "Sonar, once a round: an arrow to the nearest hider"],
                 ["Ears", "Listen for taunts: they come from where the hider is"],
                 ["Found", "Every hider you find joins the hunt"],

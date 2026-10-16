@@ -1,5 +1,6 @@
 // One input state for Prop Hunt, filled by the keyboard and mouse or by the touch controls.
-// The simulation reads the movement; the camera reads and clears the look deltas.
+// WASD moves; the arrow keys (or the mouse) turn the camera, so the game plays on a keyboard
+// alone. The simulation reads the movement; the camera reads the look.
 import { useEffect } from "react";
 import type { Input } from "./sim";
 
@@ -7,6 +8,9 @@ export const input: Input = { x: 0, y: 0, jumpHeld: false, jumpPressed: false, s
 
 /** Mouse movement since the camera last read it, and wheel zoom steps. */
 export const look = { dx: 0, dy: 0, zoom: 0 };
+
+/** The arrow keys held: x turns the camera (right +), y tilts it (down +). */
+export const lookKeys = { x: 0, y: 0 };
 
 /** One-shot actions, cleared by whoever handles them. */
 export const actions = { respawn: false, become: false, unbecome: false, lock: false, taunt: false, zap: false, sonar: false };
@@ -18,14 +22,14 @@ const keys = new Set<string>();
 /** The touch joystick's axes and the sprint button, merged with the keys. */
 const touch = { x: 0, y: 0, sprint: false };
 
+const held = (code: string) => (keys.has(code) ? 1 : 0);
+
 function refresh() {
-  const right = keys.has("ArrowRight") || keys.has("KeyD");
-  const left = keys.has("ArrowLeft") || keys.has("KeyA");
-  const up = keys.has("ArrowUp") || keys.has("KeyW");
-  const down = keys.has("ArrowDown") || keys.has("KeyS");
-  input.x = Math.max(-1, Math.min(1, (right ? 1 : 0) - (left ? 1 : 0) + touch.x));
-  input.y = Math.max(-1, Math.min(1, (up ? 1 : 0) - (down ? 1 : 0) + touch.y));
+  input.x = Math.max(-1, Math.min(1, held("KeyD") - held("KeyA") + touch.x));
+  input.y = Math.max(-1, Math.min(1, held("KeyW") - held("KeyS") + touch.y));
   input.sprint = keys.has("ShiftLeft") || keys.has("ShiftRight") || touch.sprint;
+  lookKeys.x = held("ArrowRight") - held("ArrowLeft");
+  lookKeys.y = held("ArrowDown") - held("ArrowUp");
 }
 
 export function setStick(x: number, y: number) {
@@ -46,7 +50,7 @@ export function pressJump(down: boolean) {
 
 const CONTROL_KEYS = new Set(["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight"]);
 /** Keys that fire once per press. */
-const ACTION_KEYS: Record<string, keyof typeof actions> = { KeyR: "respawn", KeyE: "become", KeyX: "unbecome", KeyQ: "lock", KeyF: "taunt" };
+const ACTION_KEYS: Record<string, keyof typeof actions> = { KeyR: "respawn", KeyE: "become", KeyX: "unbecome", KeyQ: "lock", KeyF: "taunt", Enter: "zap", KeyZ: "zap" };
 
 /**
  * Keyboard and mouse while `active`. Clicking `target` locks the pointer, so the mouse turns

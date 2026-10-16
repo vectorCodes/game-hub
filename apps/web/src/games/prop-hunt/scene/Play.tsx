@@ -11,7 +11,7 @@ import { useAvatarModel } from "../../../avatar/useAvatarModel";
 import { play, type Sound } from "../../../lib/sound";
 import { CAMERA } from "../config";
 import { angleDelta } from "../math";
-import { actions, input, look } from "../input";
+import { actions, input, look, lookKeys } from "../input";
 import { inMatch, isDizzy, isFrozen, mayDisguise, mayZap, SEND_EVERY, sendDisguise, sendPosition, sendSonar, sendTaunt } from "../net";
 import { useHunt } from "../store";
 import { rayBoxes, type HuntSim, type SimEvent } from "../sim";
@@ -141,18 +141,19 @@ export function CameraRig({ sim, view }: { sim: HuntSim; view: View }) {
 
   useFrame((_, dt) => {
     const pl = sim.player;
-    const mouse = look.dx !== 0 || look.dy !== 0;
-    view.yaw -= look.dx * CAMERA.sensitivity;
-    view.pitch = MathUtils.clamp(view.pitch + look.dy * CAMERA.sensitivity, CAMERA.minPitch, CAMERA.maxPitch);
+    // Steering by hand: the mouse, or the arrow keys.
+    const steering = look.dx !== 0 || look.dy !== 0 || lookKeys.x !== 0 || lookKeys.y !== 0;
+    view.yaw -= look.dx * CAMERA.sensitivity + lookKeys.x * CAMERA.keyTurn * dt;
+    view.pitch = MathUtils.clamp(view.pitch + look.dy * CAMERA.sensitivity + lookKeys.y * CAMERA.keyTilt * dt, CAMERA.minPitch, CAMERA.maxPitch);
     view.distance = MathUtils.clamp(view.distance + look.zoom * 0.6, CAMERA.minDistance, CAMERA.maxDistance);
     look.dx = look.dy = look.zoom = 0;
-    // Steering with the mouse also steers where the keys go.
-    if (mouse) view.moveYaw = view.yaw;
+    // Steering the camera also steers where the keys go.
+    if (steering) view.moveYaw = view.yaw;
 
-    // Follow cam: once the mouse has been still a moment, swing round behind where you're
-    // heading (forwards or sideways; walking back at the camera leaves it be), and tilt to
-    // look up or down stairs.
-    v.idle = mouse ? 0 : v.idle + dt;
+    // Follow cam: once you've stopped steering a moment, swing round behind wherever you're
+    // heading, turning round included (faster the further it has to go; your path is held while
+    // the same keys stay down, so it doesn't bend), and tilt to look up or down stairs.
+    v.idle = steering ? 0 : v.idle + dt;
     const rise = dt > 0 && v.ready ? (pl.y - v.lastY) / dt : 0;
     v.lastY = pl.y;
     v.climb += ((pl.grounded ? rise : 0) - v.climb) * (1 - Math.exp(-dt * 6));
@@ -160,8 +161,7 @@ export function CameraRig({ sim, view }: { sim: HuntSim; view: View }) {
     if (v.idle > CAMERA.followDelay && speed > 0.5) {
       const behind = Math.atan2(-pl.vx, -pl.vz);
       const off = angleDelta(view.yaw, behind);
-      const ahead = MathUtils.clamp((Math.cos(off) + 0.7) / 0.7, 0, 1);
-      const turn = CAMERA.followRate * ahead * Math.min(1, speed / 5.5) * dt;
+      const turn = CAMERA.followRate * (0.6 + (0.9 * Math.abs(off)) / Math.PI) * Math.min(1, speed / 5.5) * dt;
       view.yaw += MathUtils.clamp(off, -turn, turn);
       const tilt = v.climb > 0.6 ? CAMERA.pitchClimbing : v.climb < -0.6 ? CAMERA.pitchDescending : CAMERA.pitch;
       view.pitch += (tilt - view.pitch) * (1 - Math.exp(-dt * CAMERA.pitchRate));

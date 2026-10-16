@@ -164,8 +164,9 @@ function PropPrompt({ touch }: { touch: boolean }) {
 }
 
 const CONTROLS: [string, string][] = [
-  ["Click", "steer the camera with the mouse (Esc frees it)"],
-  ["WASD", "move"],
+  ["Click", "steer the camera with the mouse or trackpad (Esc frees it)"],
+  ["← →  ↑ ↓", "turn and tilt the camera"],
+  ["WASD", "move (the camera follows behind you)"],
   ["Space", "jump"],
   ["Shift", "sprint"],
   ["E", "become the prop you're looking at"],
