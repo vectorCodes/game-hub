@@ -508,6 +508,45 @@ body,
 .cover-sway { animation: cover-sway 7s ease-in-out infinite; transform-box: fill-box; transform-origin: 0 100%; }
 .cover-climb { animation: cover-climb 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .cover-flip { animation: cover-flip 4s var(--ease-mirai) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+/* Prop Hunt: the seeker's crosshair drifting along the shelf, then settling on the mug that blinked. */
+@keyframes cover-aim {
+  0%, 100% { transform: translate(-110px, 10px); }
+  40% { transform: translate(40px, -6px); }
+  70%, 85% { transform: translate(0, 0); }
+}
+.cover-aim { animation: cover-aim 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .cover-aim { animation: none; } }
+
+/* Prop Hunt's landing: eyes that open in the dollhouse and blink, the seeker's flashlight
+   sweeping, a twitchy hider on the shelf, and a miss wobbling. */
+@keyframes ph-peek {
+  0%, 60%, 100% { opacity: 0; transform: scaleY(0.1); }
+  64%, 74%, 82%, 92% { opacity: 1; transform: scaleY(1); }
+  78% { opacity: 1; transform: scaleY(0.1); }
+}
+.ph-peek { animation: ph-peek 6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; opacity: 0; }
+@keyframes ph-sweep {
+  0%, 100% { transform: rotate(-16deg); }
+  50% { transform: rotate(12deg); }
+}
+.ph-sweep { animation: ph-sweep 7s ease-in-out infinite; }
+@keyframes ph-twitch {
+  0%, 90%, 100% { transform: rotate(0); }
+  92% { transform: rotate(-7deg); }
+  95% { transform: rotate(6deg); }
+  98% { transform: rotate(-3deg); }
+}
+.ph-twitch { animation: ph-twitch 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes ph-wobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(9deg); }
+}
+.ph-wobble { animation: ph-wobble 0.32s ease-in-out 2; transform-box: fill-box; transform-origin: 50% 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .ph-sweep, .ph-twitch, .ph-wobble { animation: none; }
+  .ph-peek { animation: none; opacity: 1; transform: none; }
+}
 
 /* Pair Pop: the peek timer, the results card swinging in, and the landing's flipping tiles. */
 @keyframes pp-drain {

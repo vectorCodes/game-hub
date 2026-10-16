@@ -1,11 +1,27 @@
-// Sky Climb rooms: a small Worker in front of one ClimbRoom Durable Object per room code.
-//   POST /rooms               → { code }               make a room
-//   GET  /rooms/:code         → RoomPeek              before joining
-//   GET  /rooms/:code/ws      → WebSocket             the room itself
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, normalizeRoomCode, type RoomPeek } from "@shadow/shared";
+// Game rooms: a small Worker in front of one Durable Object per room code. Each game has its
+// own path prefix and Durable Object class, so codes never clash between games.
+//   POST <prefix>               → { code }               make a room
+//   GET  <prefix>/:code         → RoomPeek               before joining
+//   GET  <prefix>/:code/ws      → WebSocket              the room itself
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, normalizeRoomCode, type RoomPeekOf } from "@shadow/shared";
 import type { Env } from "./env";
 
 export { ClimbRoom } from "./room";
+export { HuntRoom } from "./huntRoom";
+
+/** What the Worker asks of any game's room (RoomCore provides all three). */
+interface RoomStub {
+  init(code: string): Promise<boolean>;
+  peek(): Promise<RoomPeekOf<string>>;
+  fetch(request: Request): Promise<Response>;
+}
+
+/** Each game's rooms, by path prefix. */
+const GAMES: { prefix: string; room: (env: Env, code: string) => RoomStub }[] = [
+  // Sky Climb came first, so its rooms are at the bare /rooms.
+  { prefix: "/rooms", room: (env, code) => env.CLIMB_ROOM.get(env.CLIMB_ROOM.idFromName(code)) },
+  { prefix: "/hunt/rooms", room: (env, code) => env.HUNT_ROOM.get(env.HUNT_ROOM.idFromName(code)) },
+];
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -27,37 +43,39 @@ export default {
     // Browsers always send Origin here; other sites' pages may not use the rooms.
     if (origin !== null && !allowed) return json({ error: "forbidden_origin" }, 403, cors);
 
-    const match = url.pathname.match(/^\/rooms(?:\/([^/]+)(\/ws)?)?\/?$/);
-    if (!match) return json({ error: "not_found" }, 404, cors);
-    const [, rawCode, ws] = match;
-
-    if (!rawCode) {
-      if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, cors);
-      const ip = request.headers.get("CF-Connecting-IP") ?? "local";
-      const limit = await env.ROOM_CREATE_LIMIT?.limit({ key: ip });
-      if (limit && !limit.success) return json({ error: "too_many_rooms" }, 429, cors);
-      // A clash is rare (31^5 codes); try a few.
-      for (let i = 0; i < 5; i++) {
-        const code = newCode();
-        if (await roomStub(env, code).init(code)) return json({ code }, 201, cors);
-      }
-      return json({ error: "no_free_code" }, 503, cors);
+    for (const game of GAMES) {
+      if (url.pathname !== game.prefix && !url.pathname.startsWith(`${game.prefix}/`)) continue;
+      const match = url.pathname.slice(game.prefix.length).match(/^(?:\/([^/]+)(\/ws)?)?\/?$/);
+      if (!match) continue;
+      return rooms(request, env, cors, game.room, match[1], Boolean(match[2]));
     }
-
-    const code = normalizeRoomCode(decodeURIComponent(rawCode));
-    if (ws) {
-      if (request.headers.get("Upgrade") !== "websocket") return json({ error: "expected_websocket" }, 426, cors);
-      if (!code) return json({ error: "not_found" }, 404, cors);
-      return roomStub(env, code).fetch(request);
-    }
-    if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405, cors);
-    const peek: RoomPeek = code ? await roomStub(env, code).peek() : { exists: false, players: 0, status: null };
-    return json(peek, 200, cors);
+    return json({ error: "not_found" }, 404, cors);
   },
 } satisfies ExportedHandler<Env>;
 
-function roomStub(env: Env, code: string) {
-  return env.CLIMB_ROOM.get(env.CLIMB_ROOM.idFromName(code));
+async function rooms(request: Request, env: Env, cors: Record<string, string>, room: (env: Env, code: string) => RoomStub, rawCode: string | undefined, ws: boolean) {
+  if (!rawCode) {
+    if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, cors);
+    const ip = request.headers.get("CF-Connecting-IP") ?? "local";
+    const limit = await env.ROOM_CREATE_LIMIT?.limit({ key: ip });
+    if (limit && !limit.success) return json({ error: "too_many_rooms" }, 429, cors);
+    // A clash is rare (31^5 codes); try a few.
+    for (let i = 0; i < 5; i++) {
+      const code = newCode();
+      if (await room(env, code).init(code)) return json({ code }, 201, cors);
+    }
+    return json({ error: "no_free_code" }, 503, cors);
+  }
+
+  const code = normalizeRoomCode(decodeURIComponent(rawCode));
+  if (ws) {
+    if (request.headers.get("Upgrade") !== "websocket") return json({ error: "expected_websocket" }, 426, cors);
+    if (!code) return json({ error: "not_found" }, 404, cors);
+    return room(env, code).fetch(request);
+  }
+  if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405, cors);
+  const peek: RoomPeekOf<string> = code ? await room(env, code).peek() : { exists: false, players: 0, status: null };
+  return json(peek, 200, cors);
 }
 
 function newCode() {

@@ -2,6 +2,7 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { ShadowGuessCover, ShadowGuessStatus } from "./shadow-guess/HubCard";
 import { SkyClimbCover, SkyClimbStatus } from "./sky-climb/HubCard";
 import { PairPopCover, PairPopStatus } from "./pair-pop/HubCard";
+import { PropHuntCover, PropHuntStatus } from "./prop-hunt/HubCard";
 
 export interface GameEntry {
   id: string;
@@ -55,5 +56,16 @@ export const games: GameEntry[] = [
     Component: lazy(() => import("./pair-pop/PairPopPage")),
     Cover: PairPopCover,
     Status: PairPopStatus,
+  },
+  {
+    id: "prop-hunt",
+    title: "Prop Hunt",
+    shortTitle: "Props",
+    tagline: "Hide as a toaster. Hunt your friends. Don't twitch.",
+    path: "/games/prop-hunt",
+    Landing: lazy(() => import("./prop-hunt/PropHuntHome")),
+    Component: lazy(() => import("./prop-hunt/PropHuntPage")),
+    Cover: PropHuntCover,
+    Status: PropHuntStatus,
   },
 ];

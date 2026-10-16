@@ -7,3 +7,7 @@ Kits used: Furniture Kit, Food Kit, Holiday Kit, Survival Kit, Car Kit, Space Ki
 Cube Pets, Brick Kit, Toy Car Kit, Mini Arcade, Graveyard Kit.
 
 Sky Climb (`apps/web/public/sky-climb/`): Mini Characters and Platformer Kit, also by Kenney, CC0.
+
+Prop Hunt (`apps/web/public/prop-hunt/`): textures, the sky (HDRI) and models from Poly Haven
+(https://polyhaven.com), CC0. Fetched and shrunk by `tools/models/src/propHunt.ts`, which lists
+every asset by its Poly Haven id.
