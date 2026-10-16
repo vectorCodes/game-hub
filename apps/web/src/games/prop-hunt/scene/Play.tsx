@@ -12,7 +12,7 @@ import { play, type Sound } from "../../../lib/sound";
 import { CAMERA } from "../config";
 import { angleDelta } from "../math";
 import { actions, input, look, lookKeys } from "../input";
-import { inMatch, isDizzy, isFrozen, mayDisguise, mayZap, SEND_EVERY, sendDisguise, sendPosition, sendSonar, sendTaunt } from "../net";
+import { allRemotes, getRemote, inMatch, isDizzy, isFrozen, isSpectating, mayDisguise, mayZap, sampleRemote, SEND_EVERY, sendDisguise, sendPosition, sendSonar, sendTaunt, type Frame } from "../net";
 import { useHunt } from "../store";
 import { rayBoxes, type HuntSim, type SimEvent } from "../sim";
 
@@ -39,6 +39,35 @@ const STILL = { x: 0, y: 0, jumpHeld: false, jumpPressed: false, sprint: false }
 /** The taunt sounds, by the index the sim picks. */
 const TAUNTS: Sound[] = ["squeak", "honk", "boing", "whistle"];
 const OUTSIDE = new Set(["Garden", "Side path", "Shed"]);
+
+/** Further than this in a frame: the watched player teleported (or we switched), so no follow swing. */
+const JUMP_CUT = 4;
+const watchedFrame: Frame = { t: 0, x: 0, y: 0, z: 0, facing: 0, pose: "idle", locked: false };
+
+/**
+ * Out of the round (found): instead of walking, we ride along with another player, and the
+ * camera follows them as it would us. Space (or Jump) moves on to the next player.
+ */
+function watch(sim: HuntSim, dt: number) {
+  const ids = [...allRemotes()].filter((r) => r.frames.length > 0).map((r) => r.id);
+  const current = useHunt.getState().watching;
+  let i = current === null ? -1 : ids.indexOf(current);
+  if (input.jumpPressed) {
+    input.jumpPressed = false;
+    i = ids.length ? (i + 1) % ids.length : -1;
+  } else if (i < 0) i = ids.length ? 0 : -1;
+  const id = i < 0 ? null : ids[i];
+  if (id !== current) useHunt.setState({ watching: id });
+  const r = id === null ? undefined : getRemote(id);
+  if (!r || !sampleRemote(r, performance.now(), watchedFrame)) return;
+  const pl = sim.player;
+  const f = watchedFrame;
+  const cut = Math.hypot(f.x - pl.x, f.z - pl.z) > JUMP_CUT || dt <= 0;
+  pl.vx = cut ? 0 : (f.x - pl.x) / dt;
+  pl.vz = cut ? 0 : (f.z - pl.z) / dt;
+  pl.vy = 0;
+  Object.assign(pl, { x: f.x, y: f.y, z: f.z, facing: f.facing, grounded: true });
+}
 
 /** Steps the simulation in small fixed slices (stable collisions at any frame rate). */
 export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEvent: Listener }) {
@@ -101,10 +130,15 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
     const n = Math.ceil(dt / (1 / 120));
     const frozen = isFrozen();
     if (frozen) input.jumpPressed = false;
-    for (let i = 0; i < n; i++) sim.step(dt / n, frozen ? STILL : input, view.moveYaw);
-    // In a match, everyone else sees us through these.
+    const watching = isSpectating();
+    if (watching) watch(sim, dt);
+    else {
+      if (useHunt.getState().watching !== null) useHunt.setState({ watching: null });
+      for (let i = 0; i < n; i++) sim.step(dt / n, frozen ? STILL : input, view.moveYaw);
+    }
+    // In a match, everyone else sees us through these (unless we're out).
     sendClock.current -= delta;
-    if (match && sendClock.current <= 0) {
+    if (match && !watching && sendClock.current <= 0) {
       sendClock.current = SEND_EVERY;
       const pl = sim.player;
       sendPosition(pl.x, pl.y, pl.z, pl.facing, poseOf(pl), sim.locked);
@@ -272,8 +306,8 @@ function AnimatedAvatar({ sim, subscribe, scene, animations }: AvatarProps & { s
     const pl = sim.player;
     const g = root.current;
     if (!g) return;
-    // While you're a prop, the avatar is put away.
-    g.visible = !sim.disguise;
+    // While you're a prop, or out of the round, the avatar is put away.
+    g.visible = !sim.disguise && !isSpectating();
     if (!g.visible) return;
     animateAccessories(scene, dt);
     const f = fx.current;

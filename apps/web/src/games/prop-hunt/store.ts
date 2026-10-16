@@ -10,6 +10,8 @@ interface HuntState {
   /** The room you're in ("Kitchen"), and whether that's upstairs or outside. */
   area: string | null;
   level: "ground floor" | "first floor" | "outside";
+  /** Out of the round: the player we're watching. */
+  watching: string | null;
 }
 
-export const useHunt = create<HuntState>(() => ({ aimed: null, disguise: null, locked: false, area: null, level: "ground floor" }));
+export const useHunt = create<HuntState>(() => ({ aimed: null, disguise: null, locked: false, area: null, level: "ground floor", watching: null }));

@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { useSearchParams } from "react-router";
 import { DEFAULT_AVATAR, HUNT_FORCED_TAUNT, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYERS, ROOM_CODE_LENGTH, normalizeRoomCode, type HuntPlayerView, type HuntStanding, type HuntView } from "@shadow/shared";
 import { AvatarImage } from "../../../avatar/AvatarImage";
+import { isTouch } from "../input";
+import { useHunt } from "../store";
 import { createHuntRoom, huntRematch, leaveHuntRoom, peekHuntRoom, setHuntReady, startHunt, toLocalTime, useHuntRoom, type RoomError } from "../room";
 
 export const ROOM_ERRORS: Record<RoomError, string> = {
@@ -312,9 +314,13 @@ const PHASE: Partial<Record<HuntView["status"], string>> = { countdown: "Get rea
 export function MatchBanner() {
   const { you, room } = useHuntRoom();
   const left = useCountdown(room?.phaseEndsAt ?? null);
+  const watching = useHunt((s) => s.watching);
   if (!room || !PHASE[room.status]) return null;
   const me = room.players.find((p) => p.id === you);
   const seeker = me?.role === "seeker";
+  const out = me?.role === "hider" && me.found && room.status === "seek";
+  const watched = room.players.find((p) => p.id === watching)?.name;
+  const next = isTouch() ? "Jump" : "Space";
   const hint =
     room.status === "countdown" || room.status === "hide"
       ? seeker
@@ -322,10 +328,10 @@ export function MatchBanner() {
         : "You're a hider. Find a spot and become a prop before the seekers come out!"
       : room.status === "seek"
         ? seeker
-          ? me?.found
-            ? "You were found, so now you hunt too. Zap anything that looks wrong."
-            : "Find the hiders. Zap anything that looks out of place."
-          : forcedHint(left)
+          ? "Find the hiders. Zap anything that looks out of place."
+          : out
+            ? `You were found, so you're out this round. ${watched ? `Watching ${watched} · ${next} for the next player.` : "Watching the others."}`
+            : forcedHint(left)
         : null;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-28 z-10 flex justify-center px-4">
@@ -336,7 +342,11 @@ export function MatchBanner() {
           </span>
           <b>{PHASE[room.status]}</b>
           <span className="font-mono text-lg tabular-nums">{clock(left)}</span>
-          {me?.role && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${seeker ? "bg-ember-400/20 text-ember-300" : "bg-moss-500/20 text-moss-300"}`}>{seeker ? "Seeker" : "Hider"}</span>}
+          {me?.role && (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${out ? "bg-stone-100/15 text-stone-300" : seeker ? "bg-ember-400/20 text-ember-300" : "bg-moss-500/20 text-moss-300"}`}>
+              {out ? "Out" : seeker ? "Seeker" : "Hider"}
+            </span>
+          )}
         </div>
         {hint && <p className="mt-1 text-stone-300">{hint}</p>}
       </div>

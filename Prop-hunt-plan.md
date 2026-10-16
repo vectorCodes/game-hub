@@ -42,7 +42,7 @@ Status: ✅ done · ⏳ next · ⬜ planned
 | 5–8 | 2 |
 
 - The seeker role rotates each round, so everyone gets to seek.
-- **Found hiders become seekers** ("the hunt grows"), so nobody waits around as a spectator.
+- **Found hiders are out** until the next round: they watch the others (Space for the next player).
 
 ### A round
 
@@ -62,8 +62,8 @@ hide (40 s) ──▶ seek (240 s) ──▶ round results (8 s) ──▶ next 
    - Seekers can **sprint** (1.6× speed for 3 s, recharging), because the house is big.
    - Seekers aim with a crosshair and **zap** (click or tap). A zap hits whatever is under
      the crosshair within 6 units (about 7 avatar heights).
-     - **Hit a hider:** the hider pops out of the prop with a squeak and confetti, and joins
-       the seekers. The seeker scores and heals +25 HP.
+     - **Hit a hider:** the hider pops out of the prop with a squeak and confetti, and is
+       out for the round (watching). The seeker scores and heals +25 HP.
      - **Hit a real prop:** the prop wobbles, and the seeker loses 10 HP. At 0 HP the seeker
        is dizzy for 5 s (the screen spins and they can't zap), then comes back at 50 HP.
        This keeps seekers from zapping everything in sight, without knocking anyone out.

@@ -33,7 +33,8 @@ export function Others({ sim, groupRef }: { sim: HuntSim; groupRef?: Ref<Group> 
   const ids = useRemoteIds();
   const { room, you } = useHuntRoom();
   const roster = useMemo(() => new Map((room?.players ?? []).map((p) => [p.id, p])), [room]);
-  const viewerHides = roster.get(you ?? "")?.role === "hider" && !roster.get(you ?? "")?.found;
+  // Hiders, and found hiders watching, see who's under each disguise.
+  const viewerHides = roster.get(you ?? "")?.role === "hider";
   return (
     <>
       <MovingColliders sim={sim} />

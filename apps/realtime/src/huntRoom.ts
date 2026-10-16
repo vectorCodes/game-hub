@@ -1,6 +1,6 @@
 // One Prop Hunt room: the lobby, then a match of rounds. Each round, hiders spread through the
 // house and become props while the seekers wait blindfolded; then the seekers hunt them with
-// zaps. Found hiders join the seekers. The server is the only judge of roles, phases, disguises,
+// zaps. Found hiders are out until the next round: they watch the others. The server is the only judge of roles, phases, disguises,
 // zaps and scores; clients move themselves and show what it says. Joining, reconnecting, the
 // host and saving are RoomCore's (roomCore.ts). See Prop-hunt-plan.md.
 //
@@ -139,7 +139,8 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     const room = this.room!;
     // The hot path: kept for zaps and relayed, nothing stored.
     if (msg.type === "pos") {
-      if (room.status !== "hide" && room.status !== "seek") return;
+      // A found hider is out (watching): they're no longer in the house.
+      if ((room.status !== "hide" && room.status !== "seek") || (me.role === "hider" && me.found)) return;
       me.pos = [msg.p[0] / 100, msg.p[1] / 100, msg.p[2] / 100];
       this.broadcastEach((pid) => (pid === me.id || !this.sees(pid, me) ? null : { type: "pos", id: this.idFor(me, pid), p: msg.p }));
       return;
@@ -362,7 +363,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     const beam: [number, number, number] = [at[0] / 100, at[1] / 100, at[2] / 100];
     if (hit && inRange) {
       const last = this.hidden().length === 1;
-      Object.assign(hit, { found: true, role: "seeker", disguise: null, hp: HUNT_HP });
+      Object.assign(hit, { found: true, disguise: null });
       if (last) this.award(hit, HUNT_POINTS.lastStanding);
       const quick = now - room.seekStartedAt! <= HUNT_POINTS.quickSeconds * 1000;
       this.award(me, HUNT_POINTS.find + (quick ? HUNT_POINTS.quickFind : 0));

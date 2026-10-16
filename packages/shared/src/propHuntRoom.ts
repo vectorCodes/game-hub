@@ -7,7 +7,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // over its WebSocket. See Prop-hunt-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const HUNT_PROTOCOL_VERSION = 2;
+export const HUNT_PROTOCOL_VERSION = 3;
 /** Positions sent a second. */
 export const HUNT_POS_HZ = 10;
 
@@ -61,7 +61,7 @@ export interface HuntPlayerView {
   connected: boolean;
   /** Left during the match. */
   dnf: boolean;
-  /** This round's role (null in the lobby). A found hider is a seeker from then on. */
+  /** This round's role (null in the lobby). A found hider stays a hider, out (and watching) until the next round. */
   role: HuntRole | null;
   /** Was a hider this round and got found. */
   found: boolean;
@@ -116,7 +116,7 @@ export type HuntServerMessage =
   /** Someone became a prop (`kind`), or themselves again (null). */
   | { type: "disguised"; id: string; kind: string | null }
   | { type: "zapped"; by: string; target: string | null; hit: boolean; at: [number, number, number] }
-  /** A hider was found: from now on they're a seeker (and known by their id to everyone). */
+  /** A hider was found: they're out until the next round (and known by their id to everyone). `by` is empty when a hider took over from seekers who all left. */
   | { type: "found"; id: string; tag: string; by: string }
   | { type: "taunt"; id: string; sound: number; forced: boolean }
   /** Hiders who weren't disguised when seeking began: shown to everyone for a moment. */

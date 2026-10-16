@@ -4,7 +4,7 @@
 // us: in a match only a hider still hiding may become a prop.
 //
 // To a seeker, a hider who hasn't been found is only a tag (the server's doing); once found,
-// they come back under their real id.
+// they come back under their real id, and they're out: gone from the house, watching the others.
 import { useSyncExternalStore } from "react";
 import { HUNT_POSES, HUNT_POS_HZ, type HuntPos, type HuntPose, type HuntRole, type HuntServerMessage, type HuntStatus, type HuntView } from "@shadow/shared";
 import { onHuntMessage, sendHunt, toLocalTime } from "./room";
@@ -59,6 +59,8 @@ const match = {
   you: null as string | null,
   role: null as HuntRole | null,
   canDisguise: true,
+  /** Found: out until the next round, watching the others. */
+  spectating: false,
   /** Can't move: everyone before hiding starts, seekers while the hiders hide. */
   frozen: false,
   /** Local time (ms) a dizzy seeker can zap again. */
@@ -121,6 +123,7 @@ export const inMatch = () => match.on;
 /** In a match, only a hider who's still hiding may be a prop; outside one, anyone may. */
 export const mayDisguise = () => !match.on || match.canDisguise;
 export const isFrozen = () => match.frozen;
+export const isSpectating = () => match.spectating;
 /** A seeker, while seeking: clicks zap. */
 export const mayZap = () => match.status === "seek" && match.role === "seeker";
 export const isDizzy = () => performance.now() < match.dizzyUntil;
@@ -136,6 +139,7 @@ export function syncMatch(room: HuntView | null, you: string | null) {
   match.you = you;
   match.role = me?.role ?? null;
   match.canDisguise = on && me?.role === "hider" && !me.found;
+  match.spectating = on && me?.role === "hider" && me.found;
   match.frozen = status === "countdown" || (status === "hide" && me?.role === "seeker");
   // Server time to ours; performance.now and Date.now differ only by a constant.
   match.dizzyUntil = me?.dizzyUntil ? performance.now() + (toLocalTime(me.dizzyUntil) - Date.now()) : 0;
@@ -160,9 +164,11 @@ onHuntMessage((msg: HuntServerMessage) => {
       if (msg.id !== match.you) remote(msg.id).kind = msg.kind;
       break;
     case "found":
-      // A found hider comes back under their real id (and as themselves).
+      // A found hider is out: gone from the house. (One taking over from seekers who all left
+      // comes back under their real id, as themselves.)
       if (remotes.delete(msg.tag)) changed();
-      if (remotes.has(msg.id)) remotes.get(msg.id)!.kind = null;
+      if (msg.by && remotes.delete(msg.id)) changed();
+      else if (remotes.has(msg.id)) remotes.get(msg.id)!.kind = null;
       break;
     case "exposed":
       for (const id of msg.ids) exposed.set(id, performance.now() + EXPOSED_MS);

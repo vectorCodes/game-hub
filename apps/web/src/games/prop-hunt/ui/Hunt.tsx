@@ -184,7 +184,7 @@ export function Announcements() {
           if (!msg.by) return say(`${name(msg.id)} takes over as a seeker.`);
           if (msg.id === you) {
             play("found");
-            return say(<>Found by <b>{name(msg.by)}</b>! Now you hunt too.</>, "bad");
+            return say(<>Found by <b>{name(msg.by)}</b>! You're out this round.</>, "bad");
           }
           if (msg.by === you) return say(<>You found <b>{name(msg.id)}</b>!</>, "good");
           return say(<><b>{name(msg.by)}</b> found <b>{name(msg.id)}</b></>);
