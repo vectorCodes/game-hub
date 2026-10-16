@@ -70,8 +70,8 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
     if (actions.become) {
       actions.become = false;
       const id = useHunt.getState().aimed;
-      if (id !== null && mayDisguise()) {
-        const prop = sim.map.props[id];
+      const prop = id === null ? undefined : sim.map.props[id];
+      if (id !== null && prop && mayDisguise()) {
         const kind = sim.map.kinds[prop.kind];
         // Start out turned like the prop you copied, so it sits among its twins.
         sim.become(kind, (prop.turn * Math.PI) / 2);

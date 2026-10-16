@@ -7,7 +7,6 @@
 // What seekers mustn't learn: while hiders hide, seekers get none of their positions; while
 // they seek, a hider who hasn't been found is known to seekers only by this round's tag.
 import {
-  BIG_HOUSE,
   HUNT_COUNTDOWN_MS,
   HUNT_DIZZY_MS,
   HUNT_FORCED_TAUNT,
@@ -32,6 +31,8 @@ import {
   HUNT_ZAP_SLACK,
   HuntClientMessage,
   canDisguiseAs,
+  houseFor,
+  newHouseSeed,
   rankHunt,
   seekersFor,
   type HuntLastRound,
@@ -43,8 +44,6 @@ import {
   type HuntView,
 } from "@shadow/shared";
 import { RoomCore, randomId, type CorePlayer, type CoreRoom } from "./roomCore";
-
-const MAP = BIG_HOUSE;
 
 interface Player extends CorePlayer {
   role: HuntRole | null;
@@ -78,6 +77,8 @@ interface Room extends CoreRoom<Player, HuntStatus> {
   nextForcedAt: number | null;
   lastRound: HuntLastRound | null;
   standings: HuntStanding[] | null;
+  /** This round's house (`houseFor`): a new one every round. */
+  mapSeed: number;
 }
 
 type Msg = HuntServerMessage;
@@ -101,6 +102,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       nextForcedAt: null,
       lastRound: null,
       standings: null,
+      mapSeed: newHouseSeed(),
     };
   }
 
@@ -169,8 +171,9 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
 
       case "disguise": {
         if (!this.hiding(me)) return;
-        if (msg.prop !== null && !canDisguiseAs(MAP, msg.prop)) return this.send(ws, { type: "error", code: "bad_message" });
-        me.disguise = msg.prop === null ? null : MAP.props[msg.prop].kind;
+        const map = houseFor(room.mapSeed);
+        if (msg.prop !== null && !canDisguiseAs(map, msg.prop)) return this.send(ws, { type: "error", code: "bad_message" });
+        me.disguise = msg.prop === null ? null : map.props[msg.prop].kind;
         this.broadcastEach((pid) => (pid === me.id ? null : { type: "disguised", id: this.idFor(me, pid), kind: me.disguise }));
         break;
       }
@@ -231,13 +234,15 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
   private setupRound() {
     const room = this.room!;
     room.round += 1;
+    room.mapSeed = newHouseSeed();
+    const map = houseFor(room.mapSeed);
     const seated = shuffle(this.seated());
     const seekers = new Set(seated.slice().sort((a, b) => a.turns - b.turns).slice(0, seekersFor(seated.length)));
-    const start = Math.floor(Math.random() * MAP.hiderSpawns.length);
+    const start = Math.floor(Math.random() * map.hiderSpawns.length);
     let next = 0;
     for (const p of seated) {
       const seeker = seekers.has(p);
-      Object.assign(p, this.roundReset(), { role: seeker ? "seeker" : "hider", spawn: seeker ? 0 : (start + next++) % MAP.hiderSpawns.length });
+      Object.assign(p, this.roundReset(), { role: seeker ? "seeker" : "hider", spawn: seeker ? 0 : (start + next++) % map.hiderSpawns.length });
       if (seeker) p.turns += 1;
     }
     room.seekStartedAt = room.nextSurviveAt = room.nextForcedAt = null;
@@ -465,6 +470,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       phaseEndsAt: room.phaseEndsAt,
       seekStartedAt: room.seekStartedAt,
       lastRound: room.lastRound,
+      mapSeed: room.mapSeed,
     };
   }
 }

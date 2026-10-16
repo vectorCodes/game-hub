@@ -6,7 +6,7 @@ import { Link, useSearchParams } from "react-router";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
 import { EffectComposer, N8AO, SMAA } from "@react-three/postprocessing";
-import { BIG_HOUSE, HOUSE_SCALE, UPSTAIRS, normalizeRoomCode, shortName } from "@shadow/shared";
+import { BIG_HOUSE, HOUSE_SCALE, UPSTAIRS, houseFor, newHouseSeed, normalizeRoomCode, shortName } from "@shadow/shared";
 import { Object3D, type DirectionalLight, type Group } from "three";
 import { useAuth } from "../../auth/store";
 import { useAvatar } from "../../avatar/store";
@@ -16,6 +16,7 @@ import { PROP_HUNT_HOME } from "./config";
 import { onForcedTaunt, syncMatch } from "./net";
 import { joinHuntRoom, leaveHuntRoom, roomsAvailable, useHuntRoom } from "./room";
 import { HuntSim, type SimEvent } from "./sim";
+import { useHunt } from "./store";
 import { House } from "./scene/House";
 import { Aim, DisguisedSelf } from "./scene/Disguise";
 import { Colliders } from "./scene/Colliders";
@@ -123,16 +124,31 @@ export default function PropHuntPage() {
   const [upstairs, setUpstairs] = useState(true);
   const [labels, setLabels] = useState(true);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [params, setParams] = useSearchParams();
+  const roomParam = normalizeRoomCode(params.get("room") ?? "");
+  const synced = useAuth((s) => s.synced);
+  const fullName = useAuth((s) => s.user?.user_metadata?.full_name as string | undefined);
+  const { code: roomCode, room, you, error: roomError } = useHuntRoom();
+
+  // The props are shuffled every round (the room's seed), and on every visit on your own.
+  const [soloSeed] = useState(newHouseSeed);
+  const seed = room?.mapSeed ?? soloSeed;
+  const map = useMemo(() => houseFor(seed), [seed]);
   const counts = useMemo(() => {
-    const disguise = BIG_HOUSE.props.filter((p) => BIG_HOUSE.kinds[p.kind].disguise).length;
-    return { props: BIG_HOUSE.props.length, disguise };
-  }, []);
+    const disguise = map.props.filter((p) => map.kinds[p.kind].disguise).length;
+    return { props: map.props.length, disguise };
+  }, [map]);
   const sim = useMemo(() => {
-    // Colliders as drawn: model-drawn furniture and props collide as their models' shapes.
-    const s = new HuntSim(BIG_HOUSE, artColliders(BIG_HOUSE));
+    const s = new HuntSim(BIG_HOUSE);
     s.spawnAt(BIG_HOUSE.hiderSpawns[0], Math.PI);
     return s;
   }, []);
+  // Colliders as drawn: model-drawn furniture and props collide as their models' shapes.
+  useMemo(() => sim.setMap(map, artColliders(map)), [sim, map]);
+  // A new house: whatever was under the crosshair is gone.
+  useEffect(() => {
+    useHunt.setState({ aimed: null });
+  }, [map]);
   const view = useMemo(newView, []);
   // Sim events reach the effects (the avatar's squash) through this.
   const events = useMemo(() => {
@@ -156,11 +172,6 @@ export default function PropHuntPage() {
 
   // Playing with friends: ?room=K7MPQ (a shared link, or the friends card) joins that room once
   // signed-in state is known, so the server sees who we are.
-  const [params, setParams] = useSearchParams();
-  const roomParam = normalizeRoomCode(params.get("room") ?? "");
-  const synced = useAuth((s) => s.synced);
-  const fullName = useAuth((s) => s.user?.user_metadata?.full_name as string | undefined);
-  const { code: roomCode, room, you, error: roomError } = useHuntRoom();
   const [friends, setFriends] = useState(() => params.get("friends") === "1");
   useEffect(() => {
     if (!roomParam || !synced) return;
@@ -199,11 +210,11 @@ export default function PropHuntPage() {
     if (!me?.role) return;
     placedRound.current = room.round;
     if (sim.disguise) sim.become(null);
-    const spot = me.role === "seeker" ? BIG_HOUSE.seekerSpawn : BIG_HOUSE.hiderSpawns[me.spawn % BIG_HOUSE.hiderSpawns.length];
+    const spot = me.role === "seeker" ? map.seekerSpawn : map.hiderSpawns[me.spawn % map.hiderSpawns.length];
     sim.spawnAt(spot, Math.PI);
     view.yaw = 0;
     setMode("walk");
-  }, [room, you, sim, view]);
+  }, [room, you, sim, view, map]);
   useEffect(() => {
     if (!room || room.status === "lobby") placedRound.current = 0;
   }, [room]);
@@ -249,7 +260,7 @@ export default function PropHuntPage() {
         />
         <Lights sim={sim} follow={walking} shadowMap={q.shadowMap} />
         {/* Walking needs every floor: the colliders are there either way. */}
-        <House map={BIG_HOUSE} below={upstairs || walking ? Infinity : UPSTAIRS - 1} groupRef={house} />
+        <House map={map} below={upstairs || walking ? Infinity : UPSTAIRS - 1} groupRef={house} />
         <Driver sim={sim} view={view} onEvent={events.emit} />
         <Suspense fallback={null}>
           <Avatar sim={sim} subscribe={events.subscribe} />

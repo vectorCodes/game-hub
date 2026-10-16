@@ -36,7 +36,7 @@ const HEAD = 0.55;
 
 export class HuntSim {
   /** The house's colliders (walls, floors, furniture, props). */
-  readonly colliders: Collider[];
+  colliders: Collider[] = [];
   /** Anything that moves (other players disguised as props), replaced every frame. */
   private moving: Collider[] = [];
   /** The colliders by grid cell, so a step only looks at what's near. */
@@ -74,10 +74,17 @@ export class HuntSim {
 
   /** `colliders` defaults to the map's own shapes; the web app passes ones built from the art's models. */
   constructor(
-    readonly map: HouseMap,
+    public map: HouseMap,
     colliders: Collider[] = mapColliders(map),
   ) {
+    this.setMap(map, colliders);
+  }
+
+  /** A new house (every round shuffles its props): you stay where you are. */
+  setMap(map: HouseMap, colliders: Collider[] = mapColliders(map)) {
+    this.map = map;
     this.colliders = colliders;
+    this.grid.clear();
     for (const b of colliders) {
       for (let i = Math.floor(b.x0 / CELL); i <= Math.floor(b.x1 / CELL); i++) {
         for (let k = Math.floor(b.z0 / CELL); k <= Math.floor(b.z1 / CELL); k++) {

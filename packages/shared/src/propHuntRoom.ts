@@ -7,7 +7,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // over its WebSocket. See Prop-hunt-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const HUNT_PROTOCOL_VERSION = 1;
+export const HUNT_PROTOCOL_VERSION = 2;
 /** Positions sent a second. */
 export const HUNT_POS_HZ = 10;
 
@@ -96,6 +96,8 @@ export interface HuntView {
   /** When seeking started this round (for quick finds and the sonar). */
   seekStartedAt: number | null;
   lastRound: HuntLastRound | null;
+  /** Seeds this round's house (`houseFor`): the things to hide as are shuffled every round. */
+  mapSeed: number;
 }
 
 export interface HuntStanding {

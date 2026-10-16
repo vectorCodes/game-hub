@@ -2,7 +2,7 @@
 // the crosshair with what E, Q and X do right now, and the controls (H shows and hides them).
 // On phones the prompts are buttons and the touch controls take the bottom corners.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { BIG_HOUSE, HUNT_TAUNT_COOLDOWN_MS } from "@shadow/shared";
+import { HUNT_TAUNT_COOLDOWN_MS } from "@shadow/shared";
 import { actions } from "../input";
 import { useHunt } from "../store";
 import { TouchControls } from "./Touch";
@@ -127,12 +127,13 @@ function PromptButton({ children, onTap }: { children: ReactNode; onTap: () => v
 }
 
 /** The crosshair, and what E, Q and X do right now (on phones, buttons that do it). */
-function PropPrompt({ touch }: { touch: boolean }) {
+function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   const aimed = useHunt((s) => s.aimed);
   const disguise = useHunt((s) => s.disguise);
   const locked = useHunt((s) => s.locked);
-  const target = aimed === null ? null : BIG_HOUSE.kinds[BIG_HOUSE.props[aimed].kind];
-  const self = disguise ? BIG_HOUSE.kinds[disguise] : null;
+  const prop = aimed === null ? undefined : sim.map.props[aimed];
+  const target = prop ? sim.map.kinds[prop.kind] : null;
+  const self = disguise ? sim.map.kinds[disguise] : null;
   return (
     <>
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -236,7 +237,7 @@ export function Hud({ sim, touch }: { sim: HuntSim; touch: boolean }) {
       <WhereAndWatch touch={touch} />
       {!touch && <MouseTip />}
       <Meters sim={sim} touch={touch} />
-      <PropPrompt touch={touch} />
+      <PropPrompt sim={sim} touch={touch} />
       {!touch && <Controls />}
     </>
   );

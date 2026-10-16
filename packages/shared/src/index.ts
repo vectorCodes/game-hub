@@ -10,3 +10,4 @@ export * from "./pairPop";
 export * from "./propHunt";
 export * from "./propHuntHouse";
 export * from "./propHuntRoom";
+export * from "./propHuntShuffle";
