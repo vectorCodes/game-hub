@@ -3,8 +3,13 @@
 // so a real mug and a hider disguised as one use the very same material.
 import { MeshStandardMaterial } from "three";
 
+interface Sheen {
+  roughness: number;
+  metalness?: number;
+}
+
 /** Sheen by surface. Textured surfaces (oak, marble, floors…) live in scene/Shell.tsx. */
-export const PLAIN: Record<string, { roughness: number; metalness?: number }> = {
+export const PLAIN: Record<string, Sheen> = {
   paint: { roughness: 0.55 },
   ceramic: { roughness: 0.12 },
   enamel: { roughness: 0.22 },
@@ -17,7 +22,7 @@ export const PLAIN: Record<string, { roughness: number; metalness?: number }> = 
 };
 
 /** Greybox parts (no surface): the look the house had before the art. */
-const GREYBOX = { roughness: 0.85 };
+const GREYBOX: Sheen = { roughness: 0.85 };
 
 const cache = new Map<string, MeshStandardMaterial>();
 
@@ -27,7 +32,7 @@ export function partMaterial(surface: string | undefined, color: string): MeshSt
   let m = cache.get(key);
   if (!m) {
     const s = (surface && PLAIN[surface]) || GREYBOX;
-    cache.set(key, (m = new MeshStandardMaterial({ color, roughness: s.roughness, metalness: "metalness" in s ? s.metalness : 0 })));
+    cache.set(key, (m = new MeshStandardMaterial({ color, roughness: s.roughness, metalness: s.metalness ?? 0 })));
   }
   return m;
 }

@@ -118,12 +118,14 @@ export abstract class RoomCore<
   async webSocketMessage(ws: WebSocket, data: string | ArrayBuffer) {
     if (typeof data !== "string" || data.length > MAX_MESSAGE_CHARS) return this.send(ws, { type: "error", code: "bad_message" });
     if (!this.allow(ws)) return;
-    let msg: C | CoreClientMessage;
+    let parsed: C;
     try {
-      msg = this.parse(JSON.parse(data));
+      parsed = this.parse(JSON.parse(data));
     } catch {
       return this.send(ws, { type: "error", code: "bad_message" });
     }
+    // A game's messages include the core ones (hello, ping, leave), handled here.
+    const msg = parsed as C | CoreClientMessage;
     const now = Date.now();
     if (msg.type === "ping") return this.send(ws, { type: "pong", t: (msg as Extract<CoreClientMessage, { type: "ping" }>).t, now });
 

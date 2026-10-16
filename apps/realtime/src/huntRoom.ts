@@ -36,6 +36,7 @@ import {
   seekersFor,
   type HuntLastRound,
   type HuntRole,
+  type HuntSide,
   type HuntServerMessage,
   type HuntStanding,
   type HuntStatus,
@@ -260,7 +261,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     if (bare.length) this.broadcastEach((pid) => ({ type: "exposed", ids: bare.map((p) => this.idFor(p, pid)) }));
   }
 
-  private endRound(at: number, winners: HuntRole) {
+  private endRound(at: number, winners: HuntSide) {
     const room = this.room!;
     if (winners === "hiders") for (const p of this.hidden()) this.award(p, HUNT_POINTS.surviveRound);
     room.lastRound = { round: room.round, winners, points: Object.fromEntries(room.players.map((p) => [p.id, p.roundPoints])) };

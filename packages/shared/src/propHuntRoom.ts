@@ -49,6 +49,8 @@ export type HuntClientMessage = z.infer<typeof HuntClientMessage>;
  */
 export type HuntStatus = "lobby" | "countdown" | "hide" | "seek" | "round" | "results";
 export type HuntRole = "hider" | "seeker";
+/** Who won a round. */
+export type HuntSide = "hiders" | "seekers";
 
 export interface HuntPlayerView {
   id: string;
@@ -75,7 +77,7 @@ export interface HuntPlayerView {
 
 export interface HuntLastRound {
   round: number;
-  winners: HuntRole;
+  winners: HuntSide;
   /** Points each player made in that round. */
   points: Record<string, number>;
 }
