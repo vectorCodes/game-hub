@@ -655,6 +655,7 @@ function scaled(map: HouseMap, k: number): HouseMap {
     props: map.props.map((p) => ({ ...p, x: p.x * k, y: p.y * k, z: p.z * k })),
     grass: map.grass.map((g) => ({ x0: g.x0 * k, z0: g.z0 * k, x1: g.x1 * k, z1: g.z1 * k })),
     areas: map.areas.map(box),
+    stairs: map.stairs.map(box),
     hiderSpawns: map.hiderSpawns.map(spot),
     seekerSpawn: spot(map.seekerSpawn),
   };
@@ -672,6 +673,7 @@ export const BIG_HOUSE: HouseMap = scaled(
       { x0: 0, z0: 64, x1: 12, z1: 75 },
     ],
     areas,
+    stairs: [{ x0: 22 + T, y0: 0, z0: 6, x1: 27, y1: F, z1: 26, up: "+z" }],
     hiderSpawns,
     seekerSpawn: { x: -8, y: 0, z: 6 },
   },

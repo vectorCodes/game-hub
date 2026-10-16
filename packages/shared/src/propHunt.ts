@@ -116,6 +116,8 @@ export interface HouseMap {
   /** Long grass: drawn, never collides. */
   grass: { x0: number; z0: number; x1: number; z1: number }[];
   areas: Area[];
+  /** Each flight of stairs, and which way it climbs (on the ground, +z or −z), for the minimap. */
+  stairs: (Box & { up: "+z" | "-z" })[];
   hiderSpawns: Spot[];
   seekerSpawn: Spot;
 }

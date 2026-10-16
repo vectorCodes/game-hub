@@ -1,10 +1,11 @@
 // The sandbox HUD: where you are, a stopwatch for timing routes, the sprint and taunt meters,
-// the crosshair with what E, Q and X do right now, and the controls (H shows and hides them).
+// the crosshair with what E, Q and X do right now, the minimap, and the controls (H shows and hides them).
 // On phones the prompts are buttons and the touch controls take the bottom corners.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { HUNT_TAUNT_COOLDOWN_MS } from "@shadow/shared";
 import { actions } from "../input";
 import { useHunt } from "../store";
+import { Minimap } from "./Minimap";
 import { TouchControls } from "./Touch";
 import type { HuntSim } from "../sim";
 
@@ -176,6 +177,7 @@ const CONTROLS: [string, string][] = [
   ["F", "taunt"],
   ["T", "stopwatch"],
   ["R", "next spawn (sonar, in a match)"],
+  ["M", "bigger map"],
   ["Scroll", "zoom"],
   ["Tab", "overview (not in a match)"],
   ["H", "hide this"],
@@ -193,12 +195,13 @@ function Controls() {
   }, []);
   if (!open)
     return (
-      <div className="glass pointer-events-none absolute top-4 right-4 px-3 py-2 text-xs text-stone-100">
+      <div className="glass pointer-events-none absolute top-60 right-4 px-3 py-2 text-xs text-stone-100">
         <Key>H</Key> controls
       </div>
     );
   return (
-    <div className="glass pointer-events-none absolute top-4 right-4 hidden w-60 p-4 text-xs text-stone-100 sm:block">
+    // Under the minimap.
+    <div className="glass pointer-events-none absolute top-60 right-4 hidden w-60 p-4 text-xs text-stone-100 sm:block">
       <div className="mb-2 label-mono text-stone-400">Controls</div>
       <dl className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
         {CONTROLS.map(([key, what]) => (
@@ -238,6 +241,7 @@ export function Hud({ sim, touch }: { sim: HuntSim; touch: boolean }) {
       {!touch && <MouseTip />}
       <Meters sim={sim} touch={touch} />
       <PropPrompt sim={sim} touch={touch} />
+      <Minimap sim={sim} touch={touch} />
       {!touch && <Controls />}
     </>
   );
