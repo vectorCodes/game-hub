@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HUNT_FORCED_TAUNT, HUNT_HP, HUNT_POINTS, HUNT_SONAR_FROM_SECONDS_LEFT, HUNT_SONAR_SMALL_ROOM, type HuntView } from "@shadow/shared";
 import { play } from "../../../lib/sound";
 import { actions } from "../input";
-import { onSonar } from "../net";
+import { onScan, onSonar } from "../net";
 import { onHuntMessage, toLocalTime, useHuntRoom } from "../room";
 
 /** Whole seconds until a server time, ticking on its own. */
@@ -66,7 +66,7 @@ function sonarFrom(room: HuntView) {
   return room.phaseEndsAt === null ? null : room.phaseEndsAt - seconds * 1000;
 }
 
-/** A seeker while seeking: health, how to zap, dizziness, and the sonar. */
+/** A seeker while seeking: health, how to zap, dizziness, the scanner and the sonar. */
 export function SeekerBar({ touch }: { touch: boolean }) {
   const { room, you } = useHuntRoom();
   const me = room?.players.find((p) => p.id === you);
@@ -79,6 +79,7 @@ export function SeekerBar({ touch }: { touch: boolean }) {
   useEffect(() => onSonar(() => setUsedRound(round)), [round]);
   if (!seeking || !me) return null;
   const sonar = usedRound === round ? "used" : sonarIn > 0 ? "waiting" : "ready";
+  const scanReady = !me.scanUsed;
   const hp = Math.max(0, me.hp);
   const dizzy = dizzyLeft > 0;
   return (
@@ -92,7 +93,11 @@ export function SeekerBar({ touch }: { touch: boolean }) {
           <div className="h-2 overflow-hidden rounded-full bg-stone-100/15">
             <div className={`h-full rounded-full transition-[width] ${hp > 40 ? "bg-moss-400" : "bg-ember-400"}`} style={{ width: `${(hp / HUNT_HP) * 100}%` }} />
           </div>
-          <div className={`mt-2 flex justify-between ${sonar === "ready" ? "text-[#4fb8c9]" : "text-stone-400"}`}>
+          <div className={`mt-2 flex justify-between ${scanReady ? "text-[#7ef0ff]" : "text-stone-400"}`}>
+            <span>{touch ? "Scan" : "V · Scan"}: real props glow, hiders don't</span>
+            <span className="tabular-nums">{scanReady ? "ready!" : "used"}</span>
+          </div>
+          <div className={`mt-1 flex justify-between ${sonar === "ready" ? "text-[#4fb8c9]" : "text-stone-400"}`}>
             <span>{touch ? "Sonar" : "R · Sonar"}: points to the nearest hider</span>
             <span className="tabular-nums">{sonar === "used" ? "used" : sonar === "ready" ? "ready!" : `in ${sonarIn} s`}</span>
           </div>
@@ -106,6 +111,15 @@ export function SeekerBar({ touch }: { touch: boolean }) {
           onPointerDown={() => (actions.zap = true)}
         >
           Zap
+        </button>
+      )}
+      {touch && scanReady && (
+        <button
+          style={{ right: "calc(1.5rem + env(safe-area-inset-right))", bottom: "calc(17rem + env(safe-area-inset-bottom))" }}
+          className="absolute z-20 grid h-14 w-14 touch-none place-items-center rounded-full bg-[#2f9fb3] text-sm font-bold text-white shadow-lg select-none active:scale-95"
+          onPointerDown={() => (actions.scan = true)}
+        >
+          Scan
         </button>
       )}
       {touch && sonar === "ready" && (
@@ -175,6 +189,16 @@ export function Announcements() {
     lastDizzy.current = dizzyUntil;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dizzyUntil]);
+
+  // A scan swept over us while we hide.
+  useEffect(
+    () =>
+      onScan((_, __, near) => {
+        if (near) say("A seeker scanned right by you! Hold still…", "bad");
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   useEffect(
     () =>

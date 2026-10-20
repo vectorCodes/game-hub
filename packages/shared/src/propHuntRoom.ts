@@ -8,7 +8,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // over its WebSocket. See Prop-hunt-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const HUNT_PROTOCOL_VERSION = 5;
+export const HUNT_PROTOCOL_VERSION = 6;
 /** Positions sent a second. */
 export const HUNT_POS_HZ = 10;
 
@@ -43,6 +43,8 @@ export const HuntClientMessage = z.discriminatedUnion("type", [
   /** Leave a decoy of the prop you've become, here (`p`'s position and facing). */
   z.object({ type: z.literal("decoy"), p: HuntPos }),
   z.object({ type: z.literal("sonar") }),
+  /** A seeker's scanner, from where they stand. */
+  z.object({ type: z.literal("scan") }),
   z.object({ type: z.literal("rematch") }),
   RoomLeave,
   RoomPing,
@@ -83,6 +85,8 @@ export interface HuntPlayerView {
   decoys: number;
   /** Prop Hunt level, for signed-in players. */
   level: number | null;
+  /** A seeker has used this round's scan. */
+  scanUsed: boolean;
 }
 
 export interface HuntLastRound {
@@ -135,6 +139,8 @@ export type HuntServerMessage =
   | { type: "decoyPopped"; id: string; by: string; mine: boolean }
   /** Hiders who weren't disguised when seeking began: shown to everyone for a moment. */
   | { type: "exposed"; ids: string[] }
+  /** A seeker (`by`) scanned from `at` (world units). `near`: you're a hider inside it. */
+  | { type: "scan"; by: string; at: [number, number, number]; near: boolean }
   /** Only to the seeker who used it: which way the nearest hider is (a unit vector on the ground). */
   | { type: "sonar"; dir: [number, number] }
   | { type: "results"; standings: HuntStanding[] }

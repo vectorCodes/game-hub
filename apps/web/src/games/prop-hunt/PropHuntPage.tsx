@@ -23,6 +23,7 @@ import { Aim, DisguisedSelf } from "./scene/Disguise";
 import { Colliders } from "./scene/Colliders";
 import { Others } from "./scene/Others";
 import { SonarArrow } from "./scene/Sonar";
+import { ScanPulse } from "./scene/Scan";
 import { Zaps } from "./scene/Zap";
 import { Puffs } from "./scene/Puffs";
 import { TauntNotes } from "./scene/Taunt";
@@ -279,6 +280,7 @@ export default function PropHuntPage() {
         <Others sim={sim} groupRef={others} />
         <Zaps sim={sim} house={house} others={others} />
         <SonarArrow sim={sim} />
+        <ScanPulse sim={sim} />
         {showColliders && <Colliders sim={sim} />}
         {walking ? (
           <>

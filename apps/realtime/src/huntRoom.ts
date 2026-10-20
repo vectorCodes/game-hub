@@ -23,6 +23,7 @@ import {
   HUNT_POINTS,
   HUNT_PROTOCOL_VERSION,
   HUNT_ROUND_RESULTS_MS,
+  HUNT_SCAN_RANGE,
   HUNT_SEEK_SECONDS,
   HUNT_SONAR_FROM_SECONDS_LEFT,
   HUNT_SONAR_SMALL_ROOM,
@@ -72,6 +73,7 @@ interface Player extends CorePlayer {
   lastZapAt: number;
   lastTauntAt: number;
   sonarUsed: boolean;
+  scanUsed: boolean;
   /** Decoys left this round. */
   decoys: number;
   /** Picked taunt sounds: one plays every time, several shuffle. */
@@ -153,6 +155,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       lastZapAt: 0,
       lastTauntAt: 0,
       sonarUsed: false,
+      scanUsed: false,
       decoys: HUNT_DECOYS,
       taunts: HUNT_STARTER_TAUNTS,
       level: null,
@@ -250,6 +253,20 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         break;
       }
 
+      case "scan": {
+        if (room.status !== "seek" || me.role !== "seeker" || me.scanUsed || !me.pos) return;
+        me.scanUsed = true;
+        const at = me.pos;
+        // Everyone sees the pulse; hiders inside it are warned.
+        const inside = new Set(
+          this.hidden()
+            .filter((p) => p.pos && Math.hypot(p.pos[0] - at[0], p.pos[1] - at[1], p.pos[2] - at[2]) <= HUNT_SCAN_RANGE)
+            .map((p) => p.id),
+        );
+        this.broadcastEach((pid) => ({ type: "scan", by: me.id, at, near: inside.has(pid) }));
+        break;
+      }
+
       case "sonar": {
         if (room.status !== "seek" || me.role !== "seeker" || me.sonarUsed || !me.pos) return;
         if ((room.phaseEndsAt! - now) / 1000 > this.sonarFrom()) return;
@@ -283,7 +300,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
 
   /** Everything a player starts a round with (besides their role). */
   private roundReset() {
-    return { found: false, hp: HUNT_HP, dizzyUntil: null, roundPoints: 0, disguise: null, pos: null, lastZapAt: 0, lastTauntAt: 0, sonarUsed: false, decoys: HUNT_DECOYS, tag: randomId() };
+    return { found: false, hp: HUNT_HP, dizzyUntil: null, roundPoints: 0, disguise: null, pos: null, lastZapAt: 0, lastTauntAt: 0, sonarUsed: false, scanUsed: false, decoys: HUNT_DECOYS, tag: randomId() };
   }
 
   /** The next round's roles: seekers from those who've sought least (ties at random), everyone else hides. */
@@ -587,6 +604,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         spawn: p.spawn,
         decoys: p.decoys,
         level: p.level ?? null,
+        scanUsed: p.scanUsed ?? false,
       })),
       round: room.round,
       rounds: room.rounds,

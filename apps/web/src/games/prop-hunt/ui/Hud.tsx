@@ -193,6 +193,7 @@ const CONTROLS: [string, string][] = [
   ["G", "leave a decoy (as a prop)"],
   ["T", "stopwatch"],
   ["R", "next spawn (sonar, in a match)"],
+  ["V", "scan (seekers, once a round)"],
   ["M", "bigger map"],
   ["Scroll", "zoom"],
   ["Tab", "overview (not in a match)"],

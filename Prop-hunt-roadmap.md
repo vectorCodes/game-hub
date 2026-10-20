@@ -54,7 +54,9 @@ them was me").
 ## Moment-to-moment fun
 
 ### Seeker gadgets (one use each per round)
-- **Scanner:** real props nearby glow for 2 s; hiders don't.
+- **Scanner (done):** V (or Scan on phones), once a round while seeking.
+  Real props within 8 units glow for 2.5 s for that seeker; hiders and decoys don't. Everyone
+  sees the pulse, and hiders inside it are warned.
 - **Sniff:** footprints show for a moment.
 - **Freeze grenade:** props in an area can't move for a few seconds.
 

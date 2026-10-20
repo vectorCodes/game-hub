@@ -57,6 +57,8 @@ const tauntListeners = new Set<TauntListener>();
 /** Our own taunts that the room forced (the last minute): we didn't press anything, so we're told. */
 const forcedListeners = new Set<(sound: string) => void>();
 const sonarListeners = new Set<(dir: [number, number]) => void>();
+type ScanListener = (by: string, at: [number, number, number], near: boolean) => void;
+const scanListeners = new Set<ScanListener>();
 type DecoyListener = (at: [number, number, number], by: string, mine: boolean) => void;
 const decoyListeners = new Set<DecoyListener>();
 
@@ -72,6 +74,7 @@ const match = {
   spectating: false,
   /** Decoys we have left this round. */
   decoys: 0,
+  scanUsed: false,
   /** Can't move: everyone before hiding starts, seekers while the hiders hide. */
   frozen: false,
   /** Local time (ms) a dizzy seeker can zap again. */
@@ -130,6 +133,12 @@ export function onSonar(l: (dir: [number, number]) => void) {
   return () => void sonarListeners.delete(l);
 }
 
+/** A seeker scanned: everyone sees the pulse; `near` when we're a hider inside it. */
+export function onScan(l: ScanListener) {
+  scanListeners.add(l);
+  return () => void scanListeners.delete(l);
+}
+
 /** A decoy was zapped: where it stood, who zapped it, and whether it was ours. */
 export function onDecoyPopped(l: DecoyListener) {
   decoyListeners.add(l);
@@ -155,6 +164,8 @@ export const mayDisguise = () => !match.on || match.canDisguise;
 export const isFrozen = () => match.frozen;
 export const isSpectating = () => match.spectating;
 export const decoysLeft = () => match.decoys;
+/** A seeker, while seeking, with this round's scan unused. */
+export const mayScan = () => mayZap() && !match.scanUsed;
 /** A seeker, while seeking: clicks zap. */
 export const mayZap = () => match.status === "seek" && match.role === "seeker";
 export const isDizzy = () => performance.now() < match.dizzyUntil;
@@ -172,6 +183,7 @@ export function syncMatch(room: HuntView | null, you: string | null) {
   match.canDisguise = on && me?.role === "hider" && !me.found;
   match.spectating = on && me?.role === "hider" && me.found;
   match.decoys = me?.decoys ?? 0;
+  match.scanUsed = me?.scanUsed ?? false;
   match.frozen = status === "countdown" || (status === "hide" && me?.role === "seeker");
   // Server time to ours; performance.now and Date.now differ only by a constant.
   match.dizzyUntil = me?.dizzyUntil ? performance.now() + (toLocalTime(me.dizzyUntil) - Date.now()) : 0;
@@ -211,6 +223,9 @@ onHuntMessage((msg: HuntServerMessage) => {
       break;
     case "sonar":
       for (const l of sonarListeners) l(msg.dir);
+      break;
+    case "scan":
+      if (match.on) for (const l of scanListeners) l(msg.by, msg.at, msg.near);
       break;
     case "decoy": {
       if (!match.on) return;
@@ -294,3 +309,8 @@ export function sendDecoy(x: number, y: number, z: number, facing: number) {
   sendHunt({ type: "decoy", p: [Math.round(x * 100), Math.round(y * 100), Math.round(z * 100), turn, 0, 1] });
 }
 export const sendSonar = () => sendHunt({ type: "sonar" });
+export const sendScan = () => {
+  // Once: the room's answer (and the room view) will say it's used.
+  match.scanUsed = true;
+  sendHunt({ type: "scan" });
+};

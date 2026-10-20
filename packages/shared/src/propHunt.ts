@@ -24,6 +24,9 @@ export const HUNT_SONAR_SMALL_ROOM = { players: 3, fromSecondsLeft: 120 } as con
 /** HP a seeker starts each round with, and comes back with after being dizzy. */
 export const HUNT_HP = 100;
 export const HUNT_HP_AFTER_DIZZY = 50;
+/** The seekers' scanner, once a round: real props this close light up for this long (hiders and decoys don't). */
+export const HUNT_SCAN_RANGE = 8;
+export const HUNT_SCAN_MS = 2500;
 /** Decoys each hider may drop a round: a copy of the prop they've become, left where they stand. */
 export const HUNT_DECOYS = 2;
 /** A decoy goes down within this of where the room last saw its hider. */

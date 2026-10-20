@@ -42,8 +42,10 @@ const modelOf = (kind: PropKind): ModelKey | null => KIND_MODELS[kind.id]?.[0]?.
 // ---------- One on its own (a disguise) ----------
 
 const OUTLINE = new MeshBasicMaterial({ color: AIM.outline, side: BackSide, transparent: true, opacity: 0.95, depthWrite: false });
+/** The seekers' scan: real props glow in its colour. */
+export const SCAN_OUTLINE = new MeshBasicMaterial({ color: "#7ef0ff", side: BackSide, transparent: true, opacity: 0.9, depthWrite: false });
 
-function ModelProp({ kind, model, outline }: { kind: PropKind; model: ModelKey; outline: number }) {
+function ModelProp({ kind, model, outline, glow }: { kind: PropKind; model: ModelKey; outline: number; glow: Material }) {
   const pieces = useModelPieces(model);
   const fit = useMemo(() => {
     const m = modelMatrix(kind, model, { x: 0, y: 0, z: 0, turn: 0 });
@@ -58,7 +60,7 @@ function ModelProp({ kind, model, outline }: { kind: PropKind; model: ModelKey; 
   return (
     <group matrixAutoUpdate={false} matrix={fit}>
       {pieces.map((p, i) => (
-        <mesh key={i} geometry={p.geometry} material={outline ? OUTLINE : p.material} matrixAutoUpdate={false} matrix={p.matrix} castShadow={!outline} receiveShadow={!outline} raycast={outline ? () => {} : undefined} />
+        <mesh key={i} geometry={p.geometry} material={outline ? glow : p.material} matrixAutoUpdate={false} matrix={p.matrix} castShadow={!outline} receiveShadow={!outline} raycast={outline ? () => {} : undefined} />
       ))}
     </group>
   );
@@ -66,11 +68,12 @@ function ModelProp({ kind, model, outline }: { kind: PropKind; model: ModelKey; 
 
 /**
  * A prop on its own, origin at its bottom centre. With `outline`, a slightly larger inside-out
- * copy instead: drawn behind the real one, it reads as a glowing edge. Suspends while a model loads.
+ * copy instead: drawn behind the real one, it reads as a glowing edge (in `glow`, the aim's
+ * colour by default). Suspends while a model loads.
  */
-export function PropModel({ kind, outline = 0 }: { kind: PropKind; outline?: number }) {
+export function PropModel({ kind, outline = 0, glow = OUTLINE }: { kind: PropKind; outline?: number; glow?: Material }) {
   const model = modelOf(kind);
-  if (model) return <ModelProp kind={kind} model={model} outline={outline} />;
+  if (model) return <ModelProp kind={kind} model={model} outline={outline} glow={glow} />;
   return (
     <>
       {kind.parts.map((part, i) => {
@@ -80,7 +83,7 @@ export function PropModel({ kind, outline = 0 }: { kind: PropKind; outline?: num
           <mesh
             key={i}
             geometry={GEOMETRY[part.shape]}
-            material={outline ? OUTLINE : partMaterial(part.surface, part.color)}
+            material={outline ? glow : partMaterial(part.surface, part.color)}
             position={[x, y - outline, z]}
             scale={[w + 2 * outline, h + 2 * outline, d + 2 * outline]}
             castShadow={!outline}

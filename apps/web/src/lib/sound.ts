@@ -58,7 +58,9 @@ export type Sound =
   | "found"
   | "dizzy"
   | "tick"
-  | "sonar";
+  | "sonar"
+  | "scan"
+  | "scanWarn";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -422,6 +424,14 @@ export function play(sound: Sound, level = 1, from?: { volume: number; pan: numb
       return tone(ac, out, { freq: 700, to: 200, dur: 0.9, type: "triangle", gain: 0.12 });
     case "tick":
       return tone(ac, out, { freq: 880, dur: 0.08, type: "square", gain: 0.05 });
+    case "scan":
+      // A rising electronic sweep.
+      tone(ac, out, { freq: 300, to: 2400, dur: 0.5, type: "sawtooth", gain: 0.05 });
+      return tone(ac, out, { freq: 1200, at: 0.45, dur: 0.4, gain: 0.08 });
+    case "scanWarn":
+      // Bzzt bzzt: a scan just swept over you.
+      [0, 0.16].forEach((at) => tone(ac, out, { freq: 160, at, dur: 0.12, type: "square", gain: 0.08 }));
+      return;
     case "sonar":
       // A submarine ping, and its echo.
       tone(ac, out, { freq: 1320, dur: 0.6, gain: 0.14 });

@@ -22,12 +22,14 @@ import {
   isFrozen,
   isSpectating,
   mayDisguise,
+  mayScan,
   mayZap,
   sampleRemote,
   SEND_EVERY,
   sendDecoy,
   sendDisguise,
   sendPosition,
+  sendScan,
   sendSonar,
   sendTaunt,
   type Frame,
@@ -114,6 +116,10 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
       actions.sonar = false;
       // The room checks it's unlocked and unused, and answers only us.
       if (mayZap()) sendSonar();
+    }
+    if (actions.scan) {
+      actions.scan = false;
+      if (mayScan()) sendScan();
     }
     if (actions.become) {
       actions.become = false;
