@@ -15,6 +15,8 @@ export const config = {
   pgliteDir: process.env.PGLITE_DIR ?? ".pglite",
   supabaseUrl: process.env.SUPABASE_URL || undefined,
   supabaseJwtSecret: process.env.SUPABASE_JWT_SECRET || undefined,
+  /** Shared with the realtime Worker, which reports finished Prop Hunt matches with it. */
+  huntResultsSecret: process.env.HUNT_RESULTS_SECRET || undefined,
   modelsBaseUrl,
   /** Models are served by the API itself unless they live on another host. */
   serveModels: !/^https?:\/\//.test(modelsBaseUrl),

@@ -13,7 +13,8 @@ import { useAvatar } from "../../avatar/store";
 import { isTouch, useControls } from "./input";
 import { artColliders } from "./art/colliders";
 import { PROP_HUNT_HOME } from "./config";
-import { onForcedTaunt, syncMatch } from "./net";
+import { onForcedTaunt, sendLoadout, syncMatch } from "./net";
+import { myTaunts, useHuntProgress, useLoadHuntProgress } from "./progress";
 import { joinHuntRoom, leaveHuntRoom, roomsAvailable, useHuntRoom } from "./room";
 import { HuntSim, type SimEvent } from "./sim";
 import { useHunt } from "./store";
@@ -191,6 +192,13 @@ export default function PropHuntPage() {
   useEffect(() => {
     playingRef.current = playing;
   }, [playing]);
+  // Your level and taunts: loaded when you sign in, and told to the room you're in (it plays
+  // your taunts for everyone and shows your level).
+  useLoadHuntProgress();
+  const progress = useHuntProgress((s) => s.progress);
+  useEffect(() => {
+    if (you) sendLoadout(myTaunts(), progress?.level ?? null);
+  }, [you, roomCode, progress]);
   // The room forces a taunt on us in the last minute: we hear and see it too.
   useEffect(() => onForcedTaunt((sound) => sim.tauntNow(sound)), [sim]);
   const showFriends = friends && !roomCode;

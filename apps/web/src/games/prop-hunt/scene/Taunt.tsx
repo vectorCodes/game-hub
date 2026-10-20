@@ -3,13 +3,16 @@ import { useEffect, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import type { Group } from "three";
+import { HUNT_TAUNTS } from "@shadow/shared";
 import type { HuntSim, SimEvent } from "../sim";
 
 const NOTES = ["♪", "♫", "♩", "♬"];
 const COLORS = ["#f5c04a", "#e8774f", "#7ec8ff", "#d9a6ff"];
 
 /** Floats a handful of notes up out of `el` (a zero-size box anchored in the world). */
-export function burstNotes(el: HTMLElement, sound: number) {
+export function burstNotes(el: HTMLElement, taunt: string) {
+  // Each taunt sound starts the notes and colours in its own place.
+  const sound = Math.max(0, HUNT_TAUNTS.findIndex((t) => t.id === taunt));
   for (let i = 0; i < 5; i++) {
     const note = document.createElement("span");
     note.textContent = NOTES[(i + sound) % NOTES.length];

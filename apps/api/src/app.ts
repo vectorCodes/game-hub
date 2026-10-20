@@ -14,13 +14,15 @@ import { avatarRoutes } from "./modules/avatar/routes";
 import { skyClimbRoutes } from "./modules/sky-climb/routes";
 import { SkyClimbService, TooFastError } from "./modules/sky-climb/service";
 import { pairPopRoutes } from "./modules/pair-pop/routes";
+import { propHuntRoutes } from "./modules/prop-hunt/routes";
 import { PairPopService } from "./modules/pair-pop/service";
 import { MODELS_DIR } from "./paths";
 
 type AppConfig = Pick<
   Config,
   "corsOrigin" | "modelsBaseUrl" | "serveModels" | "isProd" | "supabaseUrl" | "supabaseJwtSecret"
->;
+> &
+  Partial<Pick<Config, "huntResultsSecret">>;
 
 export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boolean } = {}) {
   const app = Fastify({ logger: opts.logger ?? false });
@@ -64,6 +66,7 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
   skyClimbRoutes(app, skyClimb);
   pairPopRoutes(app, pairPop);
   avatarRoutes(app, db, skyClimb);
+  propHuntRoutes(app, db, config.huntResultsSecret);
   if (!config.isProd) devRoutes(app, db, config.modelsBaseUrl);
 
   return { app, shadowGuess };

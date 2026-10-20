@@ -31,8 +31,8 @@ export interface Remote {
   kind: string | null;
   /** A decoy: never moves, never goes quiet. */
   still?: boolean;
-  /** Our own decoy: we can walk through it. */
-  mine?: boolean;
+  /** Our own decoy, just left: we pass through it until we've stepped out of it, then it's solid. */
+  ghost?: boolean;
 }
 
 /** Drawn this far behind, so there are two positions (sent 10 a second) to blend. */
@@ -52,10 +52,10 @@ const exposed = new Map<string, number>();
 const EXPOSED_MS = 5000;
 export const isExposed = (id: string) => (exposed.get(id) ?? 0) > performance.now();
 
-type TauntListener = (id: string, sound: number, forced: boolean) => void;
+type TauntListener = (id: string, sound: string, forced: boolean) => void;
 const tauntListeners = new Set<TauntListener>();
 /** Our own taunts that the room forced (the last minute): we didn't press anything, so we're told. */
-const forcedListeners = new Set<(sound: number) => void>();
+const forcedListeners = new Set<(sound: string) => void>();
 const sonarListeners = new Set<(dir: [number, number]) => void>();
 type DecoyListener = (at: [number, number, number], by: string, mine: boolean) => void;
 const decoyListeners = new Set<DecoyListener>();
@@ -120,7 +120,7 @@ export function onRemoteTaunt(l: TauntListener) {
   return () => void tauntListeners.delete(l);
 }
 
-export function onForcedTaunt(l: (sound: number) => void) {
+export function onForcedTaunt(l: (sound: string) => void) {
   forcedListeners.add(l);
   return () => void forcedListeners.delete(l);
 }
@@ -144,7 +144,7 @@ const LOCAL_DECOYS = 4;
 export function addLocalDecoy(kind: string, x: number, y: number, z: number, facing: number) {
   const id = `local-${localDecoys++}`;
   remote(id);
-  Object.assign(remotes.get(id)!, { kind, still: true, mine: true, frames: [{ t: performance.now(), x, y, z, facing, pose: "idle", locked: true }] });
+  Object.assign(remotes.get(id)!, { kind, still: true, ghost: true, frames: [{ t: performance.now(), x, y, z, facing, pose: "idle", locked: true }] });
   const old = `local-${localDecoys - 1 - LOCAL_DECOYS}`;
   if (remotes.delete(old)) changed();
 }
@@ -215,7 +215,7 @@ onHuntMessage((msg: HuntServerMessage) => {
     case "decoy": {
       if (!match.on) return;
       const r = remote(msg.id);
-      Object.assign(r, { kind: msg.kind, still: true, mine: msg.mine, frames: [{ t: performance.now(), ...unpack(msg.p) }] });
+      Object.assign(r, { kind: msg.kind, still: true, ghost: msg.mine, frames: [{ t: performance.now(), ...unpack(msg.p) }] });
       break;
     }
     case "decoyPopped": {
@@ -286,7 +286,9 @@ export function sendPosition(x: number, y: number, z: number, facing: number, po
 export const sendDisguise = (prop: number | null) => sendHunt({ type: "disguise", prop });
 export const sendZap = (target: string | null, at: [number, number, number]) =>
   sendHunt({ type: "zap", target, at: [Math.round(at[0] * 100), Math.round(at[1] * 100), Math.round(at[2] * 100)] });
-export const sendTaunt = () => sendHunt({ type: "taunt" });
+export const sendTaunt = (sound: string) => sendHunt({ type: "taunt", sound });
+/** Your picked taunts and level, for the room (it plays your taunts and shows your level). */
+export const sendLoadout = (taunts: string[], level: number | null) => sendHunt({ type: "loadout", taunts, level });
 export function sendDecoy(x: number, y: number, z: number, facing: number) {
   const turn = Math.round((((facing % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * 256) % 256;
   sendHunt({ type: "decoy", p: [Math.round(x * 100), Math.round(y * 100), Math.round(z * 100), turn, 0, 1] });

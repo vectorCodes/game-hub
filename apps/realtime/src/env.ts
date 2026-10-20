@@ -10,4 +10,8 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   SUPABASE_URL?: string;
   SUPABASE_JWT_SECRET?: string;
+  /** The API's origin, where finished Prop Hunt matches are reported for XP. */
+  API_URL?: string;
+  /** Shared with the API (its HUNT_RESULTS_SECRET). */
+  HUNT_RESULTS_SECRET?: string;
 }

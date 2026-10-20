@@ -205,3 +205,30 @@ export const pairPopGames = pgTable(
   },
   (t) => [index().on(t.puzzleDate, t.mode), index().on(t.userId)],
 ).enableRLS();
+
+/** Each signed-in player's Prop Hunt XP (levels follow from it) and the taunts they've picked. */
+export const huntProgress = pgTable("hunt_progress", {
+  userId: uuid().primaryKey(),
+  xp: integer().notNull().default(0),
+  matches: integer().notNull().default(0),
+  wins: integer().notNull().default(0),
+  /** Picked taunt ids (null: the starter set). */
+  taunts: jsonb().$type<string[]>(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+/** Every match a player was credited for, as the room reported it: a retried report counts once. */
+export const huntResults = pgTable(
+  "hunt_results",
+  {
+    matchId: text().notNull(),
+    userId: uuid().notNull(),
+    score: integer().notNull(),
+    place: integer().notNull(),
+    xp: integer().notNull(),
+    /** Their XP before this match. */
+    xpBefore: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.matchId, t.userId] })],
+).enableRLS();

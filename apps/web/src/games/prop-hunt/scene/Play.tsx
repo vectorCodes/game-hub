@@ -32,6 +32,7 @@ import {
   sendTaunt,
   type Frame,
 } from "../net";
+import { pickTaunt } from "../progress";
 import { useHunt } from "../store";
 import { rayBoxes, type HuntSim, type SimEvent } from "../sim";
 
@@ -55,8 +56,6 @@ type Listener = (e: SimEvent) => void;
 /** What the sim gets while you're frozen (the countdown, or blindfolded in the garage). */
 const STILL = { x: 0, y: 0, jumpHeld: false, jumpPressed: false, sprint: false };
 
-/** The taunt sounds, by the index the sim picks. */
-const TAUNTS: Sound[] = ["squeak", "honk", "boing", "whistle"];
 const OUTSIDE = new Set(["Garden", "Side path", "Shed"]);
 
 /** Further than this in a frame: the watched player teleported (or we switched), so no follow swing. */
@@ -137,7 +136,10 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
     if (actions.taunt) {
       actions.taunt = false;
       // In a match only hiders taunt, and the room tells everyone else.
-      if ((!match || mayDisguise()) && sim.taunt() && match) sendTaunt();
+      if (!match || mayDisguise()) {
+        const sound = pickTaunt();
+        if (sim.taunt(sound) && match) sendTaunt(sound);
+      }
     }
     if (actions.decoy) {
       actions.decoy = false;
@@ -177,7 +179,8 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
       if (e.type === "jump") play("jump");
       if (e.type === "become") play(e.kind ? "become" : "unbecome");
       if (e.type === "decoy") play("become");
-      if (e.type === "taunt") play(TAUNTS[e.sound]);
+      // Taunt ids are sound names (HUNT_TAUNTS).
+      if (e.type === "taunt") play(e.sound as Sound);
       onEvent(e);
     }
     sim.events.length = 0;

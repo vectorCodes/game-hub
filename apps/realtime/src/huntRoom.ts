@@ -27,11 +27,13 @@ import {
   HUNT_SONAR_FROM_SECONDS_LEFT,
   HUNT_SONAR_SMALL_ROOM,
   HUNT_TAUNT_COOLDOWN_MS,
-  HUNT_TAUNT_SOUNDS,
   HUNT_ZAP_COOLDOWN_MS,
   HUNT_ZAP_RANGE,
   HUNT_ZAP_SLACK,
+  HUNT_RESULTS_SECRET_HEADER,
+  HUNT_STARTER_TAUNTS,
   HuntClientMessage,
+  isHuntTaunt,
   canDisguiseAs,
   houseFor,
   newHouseSeed,
@@ -44,6 +46,8 @@ import {
   type HuntServerMessage,
   type HuntStanding,
   type HuntStatus,
+  type HuntResultsBody,
+  type HuntXpGain,
   type HuntView,
 } from "@shadow/shared";
 import { RoomCore, randomId, type CorePlayer, type CoreRoom } from "./roomCore";
@@ -70,6 +74,12 @@ interface Player extends CorePlayer {
   sonarUsed: boolean;
   /** Decoys left this round. */
   decoys: number;
+  /** Picked taunt sounds: one plays every time, several shuffle. */
+  taunts: string[];
+  /** Prop Hunt level (signed-in players say theirs; the API's answer after a match replaces it). */
+  level: number | null;
+  /** The last match's XP, once the API has saved it (null: it couldn't be). */
+  xp?: HuntXpGain | null;
 }
 
 /** A decoy prop a hider left: to seekers, just another prop (its id looks like a hider's tag). */
@@ -96,6 +106,8 @@ interface Room extends CoreRoom<Player, HuntStatus> {
   mapSeed: number;
   /** This round's decoys still standing. */
   decoys: Decoy[];
+  /** This match, as reported to the API (a retried report counts once). */
+  matchId?: string;
 }
 
 type Msg = HuntServerMessage;
@@ -142,6 +154,8 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       lastTauntAt: 0,
       sonarUsed: false,
       decoys: HUNT_DECOYS,
+      taunts: HUNT_STARTER_TAUNTS,
+      level: null,
     };
   }
 
@@ -182,7 +196,8 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         room.rounds = Math.min(seated.length, HUNT_MAX_ROUNDS);
         room.lastRound = null;
         room.standings = null;
-        for (const p of seated) Object.assign(p, { score: 0, turns: 0 });
+        for (const p of seated) Object.assign(p, { score: 0, turns: 0, xp: undefined });
+        room.matchId = `${room.code}-${randomId()}`;
         this.setupRound();
         room.status = "countdown";
         room.phaseEndsAt = now + HUNT_COUNTDOWN_MS;
@@ -210,7 +225,15 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         if (!this.hiding(me) || now - me.lastTauntAt < HUNT_TAUNT_COOLDOWN_MS) return;
         me.lastTauntAt = now;
         if (room.status === "seek") this.award(me, HUNT_POINTS.taunt);
-        this.taunt(me, false);
+        this.taunt(me, false, msg.sound);
+        break;
+      }
+
+      case "loadout": {
+        const taunts = msg.taunts.filter(isHuntTaunt);
+        me.taunts = taunts.length ? taunts : HUNT_STARTER_TAUNTS;
+        // Only signed-in players have a level.
+        me.level = me.key.startsWith("u:") ? msg.level : null;
         break;
       }
 
@@ -317,6 +340,52 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     room.phaseEndsAt = null;
     room.standings = rankHunt(room.players);
     this.broadcast({ type: "results", standings: room.standings });
+    this.ctx.waitUntil(this.reportResults(room.matchId ?? `${room.code}-${Date.now()}`, room.standings));
+  }
+
+  /**
+   * Tells the API how the match went, so signed-in players earn XP, then tells each of them what
+   * they got. The API may be asleep (it wakes in under a minute), so it gets a few tries.
+   */
+  private async reportResults(matchId: string, standings: HuntStanding[]) {
+    const room = this.room!;
+    const signedIn = standings.flatMap((s) => {
+      const p = room.players.find((q) => q.id === s.id);
+      return p?.key.startsWith("u:") ? [{ p, userId: p.key.slice(2), place: s.place, score: s.score, dnf: s.dnf }] : [];
+    });
+    if (!signedIn.length) return;
+    const tell = (p: Player, gain: HuntXpGain | null) => {
+      p.xp = gain;
+      if (gain) p.level = gain.level;
+      this.broadcastEach((pid) => (pid === p.id ? { type: "xp", gain } : null));
+    };
+    const { API_URL, HUNT_RESULTS_SECRET } = this.env;
+    let gains: HuntXpGain[] | null = null;
+    if (API_URL && HUNT_RESULTS_SECRET) {
+      const body: HuntResultsBody = { matchId, players: signedIn.map(({ userId, place, score, dnf }) => ({ userId, place, score, dnf })) };
+      for (const wait of [0, 10_000, 30_000]) {
+        if (wait) await new Promise((r) => setTimeout(r, wait));
+        try {
+          const res = await fetch(`${API_URL.replace(/\/$/, "")}/api/hunt/results`, {
+            method: "POST",
+            headers: { "content-type": "application/json", [HUNT_RESULTS_SECRET_HEADER]: HUNT_RESULTS_SECRET },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(60_000),
+          });
+          if (res.ok) {
+            gains = ((await res.json()) as { players: HuntXpGain[] }).players;
+            break;
+          }
+          // A bad secret or a bad report won't get better by trying again.
+          if (res.status < 500) break;
+        } catch {
+          // Unreachable, or timed out while it woke: try again.
+        }
+      }
+    }
+    for (const s of signedIn) tell(s.p, gains?.find((g) => g.userId === s.userId) ?? null);
+    this.broadcastRoom();
+    await this.commit();
   }
 
   /** Moves the match along: phases ending, survival points, forced taunts, a side running out of players. */
@@ -427,8 +496,10 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     return { type: "decoy", id: d.id, kind: d.kind, p: d.p, mine: viewer === d.owner };
   }
 
-  private taunt(p: Player, forced: boolean) {
-    const sound = Math.floor(Math.random() * HUNT_TAUNT_SOUNDS);
+  /** One of the player's taunts: `pick` if it's one of theirs, otherwise any of them. */
+  private taunt(p: Player, forced: boolean, pick?: string) {
+    const taunts = p.taunts?.length ? p.taunts : HUNT_STARTER_TAUNTS;
+    const sound = pick && taunts.includes(pick) ? pick : taunts[Math.floor(Math.random() * taunts.length)];
     this.broadcastEach((pid) => ({ type: "taunt", id: this.idFor(p, pid), sound, forced }));
   }
 
@@ -492,6 +563,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     }
     if (room.status === "seek" || (room.status === "hide" && !this.isSeeker(me.id))) for (const d of room.decoys ?? []) this.send(ws, this.decoyMessage(d, me.id));
     if (room.status === "results" && room.standings) this.send(ws, { type: "results", standings: room.standings });
+    if (room.status === "results" && me.xp !== undefined) this.send(ws, { type: "xp", gain: me.xp });
   }
 
   protected view(): HuntView {
@@ -514,6 +586,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         score: p.score,
         spawn: p.spawn,
         decoys: p.decoys,
+        level: p.level ?? null,
       })),
       round: room.round,
       rounds: room.rounds,

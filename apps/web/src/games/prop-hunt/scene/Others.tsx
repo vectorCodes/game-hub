@@ -18,7 +18,6 @@ import { PropModel } from "./PropArt";
 import { CHARACTER_SCALE, wiggleAt } from "./Play";
 import { burstNotes, NoteAnchor } from "./Taunt";
 
-const TAUNTS: Sound[] = ["squeak", "honk", "boing", "whistle"];
 /** Taunts fade to nothing over this distance (but never quite: you always hear something). */
 const HEARING = 45;
 const FADE = 0.14;
@@ -55,15 +54,22 @@ function MovingColliders({ sim }: { sim: HuntSim }) {
     const now = performance.now();
     pruneRemotes(now);
     const moving: Collider[] = [];
+    const pl = sim.player;
     for (const r of allRemotes()) {
-      // Our own decoys we walk through (we're standing in one the moment we leave it).
-      if (!r.kind || r.mine || !sampleRemote(r, now, frame)) continue;
+      if (!r.kind || !sampleRemote(r, now, frame)) continue;
       const kind = sim.map.kinds[r.kind];
       if (!kind) continue;
       let b = bounds.get(r.kind);
       if (!b) bounds.set(r.kind, (b = kindBounds(kind)));
       const half = Math.max(b.w, b.d) / 2;
-      moving.push({ x0: frame.x - half, x1: frame.x + half, z0: frame.z - half, z1: frame.z + half, y0: frame.y, y1: frame.y + b.h, step: false });
+      const box = { x0: frame.x - half, x1: frame.x + half, z0: frame.z - half, z1: frame.z + half, y0: frame.y, y1: frame.y + b.h, step: false };
+      // A decoy we just left: we're standing in it, so it turns solid once we're clear of it.
+      if (r.ghost) {
+        const inside = pl.x + sim.half > box.x0 && pl.x - sim.half < box.x1 && pl.z + sim.half > box.z0 && pl.z - sim.half < box.z1 && pl.y + sim.height > box.y0 && pl.y < box.y1;
+        if (inside) continue;
+        r.ghost = false;
+      }
+      moving.push(box);
     }
     sim.setMoving(moving);
   });
@@ -96,7 +102,8 @@ function RemotePlayer({ id, sim, player, viewerHides }: { id: string; sim: HuntS
         const d = Math.hypot(dx, frame.y - pl.y, dz);
         right.setFromMatrixColumn(camera.matrixWorld, 0);
         const pan = d > 0.5 ? (right.x * dx + right.z * dz) / Math.hypot(dx, dz) : 0;
-        play(TAUNTS[sound], 1, { volume: Math.max(0.12, 1 - d / HEARING), pan: pan * 0.8 });
+        // Taunt ids are sound names (HUNT_TAUNTS).
+        play(sound as Sound, 1, { volume: Math.max(0.12, 1 - d / HEARING), pan: pan * 0.8 });
       }),
     [id, sim, camera, frame],
   );

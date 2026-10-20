@@ -8,6 +8,7 @@ import { DEFAULT_AVATAR, HUNT_FORCED_TAUNT, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYERS, 
 import { AvatarImage } from "../../../avatar/AvatarImage";
 import { isTouch } from "../input";
 import { useHunt } from "../store";
+import { LevelBadge, TauntPicker, XpPanel } from "./Levels";
 import { createHuntRoom, huntRematch, leaveHuntRoom, peekHuntRoom, setHuntReady, startHunt, toLocalTime, useHuntRoom, type RoomError } from "../room";
 
 export const ROOM_ERRORS: Record<RoomError, string> = {
@@ -136,6 +137,7 @@ function Slot({ player, host, you }: { player: HuntPlayerView | undefined; host:
         {player.name}
         {you && <span className="text-stone-400"> (you)</span>}
       </span>
+      <LevelBadge level={player.level} />
       <span
         className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
           host ? "bg-lamp-300/15 text-lamp-200" : player.ready && player.connected ? "bg-moss-500/20 text-moss-300" : "bg-white/[0.06] text-stone-400"
@@ -241,12 +243,14 @@ export function Lobby() {
       {room.status === "results" && standings ? (
         <>
           <Podium standings={standings} you={you} />
+          <XpPanel />
           <ol className="mt-4 space-y-1.5 text-sm">
             {standings.map((s) => (
               <li key={s.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${s.id === you ? "bg-lamp-300/15 ring-1 ring-lamp-300/30" : "bg-white/[0.04]"}`}>
                 <span className="w-6 text-center text-lg">{["🥇", "🥈", "🥉"][s.place - 1] ?? s.place}</span>
                 <AvatarImage config={s.avatar ?? DEFAULT_AVATAR} size="sm" />
                 <span className="flex-1 truncate">{s.name}</span>
+                <LevelBadge level={room.players.find((p) => p.id === s.id)?.level ?? null} />
                 <span className="text-stone-300 tabular-nums">{s.dnf ? "Left" : `${s.score} pts`}</span>
               </li>
             ))}
@@ -271,6 +275,7 @@ export function Lobby() {
           </button>
         ))}
       {room.status === "lobby" && <p className="mt-3 text-center text-xs text-stone-400">Best with 4 or more. One seeker for up to 4 players, two from 5.</p>}
+      {room.status === "lobby" && <TauntPicker />}
       {room.status === "results" && (
         <button onClick={huntRematch} className="btn btn-primary mt-5 w-full">
           Play again <span aria-hidden>↻</span>

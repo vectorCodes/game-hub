@@ -1,7 +1,7 @@
 // The player's movement through the house, without any rendering: run, sprint, jump, walk up
 // steps, and bump into walls and furniture. Every collider is an axis-aligned box, so there's
 // no physics engine: move along x, push out of anything solid, then z, then fall and land.
-import { HUNT_TAUNT_COOLDOWN_MS, HUNT_TAUNT_SOUNDS, kindBounds, mapColliders, type Box, type Collider, type HouseMap, type PropKind, type Spot } from "@shadow/shared";
+import { HUNT_TAUNT_COOLDOWN_MS, kindBounds, mapColliders, type Box, type Collider, type HouseMap, type PropKind, type Spot } from "@shadow/shared";
 import { FALL_LIMIT, PHYS } from "./config";
 
 export interface Input {
@@ -19,7 +19,8 @@ export type SimEvent =
   | { type: "land"; speed: number }
   | { type: "respawn" }
   | { type: "become"; kind: PropKind | null }
-  | { type: "taunt"; sound: number }
+  /** `sound`: a taunt id (HUNT_TAUNTS). */
+  | { type: "taunt"; sound: string }
   | { type: "decoy" };
 
 const TAUNT_COOLDOWN = HUNT_TAUNT_COOLDOWN_MS / 1000;
@@ -162,15 +163,15 @@ export class HuntSim {
     this.events.push({ type: "become", kind });
   }
 
-  /** Makes a noise from where you are, if the cooldown allows. */
-  taunt(): boolean {
+  /** Makes a noise (`sound`, a taunt id) from where you are, if the cooldown allows. */
+  taunt(sound: string): boolean {
     if (this.t < this.tauntReady) return false;
-    this.tauntNow(Math.floor(Math.random() * HUNT_TAUNT_SOUNDS));
+    this.tauntNow(sound);
     return true;
   }
 
   /** A taunt you didn't choose (the room forces one in the last minute): no cooldown check. */
-  tauntNow(sound: number) {
+  tauntNow(sound: string) {
     this.tauntReady = this.t + TAUNT_COOLDOWN;
     this.events.push({ type: "taunt", sound });
   }

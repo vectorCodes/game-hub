@@ -37,6 +37,21 @@ export type Sound =
   | "honk"
   | "boing"
   | "whistle"
+  // Prop Hunt taunts unlocked with levels (ids in HUNT_TAUNTS)
+  | "quack"
+  | "fart"
+  | "slideWhistle"
+  | "bikeHorn"
+  | "trombone"
+  | "sproing"
+  | "kazoo"
+  | "cuckoo"
+  | "rubberChicken"
+  | "raspberry"
+  | "airhorn"
+  | "pew"
+  | "rimshot"
+  | "siren"
   | "zap"
   | "zapHit"
   | "zapMiss"
@@ -134,6 +149,47 @@ function rumble(ac: AudioContext, out: AudioNode, { dur, cutoff, to, gain, attac
   src.stop(t + dur + 0.05);
 }
 
+/** A held note that wobbles in pitch (`rate` times a second, by `depth` Hz): kazoos, sirens, sad trombones. */
+function vibrato(ac: AudioContext, out: AudioNode, { freq, to, at = 0, dur, rate, depth, type = "sine", gain = 0.15 }: Tone & { rate: number; depth: number }) {
+  const t = ac.currentTime + at;
+  const osc = ac.createOscillator();
+  const lfo = ac.createOscillator();
+  const wobble = ac.createGain();
+  const env = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+  lfo.frequency.value = rate;
+  wobble.gain.value = depth;
+  lfo.connect(wobble).connect(osc.frequency);
+  // Held, then let go over the last third.
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(gain, t + 0.02);
+  env.gain.setValueAtTime(gain, t + dur * 0.66);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(env).connect(out);
+  osc.start(t);
+  lfo.start(t);
+  osc.stop(t + dur + 0.05);
+  lfo.stop(t + dur + 0.05);
+}
+
+/** High-passed noise: a cymbal's "tss". */
+function hiss(ac: AudioContext, out: AudioNode, { at = 0, dur, gain }: { at?: number; dur: number; gain: number }) {
+  const t = ac.currentTime + at;
+  const src = ac.createBufferSource();
+  const filter = ac.createBiquadFilter();
+  const env = ac.createGain();
+  src.buffer = noiseBuffer(ac);
+  filter.type = "highpass";
+  filter.frequency.value = 6000;
+  env.gain.setValueAtTime(gain, t);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(filter).connect(env).connect(out);
+  src.start(t);
+  src.stop(t + dur + 0.05);
+}
+
 /** Filtered noise swept upward: the light swinging round. */
 function whoosh(ac: AudioContext, out: AudioNode) {
   const t = ac.currentTime;
@@ -198,7 +254,7 @@ export function play(sound: Sound, level = 1, from?: { volume: number; pan: numb
     gain.connect(panner).connect(ac.destination);
     out = gain;
     // Let go of the nodes once the longest sound is over.
-    setTimeout(() => gain.disconnect(), 2000);
+    setTimeout(() => gain.disconnect(), 2500);
   }
   switch (sound) {
     case "turn":
@@ -292,6 +348,63 @@ export function play(sound: Sound, level = 1, from?: { volume: number; pan: numb
     case "whistle":
       tone(ac, out, { freq: 1200, to: 2000, dur: 0.22, gain: 0.13 });
       return tone(ac, out, { freq: 2000, to: 900, at: 0.24, dur: 0.38, gain: 0.13 });
+    case "quack":
+      [0, 0.2].forEach((at) => tone(ac, out, { freq: 620, to: 360, at, dur: 0.14, type: "sawtooth", gain: 0.1 }));
+      return;
+    case "fart":
+      // A low wobbling buzz sagging in pitch, a puff of air, and a little squeak at the end.
+      vibrato(ac, out, { freq: 115, to: 68, dur: 0.75, rate: 14, depth: 22, type: "sawtooth", gain: 0.18 });
+      vibrato(ac, out, { freq: 58, to: 40, dur: 0.7, rate: 9, depth: 10, type: "square", gain: 0.06 });
+      rumble(ac, out, { dur: 0.7, cutoff: 500, to: 180, gain: 0.14, attack: 0.03 });
+      return tone(ac, out, { freq: 190, to: 280, at: 0.7, dur: 0.09, type: "square", gain: 0.05 });
+    case "slideWhistle":
+      tone(ac, out, { freq: 500, to: 1800, dur: 0.45, gain: 0.14 });
+      return tone(ac, out, { freq: 1800, to: 420, at: 0.45, dur: 0.5, gain: 0.14 });
+    case "bikeHorn":
+      [0, 0.26].forEach((at) => {
+        tone(ac, out, { freq: 440, to: 410, at, dur: 0.2, type: "square", gain: 0.06 });
+        tone(ac, out, { freq: 554, to: 520, at, dur: 0.2, type: "square", gain: 0.05 });
+      });
+      return;
+    case "trombone":
+      // Wah, wah, wah, wahhhh.
+      [294, 277, 262].forEach((freq, i) => tone(ac, out, { freq, at: i * 0.3, dur: 0.28, type: "sawtooth", gain: 0.08 }));
+      return vibrato(ac, out, { freq: 247, at: 0.9, dur: 0.95, rate: 6, depth: 6, type: "sawtooth", gain: 0.08 });
+    case "sproing":
+      return vibrato(ac, out, { freq: 120, to: 760, dur: 0.6, rate: 18, depth: 45, type: "triangle", gain: 0.2 });
+    case "kazoo":
+      [392, 440].forEach((freq, i) => vibrato(ac, out, { freq, at: i * 0.17, dur: 0.16, rate: 7, depth: 6, type: "sawtooth", gain: 0.07 }));
+      return vibrato(ac, out, { freq: 523, at: 0.34, dur: 0.5, rate: 7, depth: 9, type: "sawtooth", gain: 0.07 });
+    case "cuckoo":
+      [0, 0.55].forEach((at) => {
+        tone(ac, out, { freq: 784, at, dur: 0.2, gain: 0.15 });
+        tone(ac, out, { freq: 622, at: at + 0.22, dur: 0.3, gain: 0.15 });
+      });
+      return;
+    case "rubberChicken":
+      tone(ac, out, { freq: 700, to: 1700, dur: 0.22, type: "square", gain: 0.05 });
+      return vibrato(ac, out, { freq: 1600, to: 600, at: 0.22, dur: 0.55, rate: 24, depth: 120, type: "square", gain: 0.05 });
+    case "raspberry":
+      vibrato(ac, out, { freq: 95, to: 80, dur: 0.75, rate: 32, depth: 30, type: "sawtooth", gain: 0.16 });
+      return rumble(ac, out, { dur: 0.7, cutoff: 700, to: 300, gain: 0.12, attack: 0.02 });
+    case "airhorn":
+      [
+        [0, 0.24],
+        [0.3, 0.24],
+        [0.6, 0.65],
+      ].forEach(([at, dur]) => [466, 470, 587].forEach((freq) => tone(ac, out, { freq, at, dur, type: "sawtooth", gain: 0.045 })));
+      return;
+    case "pew":
+      [0, 0.2].forEach((at) => tone(ac, out, { freq: 1700, to: 220, at, dur: 0.16, type: "square", gain: 0.06 }));
+      return;
+    case "rimshot":
+      // Ba-dum-tss.
+      tone(ac, out, { freq: 150, to: 60, dur: 0.16, gain: 0.3 });
+      tone(ac, out, { freq: 190, to: 70, at: 0.17, dur: 0.16, gain: 0.3 });
+      rumble(ac, out, { dur: 0.08, cutoff: 3000, to: 1500, gain: 0.08, attack: 0.002 });
+      return hiss(ac, out, { at: 0.36, dur: 0.6, gain: 0.12 });
+    case "siren":
+      return vibrato(ac, out, { freq: 720, dur: 1.5, rate: 2.2, depth: 260, gain: 0.12 });
     // The hunt.
     case "zap":
       tone(ac, out, { freq: 1800, to: 300, dur: 0.18, type: "sawtooth", gain: 0.06 });

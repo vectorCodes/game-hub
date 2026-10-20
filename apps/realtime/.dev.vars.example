@@ -7,3 +7,7 @@ ALLOWED_ORIGINS=http://localhost:*
 SUPABASE_URL=
 # Only for legacy projects signing with the HS256 JWT secret.
 SUPABASE_JWT_SECRET=
+# Where finished Prop Hunt matches are reported (the API, e.g. http://localhost:3100), and the
+# secret it expects (the API's HUNT_RESULTS_SECRET). Either empty: no XP is saved.
+API_URL=
+HUNT_RESULTS_SECRET=

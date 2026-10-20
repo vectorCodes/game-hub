@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AvatarConfig } from "./avatar";
+import { HUNT_TAUNTS, type HuntXpGain } from "./propHuntLevels";
 import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf } from "./rooms";
 
 // Prop Hunt rooms: 2–8 friends, hiders against seekers, a few rounds a match. A room lives in a
@@ -7,7 +8,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // over its WebSocket. See Prop-hunt-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const HUNT_PROTOCOL_VERSION = 4;
+export const HUNT_PROTOCOL_VERSION = 5;
 /** Positions sent a second. */
 export const HUNT_POS_HZ = 10;
 
@@ -35,7 +36,10 @@ export const HuntClientMessage = z.discriminatedUnion("type", [
   z.object({ type: z.literal("disguise"), prop: z.int().min(0).max(10_000).nullable() }),
   /** A seeker's zap at `target` (as the seeker knows it), or at nothing; `at` is where the beam ends. */
   z.object({ type: z.literal("zap"), target: Id.nullable(), at: z.tuple([Cm, Cm, Cm]) }),
-  z.object({ type: z.literal("taunt") }),
+  /** `sound`: which of your taunts (one you've picked); the room picks one if it isn't. */
+  z.object({ type: z.literal("taunt"), sound: z.string().max(32).optional() }),
+  /** Your picked taunts (one plays every time, several shuffle) and your level, to show the others. */
+  z.object({ type: z.literal("loadout"), taunts: z.array(z.string().max(32)).min(1).max(HUNT_TAUNTS.length), level: z.int().min(1).max(999).nullable() }),
   /** Leave a decoy of the prop you've become, here (`p`'s position and facing). */
   z.object({ type: z.literal("decoy"), p: HuntPos }),
   z.object({ type: z.literal("sonar") }),
@@ -77,6 +81,8 @@ export interface HuntPlayerView {
   spawn: number;
   /** Decoys left this round. */
   decoys: number;
+  /** Prop Hunt level, for signed-in players. */
+  level: number | null;
 }
 
 export interface HuntLastRound {
@@ -122,7 +128,7 @@ export type HuntServerMessage =
   | { type: "zapped"; by: string; target: string | null; hit: boolean; at: [number, number, number] }
   /** A hider was found: they're out until the next round (and known by their id to everyone). `by` is empty when a hider took over from seekers who all left. */
   | { type: "found"; id: string; tag: string; by: string }
-  | { type: "taunt"; id: string; sound: number; forced: boolean }
+  | { type: "taunt"; id: string; sound: string; forced: boolean }
   /** A decoy prop, standing still at `p`. Its id looks like a hider's tag; `mine` only to the hider who left it. */
   | { type: "decoy"; id: string; kind: string; p: HuntPos; mine: boolean }
   /** A seeker (`by`) zapped a decoy: it's gone, and that counted as a miss. */
@@ -131,7 +137,9 @@ export type HuntServerMessage =
   | { type: "exposed"; ids: string[] }
   /** Only to the seeker who used it: which way the nearest hider is (a unit vector on the ground). */
   | { type: "sonar"; dir: [number, number] }
-  | { type: "results"; standings: HuntStanding[] };
+  | { type: "results"; standings: HuntStanding[] }
+  /** Only to a signed-in player, once the API has saved the match: their XP (null if it couldn't be saved). */
+  | { type: "xp"; gain: HuntXpGain | null };
 
 export type HuntPeek = RoomPeekOf<HuntStatus>;
 
@@ -143,5 +151,3 @@ export function rankHunt(players: { id: string; name: string; avatar: AvatarConf
     .map((p, i) => ({ id: p.id, name: p.name, avatar: p.avatar, place: i + 1, score: p.score, dnf: p.dnf }));
 }
 
-/** How many taunt sounds there are; the server picks one for each taunt. */
-export const HUNT_TAUNT_SOUNDS = 4;
