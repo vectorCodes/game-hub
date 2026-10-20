@@ -116,9 +116,6 @@ export function FriendsCard({ onBack }: { onBack: () => void }) {
       </form>
 
       {shown && <ErrorNote error={shown} />}
-
-      {/* Your level and taunts, before you're even in a room. */}
-      <TauntPicker />
     </Card>
   );
 }
