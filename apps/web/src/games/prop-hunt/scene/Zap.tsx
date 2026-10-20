@@ -8,7 +8,7 @@ import { AdditiveBlending, CylinderGeometry, MeshBasicMaterial, Raycaster, Spher
 import { HUNT_ZAP_COOLDOWN_MS, HUNT_ZAP_RANGE } from "@shadow/shared";
 import { play } from "../../../lib/sound";
 import { actions } from "../input";
-import { getRemote, isDizzy, isSeeker, mayZap, sampleRemote, sendZap, type Frame } from "../net";
+import { getRemote, isDizzy, isSeeker, mayZap, onDecoyPopped, sampleRemote, sendZap, type Frame } from "../net";
 import { onHuntMessage, useHuntRoom } from "../room";
 import type { HuntSim } from "../sim";
 
@@ -103,6 +103,17 @@ export function Zaps({ sim, house, others }: { sim: HuntSim; house: RefObject<Gr
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [you],
+  );
+
+  // A zapped decoy bursts into grey fluff (with a boing) for everyone.
+  useEffect(
+    () =>
+      onDecoyPopped((at) => {
+        burst(new Vector3(at[0], at[1] + 0.4, at[2]), 18, ["#d6d3d1", "#a8a29e", "#ffffff"], 3.5);
+        play("boing");
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   useFrame((_, dt) => {

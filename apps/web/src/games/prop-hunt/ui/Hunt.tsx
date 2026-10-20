@@ -2,7 +2,7 @@
 // seeker's health, zap, dizziness and sonar, and short announcements as things happen: the
 // seekers coming out, finds, hiders caught in the open, the last minute.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { HUNT_FORCED_TAUNT, HUNT_HP, HUNT_SONAR_FROM_SECONDS_LEFT, HUNT_SONAR_SMALL_ROOM, type HuntView } from "@shadow/shared";
+import { HUNT_FORCED_TAUNT, HUNT_HP, HUNT_POINTS, HUNT_SONAR_FROM_SECONDS_LEFT, HUNT_SONAR_SMALL_ROOM, type HuntView } from "@shadow/shared";
 import { play } from "../../../lib/sound";
 import { actions } from "../input";
 import { onSonar } from "../net";
@@ -188,6 +188,11 @@ export function Announcements() {
           }
           if (msg.by === you) return say(<>You found <b>{name(msg.id)}</b>!</>, "good");
           return say(<><b>{name(msg.by)}</b> found <b>{name(msg.id)}</b></>);
+        }
+        if (msg.type === "decoyPopped") {
+          if (msg.by === you) return say("Decoy! That was a fake.", "bad");
+          if (msg.mine) return say(<><b>{name(msg.by)}</b> fell for your decoy! +{HUNT_POINTS.decoy}</>, "good");
+          return;
         }
         if (msg.type === "exposed") {
           if (msg.ids.includes(you ?? "")) return say("You weren't disguised: everyone saw you!", "bad");

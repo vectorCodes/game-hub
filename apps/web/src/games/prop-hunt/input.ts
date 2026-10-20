@@ -13,7 +13,7 @@ export const look = { dx: 0, dy: 0, zoom: 0 };
 export const lookKeys = { x: 0, y: 0 };
 
 /** One-shot actions, cleared by whoever handles them. */
-export const actions = { respawn: false, become: false, unbecome: false, lock: false, taunt: false, zap: false, sonar: false };
+export const actions = { respawn: false, become: false, unbecome: false, lock: false, taunt: false, zap: false, sonar: false, decoy: false };
 
 /** Phones and tablets: touch controls instead of keys and a captured mouse. */
 export const isTouch = () => window.matchMedia("(pointer: coarse)").matches;
@@ -50,7 +50,7 @@ export function pressJump(down: boolean) {
 
 const CONTROL_KEYS = new Set(["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight"]);
 /** Keys that fire once per press. */
-const ACTION_KEYS: Record<string, keyof typeof actions> = { KeyR: "respawn", KeyE: "become", KeyX: "unbecome", KeyQ: "lock", KeyF: "taunt", Enter: "zap", KeyZ: "zap" };
+const ACTION_KEYS: Record<string, keyof typeof actions> = { KeyR: "respawn", KeyE: "become", KeyX: "unbecome", KeyQ: "lock", KeyF: "taunt", KeyG: "decoy", Enter: "zap", KeyZ: "zap" };
 
 /**
  * Keyboard and mouse while `active`. Clicking `target` locks the pointer, so the mouse turns

@@ -12,7 +12,26 @@ import { play, type Sound } from "../../../lib/sound";
 import { CAMERA } from "../config";
 import { angleDelta } from "../math";
 import { actions, input, look, lookKeys } from "../input";
-import { allRemotes, getRemote, inMatch, isDizzy, isFrozen, isSpectating, mayDisguise, mayZap, sampleRemote, SEND_EVERY, sendDisguise, sendPosition, sendSonar, sendTaunt, type Frame } from "../net";
+import {
+  addLocalDecoy,
+  allRemotes,
+  decoysLeft,
+  getRemote,
+  inMatch,
+  isDizzy,
+  isFrozen,
+  isSpectating,
+  mayDisguise,
+  mayZap,
+  sampleRemote,
+  SEND_EVERY,
+  sendDecoy,
+  sendDisguise,
+  sendPosition,
+  sendSonar,
+  sendTaunt,
+  type Frame,
+} from "../net";
 import { useHunt } from "../store";
 import { rayBoxes, type HuntSim, type SimEvent } from "../sim";
 
@@ -49,7 +68,8 @@ const watchedFrame: Frame = { t: 0, x: 0, y: 0, z: 0, facing: 0, pose: "idle", l
  * camera follows them as it would us. Space (or Jump) moves on to the next player.
  */
 function watch(sim: HuntSim, dt: number) {
-  const ids = [...allRemotes()].filter((r) => r.frames.length > 0).map((r) => r.id);
+  // Players only: decoys stand still.
+  const ids = [...allRemotes()].filter((r) => r.frames.length > 0 && !r.still).map((r) => r.id);
   const current = useHunt.getState().watching;
   let i = current === null ? -1 : ids.indexOf(current);
   if (input.jumpPressed) {
@@ -119,6 +139,16 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
       // In a match only hiders taunt, and the room tells everyone else.
       if ((!match || mayDisguise()) && sim.taunt() && match) sendTaunt();
     }
+    if (actions.decoy) {
+      actions.decoy = false;
+      // A copy of the prop you are, left where you stand: in a match the room counts and tells everyone.
+      if (sim.disguise && (!match || (mayDisguise() && decoysLeft() > 0))) {
+        const pl = sim.player;
+        if (match) sendDecoy(pl.x, pl.y, pl.z, pl.facing);
+        else addLocalDecoy(sim.disguise.id, pl.x, pl.y, pl.z, pl.facing);
+        sim.events.push({ type: "decoy" });
+      }
+    }
     if (actions.lock) {
       actions.lock = false;
       if (sim.disguise) {
@@ -146,6 +176,7 @@ export function Driver({ sim, view, onEvent }: { sim: HuntSim; view: View; onEve
     for (const e of sim.events) {
       if (e.type === "jump") play("jump");
       if (e.type === "become") play(e.kind ? "become" : "unbecome");
+      if (e.type === "decoy") play("become");
       if (e.type === "taunt") play(TAUNTS[e.sound]);
       onEvent(e);
     }

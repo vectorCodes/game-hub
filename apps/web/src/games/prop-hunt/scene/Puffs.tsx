@@ -50,7 +50,7 @@ export function Puffs({ sim, subscribe }: { sim: HuntSim; subscribe: (l: (e: Sim
     };
     return subscribe((e) => {
       const h = sim.height;
-      if (e.type === "become") spawn(16, { y: h * 0.5, spread: Math.max(0.3, sim.half), speed: 2.4, up: 0.8, size: 0.5 + h * 0.25, life: 0.7, color: "#f6f1e7" });
+      if (e.type === "become" || e.type === "decoy") spawn(16, { y: h * 0.5, spread: Math.max(0.3, sim.half), speed: 2.4, up: 0.8, size: 0.5 + h * 0.25, life: 0.7, color: "#f6f1e7" });
       if (e.type === "land" && e.speed > 9) spawn(8, { y: 0.05, spread: sim.half, speed: 1.8, up: 0.3, size: 0.25, life: 0.45, color: "#e9e1d3" });
     });
   }, [subscribe, sim, puffs, materials]);

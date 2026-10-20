@@ -5,6 +5,9 @@
 //
 // To a seeker, a hider who hasn't been found is only a tag (the server's doing); once found,
 // they come back under their real id, and they're out: gone from the house, watching the others.
+//
+// Decoys are remotes too: a prop standing still under an id like a hider's tag, so to a seeker
+// they look like any disguised hider.
 import { useSyncExternalStore } from "react";
 import { HUNT_POSES, HUNT_POS_HZ, type HuntPos, type HuntPose, type HuntRole, type HuntServerMessage, type HuntStatus, type HuntView } from "@shadow/shared";
 import { onHuntMessage, sendHunt, toLocalTime } from "./room";
@@ -26,6 +29,10 @@ export interface Remote {
   frames: Frame[];
   /** The prop kind they've become, or null as themselves. */
   kind: string | null;
+  /** A decoy: never moves, never goes quiet. */
+  still?: boolean;
+  /** Our own decoy: we can walk through it. */
+  mine?: boolean;
 }
 
 /** Drawn this far behind, so there are two positions (sent 10 a second) to blend. */
@@ -50,6 +57,8 @@ const tauntListeners = new Set<TauntListener>();
 /** Our own taunts that the room forced (the last minute): we didn't press anything, so we're told. */
 const forcedListeners = new Set<(sound: number) => void>();
 const sonarListeners = new Set<(dir: [number, number]) => void>();
+type DecoyListener = (at: [number, number, number], by: string, mine: boolean) => void;
+const decoyListeners = new Set<DecoyListener>();
 
 /** The match as it stands, for the rules and for what we send. */
 const match = {
@@ -61,6 +70,8 @@ const match = {
   canDisguise: true,
   /** Found: out until the next round, watching the others. */
   spectating: false,
+  /** Decoys we have left this round. */
+  decoys: 0,
   /** Can't move: everyone before hiding starts, seekers while the hiders hide. */
   frozen: false,
   /** Local time (ms) a dizzy seeker can zap again. */
@@ -119,11 +130,31 @@ export function onSonar(l: (dir: [number, number]) => void) {
   return () => void sonarListeners.delete(l);
 }
 
+/** A decoy was zapped: where it stood, who zapped it, and whether it was ours. */
+export function onDecoyPopped(l: DecoyListener) {
+  decoyListeners.add(l);
+  return () => void decoyListeners.delete(l);
+}
+
+/** Decoys left in the sandbox, oldest first (the room keeps count in a match). */
+let localDecoys = 0;
+const LOCAL_DECOYS = 4;
+
+/** On your own: a decoy straight away, no room to ask. Only the last few stay. */
+export function addLocalDecoy(kind: string, x: number, y: number, z: number, facing: number) {
+  const id = `local-${localDecoys++}`;
+  remote(id);
+  Object.assign(remotes.get(id)!, { kind, still: true, mine: true, frames: [{ t: performance.now(), x, y, z, facing, pose: "idle", locked: true }] });
+  const old = `local-${localDecoys - 1 - LOCAL_DECOYS}`;
+  if (remotes.delete(old)) changed();
+}
+
 export const inMatch = () => match.on;
 /** In a match, only a hider who's still hiding may be a prop; outside one, anyone may. */
 export const mayDisguise = () => !match.on || match.canDisguise;
 export const isFrozen = () => match.frozen;
 export const isSpectating = () => match.spectating;
+export const decoysLeft = () => match.decoys;
 /** A seeker, while seeking: clicks zap. */
 export const mayZap = () => match.status === "seek" && match.role === "seeker";
 export const isDizzy = () => performance.now() < match.dizzyUntil;
@@ -140,6 +171,7 @@ export function syncMatch(room: HuntView | null, you: string | null) {
   match.role = me?.role ?? null;
   match.canDisguise = on && me?.role === "hider" && !me.found;
   match.spectating = on && me?.role === "hider" && me.found;
+  match.decoys = me?.decoys ?? 0;
   match.frozen = status === "countdown" || (status === "hide" && me?.role === "seeker");
   // Server time to ours; performance.now and Date.now differ only by a constant.
   match.dizzyUntil = me?.dizzyUntil ? performance.now() + (toLocalTime(me.dizzyUntil) - Date.now()) : 0;
@@ -180,6 +212,18 @@ onHuntMessage((msg: HuntServerMessage) => {
     case "sonar":
       for (const l of sonarListeners) l(msg.dir);
       break;
+    case "decoy": {
+      if (!match.on) return;
+      const r = remote(msg.id);
+      Object.assign(r, { kind: msg.kind, still: true, mine: msg.mine, frames: [{ t: performance.now(), ...unpack(msg.p) }] });
+      break;
+    }
+    case "decoyPopped": {
+      const f = remotes.get(msg.id)?.frames[0];
+      if (remotes.delete(msg.id)) changed();
+      if (f) for (const l of decoyListeners) l([f.x, f.y, f.z], msg.by, msg.mine);
+      break;
+    }
   }
 });
 
@@ -188,7 +232,7 @@ export function pruneRemotes(now: number) {
   let gone = false;
   for (const [id, r] of remotes) {
     const last = r.frames.at(-1);
-    if (last && now - last.t > STALE_MS) {
+    if (!r.still && last && now - last.t > STALE_MS) {
       remotes.delete(id);
       gone = true;
     }
@@ -243,4 +287,8 @@ export const sendDisguise = (prop: number | null) => sendHunt({ type: "disguise"
 export const sendZap = (target: string | null, at: [number, number, number]) =>
   sendHunt({ type: "zap", target, at: [Math.round(at[0] * 100), Math.round(at[1] * 100), Math.round(at[2] * 100)] });
 export const sendTaunt = () => sendHunt({ type: "taunt" });
+export function sendDecoy(x: number, y: number, z: number, facing: number) {
+  const turn = Math.round((((facing % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * 256) % 256;
+  sendHunt({ type: "decoy", p: [Math.round(x * 100), Math.round(y * 100), Math.round(z * 100), turn, 0, 1] });
+}
 export const sendSonar = () => sendHunt({ type: "sonar" });

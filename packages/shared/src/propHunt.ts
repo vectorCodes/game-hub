@@ -24,6 +24,10 @@ export const HUNT_SONAR_SMALL_ROOM = { players: 3, fromSecondsLeft: 120 } as con
 /** HP a seeker starts each round with, and comes back with after being dizzy. */
 export const HUNT_HP = 100;
 export const HUNT_HP_AFTER_DIZZY = 50;
+/** Decoys each hider may drop a round: a copy of the prop they've become, left where they stand. */
+export const HUNT_DECOYS = 2;
+/** A decoy goes down within this of where the room last saw its hider. */
+export const HUNT_DECOY_REACH = 3;
 /** Zaps reach this much further on the server than on screen, for latency. */
 export const HUNT_ZAP_SLACK = 1.5;
 
@@ -38,6 +42,8 @@ export const HUNT_POINTS = {
   /** A hider still hidden when the time runs out. */
   surviveRound: 150,
   taunt: 5,
+  /** A seeker zapped your decoy. */
+  decoy: 25,
   /** The last hider found in a round. */
   lastStanding: 50,
 } as const;

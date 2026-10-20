@@ -56,7 +56,8 @@ function MovingColliders({ sim }: { sim: HuntSim }) {
     pruneRemotes(now);
     const moving: Collider[] = [];
     for (const r of allRemotes()) {
-      if (!r.kind || !sampleRemote(r, now, frame)) continue;
+      // Our own decoys we walk through (we're standing in one the moment we leave it).
+      if (!r.kind || r.mine || !sampleRemote(r, now, frame)) continue;
       const kind = sim.map.kinds[r.kind];
       if (!kind) continue;
       let b = bounds.get(r.kind);

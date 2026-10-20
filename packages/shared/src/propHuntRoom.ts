@@ -7,7 +7,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // over its WebSocket. See Prop-hunt-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const HUNT_PROTOCOL_VERSION = 3;
+export const HUNT_PROTOCOL_VERSION = 4;
 /** Positions sent a second. */
 export const HUNT_POS_HZ = 10;
 
@@ -36,6 +36,8 @@ export const HuntClientMessage = z.discriminatedUnion("type", [
   /** A seeker's zap at `target` (as the seeker knows it), or at nothing; `at` is where the beam ends. */
   z.object({ type: z.literal("zap"), target: Id.nullable(), at: z.tuple([Cm, Cm, Cm]) }),
   z.object({ type: z.literal("taunt") }),
+  /** Leave a decoy of the prop you've become, here (`p`'s position and facing). */
+  z.object({ type: z.literal("decoy"), p: HuntPos }),
   z.object({ type: z.literal("sonar") }),
   z.object({ type: z.literal("rematch") }),
   RoomLeave,
@@ -73,6 +75,8 @@ export interface HuntPlayerView {
   score: number;
   /** Which of the map's hider spawns this player starts at this round. */
   spawn: number;
+  /** Decoys left this round. */
+  decoys: number;
 }
 
 export interface HuntLastRound {
@@ -119,6 +123,10 @@ export type HuntServerMessage =
   /** A hider was found: they're out until the next round (and known by their id to everyone). `by` is empty when a hider took over from seekers who all left. */
   | { type: "found"; id: string; tag: string; by: string }
   | { type: "taunt"; id: string; sound: number; forced: boolean }
+  /** A decoy prop, standing still at `p`. Its id looks like a hider's tag; `mine` only to the hider who left it. */
+  | { type: "decoy"; id: string; kind: string; p: HuntPos; mine: boolean }
+  /** A seeker (`by`) zapped a decoy: it's gone, and that counted as a miss. */
+  | { type: "decoyPopped"; id: string; by: string; mine: boolean }
   /** Hiders who weren't disguised when seeking began: shown to everyone for a moment. */
   | { type: "exposed"; ids: string[] }
   /** Only to the seeker who used it: which way the nearest hider is (a unit vector on the ground). */

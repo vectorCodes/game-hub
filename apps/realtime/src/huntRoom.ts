@@ -8,6 +8,8 @@
 // they seek, a hider who hasn't been found is known to seekers only by this round's tag.
 import {
   HUNT_COUNTDOWN_MS,
+  HUNT_DECOYS,
+  HUNT_DECOY_REACH,
   HUNT_DIZZY_MS,
   HUNT_FORCED_TAUNT,
   HUNT_HIDE_SECONDS,
@@ -36,6 +38,7 @@ import {
   rankHunt,
   seekersFor,
   type HuntLastRound,
+  type HuntPos,
   type HuntRole,
   type HuntSide,
   type HuntServerMessage,
@@ -65,6 +68,18 @@ interface Player extends CorePlayer {
   lastZapAt: number;
   lastTauntAt: number;
   sonarUsed: boolean;
+  /** Decoys left this round. */
+  decoys: number;
+}
+
+/** A decoy prop a hider left: to seekers, just another prop (its id looks like a hider's tag). */
+interface Decoy {
+  id: string;
+  owner: string;
+  kind: string;
+  /** As sent (cm, facing), and in world units for zaps. */
+  p: HuntPos;
+  pos: [number, number, number];
 }
 
 interface Room extends CoreRoom<Player, HuntStatus> {
@@ -79,6 +94,8 @@ interface Room extends CoreRoom<Player, HuntStatus> {
   standings: HuntStanding[] | null;
   /** This round's house (`houseFor`): a new one every round. */
   mapSeed: number;
+  /** This round's decoys still standing. */
+  decoys: Decoy[];
 }
 
 type Msg = HuntServerMessage;
@@ -103,6 +120,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       lastRound: null,
       standings: null,
       mapSeed: newHouseSeed(),
+      decoys: [],
     };
   }
 
@@ -123,6 +141,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       lastZapAt: 0,
       lastTauntAt: 0,
       sonarUsed: false,
+      decoys: HUNT_DECOYS,
     };
   }
 
@@ -195,6 +214,19 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         break;
       }
 
+      case "decoy": {
+        // A hider, disguised, near where the room last saw them, with a decoy left.
+        if (!this.hiding(me) || me.disguise === null || me.decoys <= 0 || !me.pos) return;
+        const pos: [number, number, number] = [msg.p[0] / 100, msg.p[1] / 100, msg.p[2] / 100];
+        if (Math.hypot(pos[0] - me.pos[0], pos[1] - me.pos[1], pos[2] - me.pos[2]) > HUNT_DECOY_REACH) return;
+        me.decoys -= 1;
+        const decoy: Decoy = { id: randomId(), owner: me.id, kind: me.disguise, p: msg.p, pos };
+        (room.decoys ??= []).push(decoy);
+        // Seekers, blindfolded, get it when they come out (it would show where a hider was).
+        this.broadcastEach((pid) => (room.status === "hide" && this.isSeeker(pid) ? null : this.decoyMessage(decoy, pid)));
+        break;
+      }
+
       case "sonar": {
         if (room.status !== "seek" || me.role !== "seeker" || me.sonarUsed || !me.pos) return;
         if ((room.phaseEndsAt! - now) / 1000 > this.sonarFrom()) return;
@@ -212,7 +244,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         if (room.status !== "results") return;
         room.players = room.players.filter((p) => !p.dnf);
         for (const p of room.players) Object.assign(p, this.roundReset(), { ready: false, role: null, score: 0, turns: 0 });
-        Object.assign(room, { status: "lobby", round: 0, rounds: 0, phaseEndsAt: null, seekStartedAt: null, nextSurviveAt: null, nextForcedAt: null, lastRound: null, standings: null });
+        Object.assign(room, { status: "lobby", round: 0, rounds: 0, phaseEndsAt: null, seekStartedAt: null, nextSurviveAt: null, nextForcedAt: null, lastRound: null, standings: null, decoys: [] });
         this.fixHost();
         break;
 
@@ -228,7 +260,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
 
   /** Everything a player starts a round with (besides their role). */
   private roundReset() {
-    return { found: false, hp: HUNT_HP, dizzyUntil: null, roundPoints: 0, disguise: null, pos: null, lastZapAt: 0, lastTauntAt: 0, sonarUsed: false, tag: randomId() };
+    return { found: false, hp: HUNT_HP, dizzyUntil: null, roundPoints: 0, disguise: null, pos: null, lastZapAt: 0, lastTauntAt: 0, sonarUsed: false, decoys: HUNT_DECOYS, tag: randomId() };
   }
 
   /** The next round's roles: seekers from those who've sought least (ties at random), everyone else hides. */
@@ -236,6 +268,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     const room = this.room!;
     room.round += 1;
     room.mapSeed = newHouseSeed();
+    room.decoys = [];
     const map = houseFor(room.mapSeed);
     const seated = shuffle(this.seated());
     const seekers = new Set(seated.slice().sort((a, b) => a.turns - b.turns).slice(0, seekersFor(seated.length)));
@@ -262,6 +295,8 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     room.phaseEndsAt = at + HUNT_SEEK_SECONDS * 1000;
     room.nextSurviveAt = at + HUNT_POINTS.surviveEverySeconds * 1000;
     room.nextForcedAt = room.phaseEndsAt - HUNT_FORCED_TAUNT.fromSecondsLeft * 1000;
+    // The decoys left while they hid.
+    for (const d of room.decoys ?? []) this.broadcastEach((pid) => (this.isSeeker(pid) ? this.decoyMessage(d, pid) : null));
     // Still themselves when the seekers come out: everyone gets a look at them.
     const bare = this.hidden().filter((p) => p.disguise === null);
     if (bare.length) this.broadcastEach((pid) => ({ type: "exposed", ids: bare.map((p) => this.idFor(p, pid)) }));
@@ -372,12 +407,24 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
       this.broadcast({ type: "found", id: hit.id, tag: hit.tag, by: me.id });
       return;
     }
+    // A decoy: it pops, its hider scores, and for the seeker it's a miss like any other.
+    const decoy = target === null ? undefined : room.decoys?.find((d) => d.id === target);
+    if (decoy && me.pos && Math.hypot(decoy.pos[0] - me.pos[0], decoy.pos[1] - me.pos[1], decoy.pos[2] - me.pos[2]) <= HUNT_ZAP_RANGE + HUNT_ZAP_SLACK) {
+      room.decoys = room.decoys.filter((d) => d !== decoy);
+      const owner = room.players.find((p) => p.id === decoy.owner);
+      if (owner) this.award(owner, HUNT_POINTS.decoy);
+      this.broadcastEach((pid) => ({ type: "decoyPopped", id: decoy.id, by: me.id, mine: pid === decoy.owner }));
+    }
     me.hp -= HUNT_MISS_DAMAGE;
     if (me.hp <= 0) {
       me.dizzyUntil = now + HUNT_DIZZY_MS;
       me.hp = HUNT_HP_AFTER_DIZZY;
     }
     this.broadcast({ type: "zapped", by: me.id, target: null, hit: false, at: beam });
+  }
+
+  private decoyMessage(d: Decoy, viewer: string): Msg {
+    return { type: "decoy", id: d.id, kind: d.kind, p: d.p, mine: viewer === d.owner };
   }
 
   private taunt(p: Player, forced: boolean) {
@@ -443,6 +490,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
     for (const p of this.hidden()) {
       if (p.id !== me.id && p.disguise !== null) this.send(ws, { type: "disguised", id: this.idFor(p, me.id), kind: p.disguise });
     }
+    if (room.status === "seek" || (room.status === "hide" && !this.isSeeker(me.id))) for (const d of room.decoys ?? []) this.send(ws, this.decoyMessage(d, me.id));
     if (room.status === "results" && room.standings) this.send(ws, { type: "results", standings: room.standings });
   }
 
@@ -465,6 +513,7 @@ export class HuntRoom extends RoomCore<Player, HuntStatus, Room, HuntClientMessa
         dizzyUntil: p.dizzyUntil,
         score: p.score,
         spawn: p.spawn,
+        decoys: p.decoys,
       })),
       round: room.round,
       rounds: room.rounds,

@@ -19,7 +19,8 @@ export type SimEvent =
   | { type: "land"; speed: number }
   | { type: "respawn" }
   | { type: "become"; kind: PropKind | null }
-  | { type: "taunt"; sound: number };
+  | { type: "taunt"; sound: number }
+  | { type: "decoy" };
 
 const TAUNT_COOLDOWN = HUNT_TAUNT_COOLDOWN_MS / 1000;
 

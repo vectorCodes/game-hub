@@ -1,9 +1,10 @@
 // The sandbox HUD: where you are, a stopwatch for timing routes, the sprint and taunt meters,
-// the crosshair with what E, Q and X do right now, the minimap, and the controls (H shows and hides them).
+// the crosshair with what E, Q, X and G do right now, the minimap, and the controls (H shows and hides them).
 // On phones the prompts are buttons and the touch controls take the bottom corners.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { HUNT_TAUNT_COOLDOWN_MS } from "@shadow/shared";
 import { actions } from "../input";
+import { useHuntRoom } from "../room";
 import { useHunt } from "../store";
 import { Minimap } from "./Minimap";
 import { TouchControls } from "./Touch";
@@ -127,14 +128,18 @@ function PromptButton({ children, onTap }: { children: ReactNode; onTap: () => v
   );
 }
 
-/** The crosshair, and what E, Q and X do right now (on phones, buttons that do it). */
+/** The crosshair, and what E, Q, X and G do right now (on phones, buttons that do it). */
 function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   const aimed = useHunt((s) => s.aimed);
   const disguise = useHunt((s) => s.disguise);
   const locked = useHunt((s) => s.locked);
+  const { room, you } = useHuntRoom();
   const prop = aimed === null ? undefined : sim.map.props[aimed];
   const target = prop ? sim.map.kinds[prop.kind] : null;
   const self = disguise ? sim.map.kinds[disguise] : null;
+  // In a match the room counts decoys; on your own they're endless (the last few stay).
+  const playing = room && (room.status === "hide" || room.status === "seek");
+  const decoys = playing ? (room.players.find((p) => p.id === you)?.decoys ?? 0) : null;
   return (
     <>
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -145,6 +150,7 @@ function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
           {target && target.id !== disguise && <PromptButton onTap={() => (actions.become = true)}>Become the {target.name.toLowerCase()}</PromptButton>}
           {self && <PromptButton onTap={() => (actions.lock = true)}>{locked ? "Unlock" : "Lock"}</PromptButton>}
           {self && <PromptButton onTap={() => (actions.unbecome = true)}>Be yourself</PromptButton>}
+          {self && decoys !== 0 && <PromptButton onTap={() => (actions.decoy = true)}>Decoy{decoys !== null && ` (${decoys})`}</PromptButton>}
         </div>
       ) : (
       <div className="pointer-events-none absolute inset-x-0 bottom-6 flex flex-col items-center gap-2 px-4 text-center">
@@ -157,6 +163,15 @@ function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
           <div className="glass px-4 py-2 text-sm text-stone-100">
             You're a <b>{self.name.toLowerCase()}</b> · <Key>Q</Key> {locked ? "unlock rotation" : "lock rotation"} · <Key>X</Key> be yourself
             {locked && <span className="ml-2 label-mono text-lamp-500">Locked</span>}
+            <div className="mt-1 text-stone-300">
+              {decoys === 0 ? (
+                "No decoys left this round"
+              ) : (
+                <>
+                  <Key>G</Key> leave a decoy here{decoys !== null && ` (${decoys} left)`}
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -175,6 +190,7 @@ const CONTROLS: [string, string][] = [
   ["Q", "lock rotation"],
   ["X", "be yourself"],
   ["F", "taunt"],
+  ["G", "leave a decoy (as a prop)"],
   ["T", "stopwatch"],
   ["R", "next spawn (sonar, in a match)"],
   ["M", "bigger map"],
