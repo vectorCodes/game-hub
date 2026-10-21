@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import type { MeView } from "@shadow/shared";
 import { api } from "../api/client";
 import { supabase } from "../lib/supabase";
+import { identify, resetIdentity, track } from "../lib/analytics";
 import { savedSessionIds } from "../games/shadow-guess/store";
 import { forgetClimbRuns, savedClimbRunIds } from "../games/sky-climb/guest";
 import { forgetGames, savedGameIds } from "../games/pair-pop/guest";
@@ -28,10 +29,12 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   init: () => {
     if (!supabase) return () => {};
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
       if (get().synced && user?.id === get().user?.id) return; // token refresh
       set({ user, synced: false });
+      if (user) identify(user.id, { email: user.email, name: user.user_metadata?.full_name });
+      if (event === "SIGNED_IN") track("signed_in");
       // Supabase calls inside this callback can deadlock, so defer the follow-up work.
       setTimeout(async () => {
         if (user) {
@@ -67,6 +70,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase?.auth.signOut();
+    resetIdentity();
   },
 
   refreshMe: async () => {

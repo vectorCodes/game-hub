@@ -19,6 +19,7 @@ import {
 } from "@shadow/shared";
 import { api } from "../../api/client";
 import { useAuth } from "../../auth/store";
+import { track } from "../../lib/analytics";
 import { play } from "../../lib/sound";
 import { TIMING } from "./config";
 import { dailyNumber, today } from "./deck";
@@ -137,6 +138,17 @@ export const usePairPop = create<PairPopState>((set, get) => {
       result: { ...local, replay: isReplay, saved: s.game ? "saving" : "local", rank: null, players: 0 },
     });
     play("win");
+    track("game_finished", {
+      game: "pair-pop",
+      mode: s.mode.kind,
+      level: s.mode.kind === "level" ? s.mode.level + 1 : null,
+      won: true,
+      score: local.score,
+      stars: local.stars,
+      moves: local.moves,
+      seconds: Math.round(local.seconds),
+      replay: isReplay,
+    });
 
     const { game, round } = s;
     if (!game) return;
@@ -228,6 +240,7 @@ export const usePairPop = create<PairPopState>((set, get) => {
         comboPop: null,
         result: null,
       }));
+      track("game_started", { game: "pair-pop", mode: mode.kind, level: mode.kind === "level" ? mode.level + 1 : null });
     },
 
     dealt: () => {

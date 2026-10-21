@@ -12,6 +12,7 @@ import {
   type RoomStanding,
   type RoomView,
 } from "@shadow/shared";
+import { track } from "../../lib/analytics";
 import { createRoomClient, type CoreRoomState, type Who } from "../../lib/realtimeRoom";
 import { packFrame, pushPacked, sampleLive, type LiveRider } from "./live";
 
@@ -48,9 +49,16 @@ export const useRoom = (): RoomState => client.useRoom();
 export const roomState = (): RoomState => client.state();
 
 /** Makes a room; resolves to its code, or null if the server couldn't. */
-export const createRoom = () => client.create();
+export const createRoom = async () => {
+  const code = await client.create();
+  if (code) track("room_created", { game: "sky-climb" });
+  return code;
+};
 export const peekRoom = (code: string) => client.peek(code) as Promise<RoomPeek | null>;
-export const joinRoom = (code: string, as: Who) => client.join(code, as);
+export const joinRoom = (code: string, as: Who) => {
+  track("room_joined", { game: "sky-climb" });
+  client.join(code, as);
+};
 export const leaveRoom = () => client.leave();
 export const clearRoomError = () => client.clearError();
 

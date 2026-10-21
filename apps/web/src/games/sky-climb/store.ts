@@ -18,6 +18,7 @@ import {
 import { ApiError, api } from "../../api/client";
 import { useAuth } from "../../auth/store";
 import { useAvatar } from "../../avatar/store";
+import { track } from "../../lib/analytics";
 import { CHARACTERS, FLOORS, zoneIndexOf, type CharacterId } from "./config";
 import { keepLocalGhost, localGhost, recordedFrames, resetRecording } from "./ghosts";
 import { guestProfile, recordGuestClimb, rememberClimbRun, saveGuestLoadout } from "./guest";
@@ -307,6 +308,7 @@ export const useClimb = create<State>((set, get) => ({
       toast: null,
     }));
     announceTwist(seed);
+    track("game_started", { game: "sky-climb", mode, challenge: !!challenge });
   },
 
   finish: async () => {
@@ -314,6 +316,15 @@ export const useClimb = create<State>((set, get) => ({
     if (phase !== "playing" && phase !== "summit") return;
     const endedAt = get().endedAt ?? Date.now();
     set({ phase: "over", endedAt });
+    track("game_finished", {
+      game: "sky-climb",
+      mode: race ? "race" : mode,
+      floor,
+      summit: floor >= FLOORS,
+      coins,
+      falls,
+      seconds: Math.round((endedAt - (startedAt ?? endedAt)) / 1000),
+    });
     if (race) return sendRoomFinish();
     const before = new Set(get().profile.achievements.filter((a) => a.unlocked).map((a) => a.id));
     const ghost = floor > 0 ? encodeGhost(recordedFrames()) : undefined;
@@ -480,6 +491,7 @@ export const useClimb = create<State>((set, get) => ({
   go: () => {
     if (get().phase !== "countdown") return;
     set({ phase: "playing" });
+    track("game_started", { game: "sky-climb", mode: "race" });
     announceTwist(get().seed);
   },
 

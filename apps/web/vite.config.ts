@@ -9,7 +9,13 @@ export default defineConfig({
   // three.js is most of the game chunk, and it's lazy-loaded only on game routes.
   build: { chunkSizeWarningLimit: 1200 },
   server: {
-    proxy: { "/api": api, "/models": api },
+    proxy: {
+      "/api": api,
+      "/models": api,
+      // PostHog, as the Vercel rewrites do in production.
+      "/ingest/static": { target: "https://us-assets.i.posthog.com", changeOrigin: true, rewrite: (p) => p.replace(/^\/ingest/, "") },
+      "/ingest": { target: "https://us.i.posthog.com", changeOrigin: true, rewrite: (p) => p.replace(/^\/ingest/, "") },
+    },
     // Allow sharing the dev/preview server through an ngrok tunnel.
     allowedHosts: [".ngrok-free.app", ".ngrok-free.dev", ".ngrok.app", ".ngrok.io"],
   },

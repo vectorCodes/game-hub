@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { GameMode, GuessResponse, GuessResult, SessionView } from "@shadow/shared";
 import { ApiError, api } from "../../api/client";
+import { track } from "../../lib/analytics";
 
 const BASE = "/api/shadow-guess";
 const storageKey = (mode: GameMode) => `shadow-guess:session:${mode}`;
@@ -85,10 +86,27 @@ interface GameState {
 }
 
 export const useShadowGame = create<GameState>((set, get) => {
+  /** Shows the server's latest session; a round that just ended is reported to analytics. */
+  function show(session: SessionView) {
+    const before = get().session;
+    set({ session, error: null });
+    if (before?.sessionId === session.sessionId && before.status === "playing" && session.status !== "playing") {
+      track("game_finished", {
+        game: "shadow-guess",
+        mode: session.mode,
+        won: session.status === "won",
+        score: session.score ?? 0,
+        guesses: session.wrongGuesses.length + (session.status === "won" ? 1 : 0),
+        hintUsed: session.hintUsed,
+        category: session.category,
+      });
+    }
+  }
+
   /** Runs a request that returns the updated session; surfaces failures as `error`. */
   async function update(request: () => Promise<SessionView>) {
     try {
-      set({ session: await request(), error: null });
+      show(await request());
     } catch (e) {
       set({ error: e instanceof ApiError ? e.code : "network_error" });
     }
@@ -97,6 +115,7 @@ export const useShadowGame = create<GameState>((set, get) => {
   async function startNew(mode: GameMode, previousSessionId?: string) {
     const session = await api<SessionView>(`${BASE}/sessions`, { body: { mode, previousSessionId } });
     remember(mode, session.sessionId);
+    track("game_started", { game: "shadow-guess", mode });
     return session;
   }
 
@@ -146,7 +165,7 @@ export const useShadowGame = create<GameState>((set, get) => {
         const res = await api<GuessResponse>(`${BASE}/sessions/${session.sessionId}/guess`, {
           body: { text },
         });
-        set({ session: res.session, error: null });
+        show(res.session);
         if (res.result === "correct") rememberSolved(res.session.sessionId);
         return res.close ? "close" : res.result;
       } catch (e) {
