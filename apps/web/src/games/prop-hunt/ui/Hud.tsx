@@ -180,56 +180,99 @@ function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   );
 }
 
-const CONTROLS: [string, string][] = [
-  ["Click", "steer the camera with the mouse or trackpad (Esc frees it)"],
-  ["← →  ↑ ↓", "turn and tilt the camera"],
-  ["WASD", "move (the camera follows behind you)"],
-  ["Space", "jump"],
-  ["Shift", "sprint"],
-  ["E", "become the prop you're looking at"],
-  ["Q", "lock rotation"],
-  ["X", "be yourself"],
-  ["F", "taunt"],
-  ["G", "leave a decoy (as a prop)"],
-  ["T", "stopwatch"],
-  ["R", "next spawn (sonar, in a match)"],
-  ["V", "scan (seekers, once a round)"],
-  ["M", "bigger map"],
-  ["Scroll", "zoom"],
-  ["Tab", "overview (not in a match)"],
-  ["H", "hide this"],
+type Group = "move" | "hide" | "seek" | "view";
+
+/** Every control, short enough for a tile. In a match only the ones for your role show. */
+const CONTROLS: { group: Group; key: string; what: string }[] = [
+  { group: "move", key: "WASD", what: "Move" },
+  { group: "move", key: "Space", what: "Jump" },
+  { group: "move", key: "Shift", what: "Sprint" },
+  { group: "move", key: "Click", what: "Mouse look" },
+  { group: "hide", key: "E", what: "Become prop" },
+  { group: "hide", key: "Q", what: "Lock turn" },
+  { group: "hide", key: "X", what: "Be yourself" },
+  { group: "hide", key: "F", what: "Taunt" },
+  { group: "hide", key: "G", what: "Decoy" },
+  { group: "seek", key: "V", what: "Scan" },
+  { group: "seek", key: "R", what: "Sonar" },
+  { group: "view", key: "M", what: "Big map" },
+  { group: "view", key: "Scroll", what: "Zoom" },
+  { group: "view", key: "←→↑↓", what: "Camera" },
+  { group: "view", key: "T", what: "Stopwatch" },
+  { group: "view", key: "Tab", what: "Overview" },
 ];
 
-/** Right: every control. H toggles it. */
+const GROUPS: { id: Group; name: string; dot: string }[] = [
+  { id: "move", name: "Move", dot: "bg-stone-300" },
+  { id: "hide", name: "Hide", dot: "bg-lamp-300" },
+  { id: "seek", name: "Seek", dot: "bg-ember-300" },
+  { id: "view", name: "View", dot: "bg-[#7ec8ff]" },
+];
+
+const OPEN_KEY = "propHunt.controls";
+function savedOpen() {
+  try {
+    return localStorage.getItem(OPEN_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+
+/** Right, under the minimap: the controls as grouped key tiles. H toggles them. */
 function Controls() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(savedOpen);
+  const { room, you } = useHuntRoom();
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code === "KeyH" && !e.repeat) setOpen((o) => !o);
+      if (e.code !== "KeyH" || e.repeat) return;
+      setOpen((o) => {
+        try {
+          localStorage.setItem(OPEN_KEY, o ? "closed" : "open");
+        } catch {
+          // Not remembered this time.
+        }
+        return !o;
+      });
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+
   if (!open)
     return (
-      <div className="glass pointer-events-none absolute top-60 right-4 px-3 py-2 text-xs text-stone-100">
+      <div className="glass pointer-events-none absolute top-60 right-4 hidden px-3 py-2 text-xs text-stone-300 sm:block">
         <Key>H</Key> controls
       </div>
     );
+
+  // In a match: just your role's keys (and none of the sandbox-only ones).
+  const role = room && room.status !== "lobby" ? room.players.find((p) => p.id === you)?.role : undefined;
+  const groups = GROUPS.filter((g) => (role === "hider" ? g.id !== "seek" : role === "seeker" ? g.id !== "hide" : true));
+  const shown = (c: (typeof CONTROLS)[number]) => !(role && c.key === "Tab");
+
   return (
-    // Under the minimap.
-    <div className="glass pointer-events-none absolute top-60 right-4 hidden w-60 p-4 text-xs text-stone-100 sm:block">
-      <div className="mb-2 label-mono text-stone-400">Controls</div>
-      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
-        {CONTROLS.map(([key, what]) => (
-          <div key={key} className="contents">
-            <dt>
-              <Key>{key}</Key>
-            </dt>
-            <dd className="text-stone-300">{what}</dd>
+    <div className="glass pointer-events-none absolute top-60 right-4 hidden w-60 p-3 text-stone-100 sm:block">
+      {groups.map((g) => (
+        <section key={g.id} className="mb-2.5 last:mb-0">
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] text-stone-400 uppercase">
+            <span className={`size-1.5 rounded-full ${g.dot}`} />
+            {g.name}
           </div>
-        ))}
-      </dl>
+          <div className="grid grid-cols-2 gap-1">
+            {CONTROLS.filter((c) => c.group === g.id && shown(c)).map((c) => (
+              <div key={c.key} className="flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-1.5 py-1 ring-1 ring-white/[0.06]">
+                <kbd className="min-w-6 shrink-0 rounded-md border-b-2 border-stone-400 bg-stone-100 px-1 text-center font-mono text-[10px] leading-4 font-semibold text-stone-950">
+                  {c.key}
+                </kbd>
+                <span className="truncate text-[11px] text-stone-200">{c.what}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+      <div className="mt-2 text-right text-[10px] text-stone-500">
+        <Key>H</Key> hide
+      </div>
     </div>
   );
 }
