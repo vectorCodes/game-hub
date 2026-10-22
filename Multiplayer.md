@@ -2,7 +2,7 @@
 
 Friends race on the same tower in rooms of 1–3 players. Anyone can create a room and share
 its 5-letter code or link, and friends join or leave as they like. The first player to the
-summit wins. If nobody reaches it, the highest floor when time runs out wins.
+top (floor 250) wins. If nobody reaches it, the highest floor when time runs out wins.
 
 **Ghosts, "beat my climb" challenge links and Live climbers stay as they are.** While you are
 in a room, they just aren't loaded.
@@ -16,8 +16,8 @@ in a room, they just aren't loaded.
 - **Roles.** Anyone can create a room, and the creator is the host. Anyone with the code or
   link can join until the race starts. Anyone can leave at any time.
 - **Race.** Everyone climbs the same freshly seeded tower, starting at the same moment.
-  - The first player to the summit wins.
-  - Otherwise, at the time limit (default 5 min), the highest floor wins.
+  - The first player to the top of the tower (floor 250) wins.
+  - Otherwise, at the time limit (default 15 min), the highest floor wins.
   - A tie on floor goes to whoever reached it first.
 - **Rematch.** After the results, "Play again" returns the room to the lobby and draws a new
   tower.
@@ -113,13 +113,13 @@ lobby ──host presses Start──▶ countdown ──startAt reached──▶
     takes over.
   - The host can press Start once every player is ready.
 - **countdown**
-  - The server picks a seed (`room-<code>-<round>-<random>`) and sets
+  - The server picks a seed (`room4-<code>-<round>-<random>`: the `room4-` prefix makes it a version 4 tower, up to floor 250) and sets
     `startAt = now + 3500 ms`.
   - It broadcasts both values and sets an alarm for `startAt`.
 - **racing**
   - The server relays positions and records each player's best floor and the time they
     reached it.
-  - The race ends when every player has reached the summit or stopped, when the time-limit
+  - The race ends when every player has reached the top or stopped, when the time-limit
     alarm fires, or when everyone has left.
 - **results**
   - The server broadcasts the final standings. Players who left mid-race are marked **DNF**.
@@ -150,7 +150,7 @@ message has a `type`.
 | `start` | – | Host only, in the lobby, when everyone is ready |
 | `pos` | `{ p: [x, y, z, facing, pose] }` | The same packed format as `live.ts`, sent at 10 Hz |
 | `progress` | `{ floor }` | Sent when a new highest floor is reached |
-| `finish` | – | Summit, or the player stops |
+| `finish` | – | Reached the top, or the player stops |
 | `rematch` | – | From results, back to the lobby |
 | `leave` | – | |
 | `ping` | `{ t }` | Clock sync |
@@ -167,8 +167,8 @@ message has a `type`.
 | `pong` | `{ t, now }` |
 | `error` | `{ code: "full" \| "started" \| "not_found" \| "bad_token" \| "outdated" }` |
 
-**Constants:** `ROOM_MAX_PLAYERS = 3`, `ROOM_RACE_SECONDS = 300`, `ROOM_POS_HZ = 10`,
-`ROOM_COUNTDOWN_MS = 3500`, `ROOM_PROTOCOL_VERSION = 1`.
+**Constants:** `ROOM_MAX_PLAYERS = 3`, `ROOM_RACE_SECONDS = 900`, `ROOM_POS_HZ = 10`,
+`ROOM_COUNTDOWN_MS = 3500`, `ROOM_PROTOCOL_VERSION = 2`.
 
 **Clock sync.** On connecting, the client sends 5 pings and keeps the result with the lowest
 round-trip time: `offset = now + rtt/2 − localNow`. The local start is `startAt − offset`.

@@ -91,7 +91,7 @@ function HeightBar({ floor, best, top }: { floor: number; best: number; top: num
       {CHECKPOINTS.filter((c) => c > 0 && c < top).map((c) => (
         <span key={c} className="absolute -left-0.5 h-px w-3 bg-white/60" style={{ bottom: at(c) }} />
       ))}
-      {/* The summit, halfway up a tower that goes on to the Moon. */}
+      {/* The summit and the Moon, milestones on a tower that goes on into deep space. */}
       {top > FLOORS && <span className="absolute left-3 translate-y-1/2 text-[10px]" style={{ bottom: at(FLOORS) }}>🏁</span>}
       {top > MOON && <span className="absolute left-3 translate-y-1/2 text-[10px]" style={{ bottom: at(MOON) }}>🌕</span>}
       {best > 0 && <span className="absolute -left-2 h-0.5 w-6 rounded bg-lamp-300" style={{ bottom: at(best) }} title="Your best" />}

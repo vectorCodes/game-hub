@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CLIMB_ACHIEVEMENTS, type ClimbProfileView } from "@shadow/shared";
 import { api } from "../../api/client";
 import { ChapterHeader, StatStrip } from "../../components/Editorial";
-import { SKY_CLIMB_HOME } from "./config";
+import { SKY_CLIMB_HOME, TOP } from "./config";
 
 export function SkyClimbProfileSection() {
   const [profile, setProfile] = useState<ClimbProfileView | null>(null);
@@ -16,7 +16,7 @@ export function SkyClimbProfileSection() {
 
   return (
     <section className="animate-rise [animation-delay:200ms]">
-      <ChapterHeader number="02" title="Sky Climb" note="One tower a day, a hundred floors." link={{ to: SKY_CLIMB_HOME, label: "Today's tower" }} />
+      <ChapterHeader number="02" title="Sky Climb" note={`One tower a day, ${TOP} floors.`} link={{ to: SKY_CLIMB_HOME, label: "Today's tower" }} />
       <StatStrip
         stats={[
           { label: "Best floor", value: profile.metrics.bestFloor },

@@ -78,7 +78,7 @@ export default function SkyClimbHome() {
           <h2 className="mt-4 text-section">Easy at the bottom. Brutal at the top.</h2>
           <p className="mt-4 text-lead">
             Every zone changes the view and the rules. The jumps get longer, the platforms smaller, and the sky darker. Past the
-            summit, gravity loosens its grip.
+            summit, gravity loosens its grip. Past the Moon, a black hole starts to pull.
           </p>
         </Reveal>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -39,7 +39,7 @@ export const games: GameEntry[] = [
     id: "sky-climb",
     title: "Sky Climb",
     shortTitle: "Climb",
-    tagline: "One tower a day. Jump from meadow to storm to the stars. Don't look down.",
+    tagline: "One tower a day. Jump from meadow to storm, past the Moon, into deep space. Don't look down.",
     path: "/games/sky-climb",
     Landing: lazy(() => import("./sky-climb/SkyClimbHome")),
     Component: lazy(() => import("./sky-climb/SkyClimbPage")),
