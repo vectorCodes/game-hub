@@ -56,7 +56,7 @@ export function PropHuntCover() {
 export function PropHuntStatus() {
   return (
     <span>
-      Rooms of {HUNT_MIN_PLAYERS}–{HUNT_MAX_PLAYERS} · <span className="text-stone-200">invite friends with a code</span>
+      Rooms of {HUNT_MIN_PLAYERS}–{HUNT_MAX_PLAYERS} · <span className="text-stone-200">desktop only</span>
     </span>
   );
 }

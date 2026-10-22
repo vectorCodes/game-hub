@@ -7,6 +7,8 @@ import { HUNT_FORCED_TAUNT, HUNT_HIDE_SECONDS, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYER
 import { Reveal } from "../../components/Reveal";
 import { play } from "../../lib/sound";
 import { PROP_HUNT_PATH } from "./config";
+import { isTouch } from "./input";
+import { DesktopOnlyNote } from "./ui/DesktopOnly";
 
 // Fixed print colours, like the hub covers: the drawing looks the same on any scheme.
 const INK = "#2a2216";
@@ -249,6 +251,8 @@ const clock = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).
 
 export default function PropHuntHome() {
   const total = ROUND.reduce((n, p) => n + p.seconds, 0);
+  // Keyboard and mouse only: phones and tablets see a note instead of the way in.
+  const touch = useMemo(isTouch, []);
   return (
     <div className="overflow-x-clip pb-24">
       {/* ---------- Hero: the house, cut open ---------- */}
@@ -266,14 +270,18 @@ export default function PropHuntHome() {
             <p className="mx-auto mt-5 max-w-lg animate-rise text-lead [animation-delay:160ms] lg:mx-0">
               You're toy-sized in a huge house. Hide by becoming a mug, a book, a rubber duck. Or hunt your friends with a zapper and a hunch.
             </p>
-            <div className="mx-auto mt-9 flex max-w-xs animate-rise flex-col items-stretch gap-3 [animation-delay:240ms] sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:justify-start">
-              <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary">
-                Play with friends <span aria-hidden>→</span>
-              </Link>
-              <Link to={PROP_HUNT_PATH} className="btn btn-secondary">
-                Explore the house alone
-              </Link>
-            </div>
+            {touch ? (
+              <DesktopOnlyNote className="mt-9 animate-rise text-left [animation-delay:240ms]" />
+            ) : (
+              <div className="mx-auto mt-9 flex max-w-xs animate-rise flex-col items-stretch gap-3 [animation-delay:240ms] sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:justify-start">
+                <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary">
+                  Play with friends <span aria-hidden>→</span>
+                </Link>
+                <Link to={PROP_HUNT_PATH} className="btn btn-secondary">
+                  Explore the house alone
+                </Link>
+              </div>
+            )}
             <dl className="mx-auto mt-10 grid max-w-md animate-rise grid-cols-3 border-y hairline py-4 [animation-delay:320ms] lg:mx-0">
               {[
                 [`${HUNT_HIDE_SECONDS} s`, "to hide"],
@@ -382,9 +390,13 @@ export default function PropHuntHome() {
           <p className="relative label-mono text-[#cc922f]">Rooms of {HUNT_MIN_PLAYERS} to {HUNT_MAX_PLAYERS}</p>
           <h2 className="relative mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">Get your friends in the house.</h2>
           <p className="relative mx-auto mt-3 max-w-lg font-serif text-[#f3ead9]/70">Make a room, send the code, and see who can stay a teapot the longest.</p>
-          <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary relative mt-8">
-            Make a room <span aria-hidden>→</span>
-          </Link>
+          {touch ? (
+            <p className="relative mt-8 font-serif text-sm text-[#f3ead9]/70">🖥️ Desktop only: open Prop Hunt on your Mac or PC to make a room.</p>
+          ) : (
+            <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary relative mt-8">
+              Make a room <span aria-hidden>→</span>
+            </Link>
+          )}
         </Reveal>
       </section>
     </div>

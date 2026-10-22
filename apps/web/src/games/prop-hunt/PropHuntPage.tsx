@@ -30,6 +30,7 @@ import { TauntNotes } from "./scene/Taunt";
 import { Hud } from "./ui/Hud";
 import { Announcements, Blindfold, Countdown, SeekerBar } from "./ui/Hunt";
 import { FriendsCard, Lobby, MatchBanner, RoundCard } from "./ui/Lobby";
+import { DesktopOnlyScreen } from "./ui/DesktopOnly";
 import { Avatar, CameraRig, Driver, newView } from "./scene/Play";
 
 /** The middle of the property, where the camera looks first. */
@@ -121,7 +122,13 @@ function Labels({ upstairs }: { upstairs: boolean }) {
 
 type Mode = "walk" | "overview";
 
+/** Keyboard and mouse only: phones and tablets (room links included) get a note instead of the house. */
 export default function PropHuntPage() {
+  const touch = useMemo(isTouch, []);
+  return touch ? <DesktopOnlyScreen /> : <PropHuntGame />;
+}
+
+function PropHuntGame() {
   const [mode, setMode] = useState<Mode>("walk");
   const [upstairs, setUpstairs] = useState(true);
   const [labels, setLabels] = useState(true);
