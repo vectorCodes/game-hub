@@ -9,7 +9,7 @@ export interface StepSpec {
   size: Size;
   /** Overrides the zone's piece for this size. */
   piece?: string;
-  kind: "static" | "crumble" | "vanish" | "orbit";
+  kind: "static" | "crumble" | "vanish" | "orbit" | "bounce";
   rise: number;
   /** Horizontal gap from the previous platform, edge to edge. */
   gap: number;
@@ -27,6 +27,12 @@ export interface StepSpec {
   orbit?: number;
   /** A meteor lands on it, this far through the shower's cycle (0…1), this far along it (−1…1 of its half-length). */
   meteor?: { at: number; along: number };
+  /** A comet crosses it, this far through the run's cycle (0…1), heading this way along it. */
+  comet?: { at: number; dir: 1 | -1 };
+  /** A laser beam turns on it, this far round (0…1) at the start, this way round. */
+  beam?: { at: number; dir: 1 | -1 };
+  /** Wormhole Maze: three wormholes on it, and which of them (0…2) is gold at the start. */
+  maze?: number;
 }
 
 /** Bridge planks collapse one after another, this long apart, once the first is stepped on. */
@@ -71,4 +77,39 @@ export const SET_PIECE_STEPS: Record<SetPieceId, StepSpec[]> = {
     dry: true,
     meteor: { at: (i * 0.3) % 1, along: i % 2 ? 0.45 : -0.45 },
   })),
+  // Three pads in a row, each throwing you far up the spiral onto the next: steer as you fall.
+  craters: [
+    { size: "normal", kind: "bounce", rise: 0.7, gap: 1.2 },
+    { size: "normal", kind: "bounce", rise: 3.3, gap: 1.8 },
+    { size: "normal", kind: "bounce", rise: 3.3, gap: 2 },
+    { size: "big", kind: "static", rise: 3.3, gap: 1.7, dry: true },
+  ],
+  // Long ledges with comets crossing in a wave, each the other way from the last: time the jumps.
+  comets: [0, 1, 2, 3, 4, 5].map((i) => ({
+    size: "long",
+    kind: "static",
+    rise: 0.75,
+    gap: 1.4,
+    dry: true,
+    comet: { at: (i * 0.27) % 1, dir: i % 2 ? -1 : 1 },
+  })),
+  // Beams turning opposite ways on long ledges, each a little behind the last: wait for yours, jump, go.
+  beams: [0, 1, 2, 3, 4, 5].map((i) => ({
+    size: "long",
+    kind: "static",
+    rise: 0.8,
+    gap: 1.5,
+    dry: true,
+    beam: { at: i * 0.15, dir: i % 2 ? -1 : 1 },
+  })),
+  // Each ledge too far above the last to jump: only a wormhole gets you up, and only the gold one.
+  maze: [
+    { size: "big", kind: "static", rise: 0.7, gap: 1, dry: true, maze: 1 },
+    { size: "big", kind: "static", rise: 3.6, gap: 4, dry: true, maze: 2 },
+    { size: "big", kind: "static", rise: 3.6, gap: 4, dry: true, maze: 0 },
+    { size: "big", kind: "static", rise: 3.6, gap: 4, dry: true, maze: 2 },
+    { size: "big", kind: "static", rise: 3.6, gap: 4, dry: true },
+  ],
+  // Like the bridge, but slower to go and further apart, with the pull at its strongest.
+  horizon: [0, 1, 2, 3, 4].map((i) => ({ size: "long", kind: "crumble", rise: 0.45, gap: 0.8, collapseAfter: 2.8 + i * 1.4 })),
 };

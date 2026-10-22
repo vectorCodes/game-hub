@@ -2,13 +2,14 @@
 // ROOM_MAX_PLAYERS players. It is the only judge of who started and who won; clients just show
 // what it says. Joining, reconnecting, the host and saving are RoomCore's (roomCore.ts).
 import {
-  CLIMB_FLOORS,
   CLIMB_MIN_SECONDS_PER_FLOOR,
+  CLIMB_TOP_FLOOR,
   ROOM_COUNTDOWN_MS,
   ROOM_MAX_PLAYERS,
   ROOM_PROTOCOL_VERSION,
   ROOM_RACE_SECONDS,
   RoomClientMessage,
+  climbTop,
   rankRoom,
   type RoomServerMessage,
   type RoomStanding,
@@ -74,7 +75,7 @@ export class ClimbRoom extends RoomCore<Player, RoomStatus, Room, RoomClientMess
         const others = this.seated().filter((p) => p.id !== me.id);
         if (others.some((p) => !p.ready || !p.connected)) return this.send(ws, { type: "error", code: "not_ready" });
         room.round += 1;
-        room.seed = `room2-${room.code}-${room.round}-${randomId()}`;
+        room.seed = `room4-${room.code}-${room.round}-${randomId()}`;
         room.startAt = now + ROOM_COUNTDOWN_MS;
         room.endsAt = room.startAt + ROOM_RACE_SECONDS * 1000;
         room.status = "countdown";
@@ -90,7 +91,7 @@ export class ClimbRoom extends RoomCore<Player, RoomStatus, Room, RoomClientMess
         if (elapsed < msg.floor * CLIMB_MIN_SECONDS_PER_FLOOR * 1000) return;
         me.floor = msg.floor;
         me.floorMs = elapsed;
-        if (me.floor >= CLIMB_FLOORS) me.finished = true;
+        if (me.floor >= climbTop(room.seed!)) me.finished = true;
         this.broadcast({ type: "progress", id: me.id, floor: me.floor, at: elapsed });
         this.tick(now);
         break;
@@ -148,7 +149,7 @@ export class ClimbRoom extends RoomCore<Player, RoomStatus, Room, RoomClientMess
   private endRace() {
     const room = this.room!;
     room.status = "results";
-    room.standings = rankRoom(room.players);
+    room.standings = rankRoom(room.players, room.seed ? climbTop(room.seed) : CLIMB_TOP_FLOOR);
     this.broadcast({ type: "results", standings: room.standings });
   }
 

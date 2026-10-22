@@ -42,6 +42,7 @@ export const TRAIL_SWATCH: Record<string, string> = {
   "trail:gold": "radial-gradient(circle at 35% 35%, #fff6d2, #eec266 40%, #a8721f 90%)",
   "trail:stardust": "radial-gradient(circle at 30% 30%, #ffffff, #b9a6ff 30%, #2a2466 85%)",
   "trail:comet": "radial-gradient(circle at 70% 30%, #ffffff, #7fd8ff 25%, #1b3f73 70%, #0a1024)",
+  "trail:blackhole": "radial-gradient(circle at 50% 50%, #000000 28%, #fff0c8 34%, #ff8a3d 48%, #3a1a0a 75%, #0a0503)",
 };
 
 const ERRORS: Record<string, string> = {

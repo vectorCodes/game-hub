@@ -1,9 +1,10 @@
 // The power-up orbs floating over platforms, and what the active ones look like on the
 // climber: a shield bubble, a magnet's pulsing ring, a halo while a double jump is ready,
-// and a ring under the feet while floating on the feather.
+// a ring under the feet while floating on the feather, a flame while the thruster burns, and
+// an anchor's chain ring while the black hole can't pull you.
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Group, Mesh, MeshBasicMaterial } from "three";
+import { AdditiveBlending, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import { input } from "../input";
 import { POWER, POWERUPS, type PowerupKind } from "../config";
 import type { Powerup } from "../tower";
@@ -46,6 +47,26 @@ function Shape({ kind, color }: { kind: PowerupKind; color: string }) {
           <torusGeometry args={[0.15, 0.06, 8, 16, Math.PI * 1.2]} />
           {mat}
         </mesh>
+      );
+    case "thruster":
+      return (
+        <mesh>
+          <coneGeometry args={[0.12, 0.38, 8]} />
+          {mat}
+        </mesh>
+      );
+    case "anchor":
+      return (
+        <>
+          <mesh position={[0, 0.06, 0]} scale={[0.35, 1, 0.35]}>
+            <boxGeometry args={[0.15, 0.32, 0.15]} />
+            {mat}
+          </mesh>
+          <mesh position={[0, -0.06, 0]} rotation={[0, 0, Math.PI]}>
+            <torusGeometry args={[0.13, 0.04, 8, 16, Math.PI]} />
+            {mat}
+          </mesh>
+        </>
       );
   }
 }
@@ -103,6 +124,8 @@ export function PowerAuras() {
   const halo = useRef<Mesh>(null);
   const float = useRef<Mesh>(null);
   const burst = useRef<Mesh>(null);
+  const flame = useRef<Mesh>(null);
+  const anchor = useRef<Mesh>(null);
   const burstAt = useRef(-10);
 
   useEffect(
@@ -149,6 +172,17 @@ export function PowerAuras() {
       float.current.scale.setScalar(0.5 + Math.sin(t * 9) * 0.06);
     }
 
+    // Thruster: a flickering flame under the feet while it burns.
+    if (set(flame.current, alive && sim.thrusting, pl.x, pl.y - 0.25, pl.z) && flame.current) {
+      flame.current.scale.set(1, 0.8 + Math.random() * 0.5, 1);
+    }
+
+    // Anchor: a heavy ring round the feet, turning slowly.
+    if (set(anchor.current, alive && fx.anchor > 0, pl.x, pl.y + 0.08, pl.z) && anchor.current) {
+      anchor.current.rotation.z = t * 1.5;
+      (anchor.current.material as MeshBasicMaterial).opacity = fx.anchor < 2 && Math.floor(t * 8) % 2 === 0 ? 0.2 : 0.75;
+    }
+
     // The ring that spreads from the feet on a mid-air jump.
     const since = t - burstAt.current;
     if (set(burst.current, since < 0.4, pl.x, pl.y + 0.05, pl.z) && burst.current) {
@@ -174,6 +208,14 @@ export function PowerAuras() {
       <mesh ref={float} visible={false} rotation={[-Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1, 0.04, 8, 32]} />
         <meshBasicMaterial color={POWERUPS.feather.color} transparent opacity={0.8} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={flame} visible={false} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.16, 0.6, 10, 1, true]} />
+        <meshBasicMaterial color={POWERUPS.thruster.color} transparent opacity={0.85} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={anchor} visible={false} rotation={[-Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.45, 0.05, 6, 12]} />
+        <meshBasicMaterial color={POWERUPS.anchor.color} transparent depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh ref={burst} visible={false} rotation={[-Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1, 0.04, 8, 32]} />

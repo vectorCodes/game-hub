@@ -16,6 +16,10 @@ const CHORDS: number[][] = [
   [196.0, 293.66, 587.33], // Low Orbit: open G, wide and floating
   [233.08, 277.18, 349.23], // Nebula: B♭ minor, dreamy
   [261.63, 392.0, 659.25], // The Moon: C major, wide open
+  [329.63, 493.88, 739.99], // Ring Belt: open E, icy and high
+  [220.0, 329.63, 493.88], // Pulsar: A sus2, cold and pulsing
+  [138.59, 207.65, 293.66], // Black Hole: low and uneasy, a tritone on top
+  [261.63, 392.0, 783.99], // Escape Velocity: bright open C, out into the light
 ];
 
 interface Pad {

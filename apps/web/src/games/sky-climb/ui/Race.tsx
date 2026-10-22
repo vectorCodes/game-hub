@@ -79,7 +79,7 @@ const STEP = ["h-28", "h-20", "h-14"];
 
 function result(s: RoomStanding) {
   if (s.dnf) return "Left the race";
-  if (s.summit) return `Summit in ${formatDuration((s.ms ?? 0) / 1000)}`;
+  if (s.summit) return `Reached the top in ${formatDuration((s.ms ?? 0) / 1000)}`;
   return s.floor > 0 ? `Floor ${s.floor}` : "Didn't climb";
 }
 

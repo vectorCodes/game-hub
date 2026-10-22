@@ -9,3 +9,4 @@ apps/api/.pglite
 .env*
 .dev.vars
 .wrangler
+*.tsbuildinfo

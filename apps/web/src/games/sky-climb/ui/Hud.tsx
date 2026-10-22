@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { climbTop, TWISTS } from "@shadow/shared";
 import { useSound } from "../../../lib/sound";
-import { CANNON, CHECKPOINTS, FLOORS, POWERUPS, POWERUP_KINDS, ZONES, zonesUpTo } from "../config";
+import { CANNON, CHECKPOINTS, FLOORS, MOON, POWERUPS, POWERUP_KINDS, ZONES, zonesUpTo } from "../config";
 import { riderMarks, type RiderKind, type RiderMark } from "../ghosts";
 import { pressJump, setStick } from "../input";
 import { liveCannon, liveEffects } from "../powerups";
@@ -22,6 +22,10 @@ const ZONE_COLORS: Record<string, string> = {
   orbit: "#7d86d8",
   nebula: "#c77ad6",
   moon: "#ecebe4",
+  rings: "#8fc8f0",
+  pulsar: "#a8c4ff",
+  blackhole: "#ff8a3d",
+  escape: "#fff6ea",
 };
 
 function Clock({ startedAt, endedAt }: { startedAt: number; endedAt: number | null }) {
@@ -73,8 +77,8 @@ function HeightBar({ floor, best, top }: { floor: number; best: number; top: num
   return (
     <div className="pointer-events-none absolute top-1/2 right-3 h-[52%] w-2 -translate-y-1/2 sm:right-5 [@media(max-height:500px)]:top-[42%] [@media(max-height:500px)]:h-[36%]" aria-hidden>
       <div className="relative h-full w-full overflow-hidden rounded-full ring-1 ring-white/15">
-        {zones.slice(0, -1).map((z, i) => {
-          const end = zones[i + 1].from;
+        {zones.map((z, i) => {
+          const end = zones[i + 1]?.from ?? top;
           return (
             <div
               key={z.id}
@@ -89,6 +93,7 @@ function HeightBar({ floor, best, top }: { floor: number; best: number; top: num
       ))}
       {/* The summit, halfway up a tower that goes on to the Moon. */}
       {top > FLOORS && <span className="absolute left-3 translate-y-1/2 text-[10px]" style={{ bottom: at(FLOORS) }}>🏁</span>}
+      {top > MOON && <span className="absolute left-3 translate-y-1/2 text-[10px]" style={{ bottom: at(MOON) }}>🌕</span>}
       {best > 0 && <span className="absolute -left-2 h-0.5 w-6 rounded bg-lamp-300" style={{ bottom: at(best) }} title="Your best" />}
       {marks.map((m) => (
         <span
@@ -105,7 +110,7 @@ function HeightBar({ floor, best, top }: { floor: number; best: number; top: num
         className="absolute left-1/2 h-4 w-4 -translate-x-1/2 translate-y-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)] ring-2 ring-lamp-400 transition-[bottom] duration-300"
         style={{ bottom: at(floor) }}
       />
-      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm">{top > FLOORS ? "🌕" : "🏁"}</span>
+      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm">{top > MOON ? "✨" : top > FLOORS ? "🌕" : "🏁"}</span>
     </div>
   );
 }

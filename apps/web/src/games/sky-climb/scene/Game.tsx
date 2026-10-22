@@ -21,7 +21,7 @@ import { Clouds, Island, SkyAndLight, SpaceBackdrop, Stars, Weather } from "./En
 import { Ghosts } from "./Ghosts";
 import { PowerAuras, Pickups } from "./Powerups";
 import { emitSimEvent, onSimEvent, preloadKit, SimContext, useSim } from "./shared";
-import { Coins, Core, Hazards, Platforms } from "./TowerView";
+import { Coins, Core, Hazards, Platforms, Wormholes } from "./TowerView";
 
 preloadKit();
 preloadCharacter();
@@ -92,6 +92,9 @@ function Driver() {
         case "spring":
           play("spring");
           break;
+        case "bounce":
+          play("boing");
+          break;
         case "airjump":
           play("jump");
           break;
@@ -139,8 +142,24 @@ function Driver() {
           recordCheer();
           store.showToast({ title: "🏁 Summit!", subtitle: "The sky goes on: climb to the Moon", tone: "best" });
           break;
+        case "moon":
+          play("win");
+          recordCheer();
+          store.showToast({ title: "🌕 The Moon!", subtitle: "Plant your flag. Deep space is still above", tone: "best" });
+          break;
         case "impact":
           play("thunder");
+          break;
+        case "comet":
+          play("turn");
+          break;
+        case "warp":
+          if (e.up) {
+            play("zap");
+          } else {
+            play("zapMiss");
+            store.showToast({ title: "🌀 Wrong wormhole!", subtitle: "Back a floor. Wait for the gold one", tone: "event" });
+          }
           break;
         case "cannonLoad":
           play("cannonLoad");
@@ -291,6 +310,7 @@ export default function Game() {
             <Core tower={tower} />
             <Platforms />
             <Hazards />
+            <Wormholes />
             <Coins />
             <Cannons />
             <Updrafts />

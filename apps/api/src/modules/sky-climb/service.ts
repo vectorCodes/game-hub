@@ -219,7 +219,7 @@ export class SkyClimbService {
         coins: Math.max(run.coins, body.coins),
         falls: Math.max(run.falls, body.falls),
       };
-      // No higher than the tower goes (a summit-high tower stops at 100, the Moon at 150).
+      // No higher than the tower goes (a summit-high tower stops at 100, the Moon at 150, deep space at 250).
       const floor = Math.min(body.floor, climbTop(run.seed));
       if (floor > run.bestFloor) {
         if (elapsedMs < floor * CLIMB_MIN_SECONDS_PER_FLOOR * 1000) throw new TooFastError("Climbed too fast");

@@ -26,7 +26,7 @@ import {
   type LineBasicMaterial,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { FLOORS, zoneOf } from "../config";
+import { BLACK_HOLE, FLOORS, MOON, PULSE, TOP, ZONES, zoneOf } from "../config";
 import { makeRng, type Tower } from "../tower";
 import { lookAt, newLook, onSimEvent, useKit, useSim } from "./shared";
 
@@ -233,12 +233,18 @@ export function Stars() {
   );
 }
 
+const PULSAR_FROM = ZONES.find((z) => z.id === "pulsar")!.from;
+const HOLE_FROM = ZONES.find((z) => z.id === "blackhole")!.from;
+
 /** Fades in from a few floors below the summit, so space is there to see as you top out. */
 const spaceFade = (height: number, from = FLOORS - 6, over = 10) => Math.min(1, Math.max(0, (height - from) / over));
 
 /**
  * Past the summit: a blue planet far below, a ringed giant off to one side, and the Moon
- * growing overhead as you near it. All far away, so they move with the camera like the sky.
+ * growing overhead as you near it. Past the Moon it drops away behind you, the giant swells
+ * as you climb into its rings, then a pulsar flashes and sweeps its beams on the platforms'
+ * beat, and last the black hole looms larger and larger, until you're out into the light.
+ * All far away, so they move with the camera like the sky.
  */
 export function SpaceBackdrop() {
   const sim = useSim();
@@ -248,7 +254,15 @@ export function SpaceBackdrop() {
   const halo = useRef<Mesh>(null);
   const giant = useRef<Group>(null);
   const moon = useRef<Mesh>(null);
+  const pulsar = useRef<Group>(null);
+  const pulsarHalo = useRef<Mesh>(null);
+  const pulsarBeams = useRef<Group>(null);
+  const hole = useRef<Group>(null);
+  const disk = useRef<Group>(null);
+  const photon = useRef<Mesh>(null);
   const tall = sim.tower.top > FLOORS;
+  const deep = sim.tower.top > MOON;
+  const beat = PULSE.beat / (sim.rules.tempo ?? 1);
 
   useFrame(() => {
     const g = group.current;
@@ -265,10 +279,40 @@ export function SpaceBackdrop() {
       if (m) m.opacity = spaceFade(h, 118, 12) * (m.userData.alpha ?? 1);
     });
     giant.current!.rotation.y += 0.0004;
-    // The Moon swells as you climb to it.
-    const near = spaceFade(h, 125, sim.tower.top - 125);
+    giant.current!.scale.setScalar(1 + spaceFade(h, MOON + 4, 30) * 1.4);
+    // The Moon swells as you climb to it, then sinks away once you've stood on it.
+    const near = spaceFade(h, 125, MOON - 125);
+    const past = spaceFade(h, MOON + 1, 8);
     moon.current!.scale.setScalar(0.6 + near * 0.9);
-    (moon.current!.material as MeshStandardMaterial).opacity = spaceFade(h, 108, 14);
+    moon.current!.position.y = 70 - past * 140;
+    (moon.current!.material as MeshStandardMaterial).opacity = spaceFade(h, 108, 14) * (1 - past * 0.4);
+    if (deep) {
+      // Flashes as each beat starts (when the even floors' pulse platforms appear).
+      const shown = spaceFade(h, PULSAR_FROM - 6, 8) * (1 - spaceFade(h, HOLE_FROM, 8));
+      const flash = Math.max(0, 1 - ((sim.t % beat) / beat) * 4);
+      pulsar.current!.visible = shown > 0.01;
+      pulsar.current!.scale.setScalar(0.8 + shown * 0.2);
+      pulsarHalo.current!.scale.setScalar(1 + flash * 0.6);
+      (pulsarHalo.current!.material as MeshBasicMaterial).opacity = shown * (0.25 + flash * 0.5);
+      pulsarBeams.current!.rotation.y = (sim.t / beat) * Math.PI;
+      pulsarBeams.current!.traverse((o) => {
+        const m = (o as Mesh).material as MeshBasicMaterial | undefined;
+        if (m) m.opacity = shown * (0.12 + flash * 0.25);
+      });
+
+      // The black hole: in sight from a little before its zone, swelling all the way up, gone in the light at the top.
+      const looms = spaceFade(h, HOLE_FROM - 10, 10) * (1 - spaceFade(h, TOP - 1, 1));
+      hole.current!.visible = looms > 0.01;
+      hole.current!.scale.setScalar(0.5 + spaceFade(h, HOLE_FROM - 10, TOP - HOLE_FROM + 10) * 1.7);
+      disk.current!.rotation.z += 0.002;
+      disk.current!.traverse((o) => {
+        const m = (o as Mesh).material as MeshBasicMaterial | undefined;
+        if (m) m.opacity = looms * (m.userData.alpha ?? 1);
+      });
+      (photon.current!.material as MeshBasicMaterial).opacity = looms * 0.8;
+      // The thin bright ring round the hole always faces you.
+      photon.current!.lookAt(camera.position);
+    }
   });
 
   if (!tall) return null;
@@ -306,6 +350,54 @@ export function SpaceBackdrop() {
         <sphereGeometry args={[22, 40, 20]} />
         <meshStandardMaterial color="#efeee6" emissive="#6d6b62" emissiveIntensity={0.55} roughness={1} transparent opacity={0} fog={false} />
       </mesh>
+      {deep && (
+        <group ref={pulsar} position={[-95, 55, 115]} visible={false}>
+          <mesh>
+            <sphereGeometry args={[5, 24, 12]} />
+            <meshBasicMaterial color="#f4f8ff" fog={false} />
+          </mesh>
+          <mesh ref={pulsarHalo}>
+            <sphereGeometry args={[13, 24, 12]} />
+            <meshBasicMaterial color="#8fb4ff" transparent blending={AdditiveBlending} depthWrite={false} fog={false} />
+          </mesh>
+          {/* Two beams from the poles, tilted off the spin axis so they sweep round. */}
+          <group ref={pulsarBeams}>
+            <group rotation-z={0.5}>
+              {[1, -1].map((side) => (
+                <mesh key={side} position-y={side * 75} rotation-x={side > 0 ? Math.PI : 0}>
+                  <coneGeometry args={[9, 150, 16, 1, true]} />
+                  <meshBasicMaterial color="#cfe0ff" transparent blending={AdditiveBlending} depthWrite={false} side={DoubleSide} fog={false} />
+                </mesh>
+              ))}
+            </group>
+          </group>
+        </group>
+      )}
+      {deep && (
+        <group ref={hole} position={[BLACK_HOLE.dir[0] * 150, 20, BLACK_HOLE.dir[1] * 150]} visible={false}>
+          <mesh renderOrder={1}>
+            <sphereGeometry args={[12, 32, 16]} />
+            <meshBasicMaterial color="#000000" fog={false} />
+          </mesh>
+          <mesh ref={photon}>
+            <torusGeometry args={[12.8, 0.7, 8, 64]} />
+            <meshBasicMaterial color="#ffe2b0" transparent blending={AdditiveBlending} depthWrite={false} fog={false} />
+          </mesh>
+          {/* The accretion disk, tilted towards you: white-hot inside, orange further out. */}
+          <group rotation-x={-1.2}>
+            <group ref={disk}>
+              <mesh>
+                <ringGeometry args={[14, 21, 64]} />
+                <meshBasicMaterial color="#fff0c8" transparent blending={AdditiveBlending} depthWrite={false} side={DoubleSide} fog={false} userData={{ alpha: 0.75 }} />
+              </mesh>
+              <mesh>
+                <ringGeometry args={[21, 44, 64]} />
+                <meshBasicMaterial color="#ff8a3d" transparent blending={AdditiveBlending} depthWrite={false} side={DoubleSide} fog={false} userData={{ alpha: 0.45 }} />
+              </mesh>
+            </group>
+          </group>
+        </group>
+      )}
     </group>
   );
 }
@@ -315,7 +407,8 @@ const BOX = { x: 34, y: 22, z: 34 };
 
 /**
  * Particles around the camera: petals in the meadow, leaves in the treetops, golden dust on
- * the cliffs, snow on the peak, rain in the storm.
+ * the cliffs, snow on the peak, rain in the storm, ice crystals in the rings, sparks round the
+ * pulsar, and embers streaming into the black hole.
  */
 export function Weather({ weak }: { weak: boolean }) {
   const sim = useSim();
@@ -345,16 +438,23 @@ export function Weather({ weak }: { weak: boolean }) {
     const kind = zone.weather;
     const c = camera.position;
     const t = sim.t;
-    const fall = kind === "snow" ? 1.6 : kind === "rain" ? 22 : kind === "dust" ? -0.15 : kind === "stardust" ? -0.3 : 0.7;
-    const sway = kind === "dust" || kind === "stardust" ? 0.4 : kind === "rain" ? 0 : 1.1;
+    const fall = kind === "snow" ? 1.6 : kind === "rain" ? 22 : kind === "dust" ? -0.15 : kind === "stardust" ? -0.3 : kind === "frost" ? 0.25 : kind === "sparks" ? -0.8 : kind === "infall" ? 0 : 0.7;
+    const sway = kind === "dust" || kind === "stardust" || kind === "frost" || kind === "sparks" ? 0.4 : kind === "rain" || kind === "infall" ? 0 : 1.1;
     const windX = sim.gust * 7;
+    // Into the black hole: everything streams the same way.
+    const infall = kind === "infall" ? 4 : 0;
+    const inX = BLACK_HOLE.dir[0] * infall;
+    const inZ = BLACK_HOLE.dir[1] * infall;
 
     for (let i = 0; i < count; i++) {
       seeds[i * 3 + 1] -= fall * dt * (0.7 + (i % 7) * 0.06);
-      seeds[i * 3] += windX * dt;
+      seeds[i * 3] += (windX + inX) * dt;
+      seeds[i * 3 + 2] += inZ * dt;
       if (seeds[i * 3 + 1] < -BOX.y / 2) seeds[i * 3 + 1] += BOX.y;
       if (seeds[i * 3 + 1] > BOX.y / 2) seeds[i * 3 + 1] -= BOX.y;
       if (seeds[i * 3] > BOX.x / 2) seeds[i * 3] -= BOX.x;
+      if (seeds[i * 3] < -BOX.x / 2) seeds[i * 3] += BOX.x;
+      if (seeds[i * 3 + 2] < -BOX.z / 2) seeds[i * 3 + 2] += BOX.z;
     }
 
     const showRain = kind === "rain";
@@ -370,9 +470,23 @@ export function Weather({ weak }: { weak: boolean }) {
         pos.needsUpdate = true;
         const m = motes.current.material as PointsMaterial;
         m.color.set(
-          kind === "snow" ? "#ffffff" : kind === "petals" ? "#ffd1e3" : kind === "leaves" ? "#9ed36a" : kind === "stardust" ? "#cdbcff" : "#ffd88a",
+          kind === "snow"
+            ? "#ffffff"
+            : kind === "petals"
+              ? "#ffd1e3"
+              : kind === "leaves"
+                ? "#9ed36a"
+                : kind === "stardust"
+                  ? "#cdbcff"
+                  : kind === "frost"
+                    ? "#c8f0ff"
+                    : kind === "sparks"
+                      ? "#e8f0ff"
+                      : kind === "infall"
+                        ? "#ffa25c"
+                        : "#ffd88a",
         );
-        m.size = kind === "snow" ? 0.16 : kind === "dust" || kind === "stardust" ? 0.08 : 0.13;
+        m.size = kind === "snow" ? 0.16 : kind === "dust" || kind === "stardust" || kind === "sparks" || kind === "infall" ? 0.08 : kind === "frost" ? 0.1 : 0.13;
       }
     }
     if (rain.current) {

@@ -135,6 +135,7 @@ below ramps smoothly with height, not just at zone borders.
 | 71–99 | ⛈️ Storm | Dark clouds, rain, night | Spinning saws, spike blocks, vanishing platforms, short time windows. |
 | 100 | 🏁 Summit | Flag, chest, stars | Final jump; summit celebration. |
 | 101–150 | 🚀 Beyond the Summit (Phase 4) | Space, then the Moon | Low gravity, orbiting asteroids, meteors. |
+| 151–250 | 🕳️ Deep Space (Phase 5) | Moon, rings, a pulsar, a black hole | Crater pads, comets, pulse platforms, laser beams, the pull, wormholes. |
 
 Ramping parameters (each a function of floor): gap distance, platform size, mover speed,
 hazard density, how many paths branch, and checkpoint spacing (every 5 floors early, every
@@ -248,6 +249,29 @@ ghosts still fit), then the climb carries on through space to the Moon at floor 
   Comet trail); a Stardust trail for 200 coins. Floor 100 still counts as a summit.
 - Room races stay version 2 (a race to the summit). The server caps a run's floor at its
   tower's top (`climbTop`).
+
+## Phase 5: Deep Space ✅
+
+Players reached the Moon too, so the tower goes on again. Daily towers from `TOWER_V4_FROM`,
+new practice towers and room races (`room4-`) are version 4: floors 0–150 are built exactly
+as in version 3, then the climb carries on to floor 250.
+- **Zones:** 🌕 Moon Base (150–164), 🪐 Ring Belt (165–189), 💫 Pulsar (190–214), 🕳️ Black Hole
+  (215–249), ✨ Escape Velocity (250). `deepKnobs` barely lengthens the gaps; the zones'
+  mechanics make it harder.
+- **New mechanics:** crater bounce pads (a big low-gravity throw), comets (a streak warns,
+  then one crosses at knee height: jump it), pulse platforms (on and off on the pulsar's
+  shared beat, neighbours taking turns), laser beams (a bar turning round the platform's
+  centre), the black hole's pull (slides you on a platform, pushes you in the air), drifting
+  debris (slides into the dark and comes back) and wormholes (+3 floors).
+- **Set-pieces:** 🌑 Crater Hop (160–163), 🌠 Comet Run (179–184), 🔦 Beam Dance (207–212),
+  🌀 Wormhole Maze (227–231: only the gold wormhole goes up, and the gold one moves on) and
+  🕳️ Event Horizon (245–249, a collapsing run). One more cannon (166–170). Checkpoints every
+  7 floors, every 6 in the black hole.
+- **Power-ups:** 🚀 Thruster (hold jump in mid-air to fly up, 1.5 s of burn a jump) and ⚓
+  Anchor (the pull can't move you).
+- **Rewards:** achievements 🪐 Ringmaster (165), 🕳️ Event Horizon (215) and ✨ Escape Velocity
+  (250, unlocks the Black Hole trail).
+- **Rooms:** races are 15 minutes and go to 250 too (`ROOM_PROTOCOL_VERSION` 2).
 
 ---
 

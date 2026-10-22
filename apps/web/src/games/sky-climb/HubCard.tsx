@@ -23,7 +23,7 @@ const FLOORS_ART: [number, number, number, boolean][] = [
  */
 export function SkyClimbCover() {
   return (
-    <CoverFrame number="02" title="Sky Climb" meta="Daily tower" caption="150 floors · meadow to the Moon">
+    <CoverFrame number="02" title="Sky Climb" meta="Daily tower" caption="250 floors · meadow to deep space">
       <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet" className="h-full w-full" aria-hidden="true">
         <circle cx="292" cy="120" r="46" fill="#d9582c" />
         {/* The shaft. */}
@@ -40,10 +40,10 @@ export function SkyClimbCover() {
         <line x1="112" y1="40" x2="112" y2="216" stroke="#2a2216" strokeOpacity="0.4" strokeWidth="1" />
         {[
           [216, "1"],
-          [172, "40"],
-          [128, "75"],
-          [84, "110"],
-          [40, "150"],
+          [172, "60"],
+          [128, "120"],
+          [84, "180"],
+          [40, "250"],
         ].map(([y, label]) => (
           <g key={label}>
             <line x1="106" y1={y} x2="112" y2={y} stroke="#2a2216" strokeOpacity="0.5" strokeWidth="1" />

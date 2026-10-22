@@ -210,7 +210,7 @@ export function Lobby() {
             <li key={s.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${s.id === you ? "bg-lamp-300/15 ring-1 ring-lamp-300/30" : "bg-white/[0.04]"}`}>
               <span className="w-6 text-center text-lg">{["🥇", "🥈", "🥉"][s.place - 1] ?? s.place}</span>
               <span className="flex-1 truncate">{s.name}</span>
-              <span className="text-stone-300 tabular-nums">{s.dnf ? "Left" : s.summit ? "Summit!" : `Floor ${s.floor}`}</span>
+              <span className="text-stone-300 tabular-nums">{s.dnf ? "Left" : s.summit ? "Top! ✨" : `Floor ${s.floor}`}</span>
             </li>
           ))}
         </ol>

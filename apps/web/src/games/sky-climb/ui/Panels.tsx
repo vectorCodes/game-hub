@@ -15,12 +15,15 @@ import { useAuth } from "../../../auth/store";
 import { GoogleIcon } from "../../../auth/AuthMenu";
 import { Segmented } from "../../../components/Segmented";
 import { formatDuration } from "../../../lib/format";
-import { MOON, SKY_CLIMB_HOME, SKY_CLIMB_PATH, ZONES } from "../config";
+import { MOON, SKY_CLIMB_HOME, SKY_CLIMB_PATH, TOP, ZONES } from "../config";
 import { liveAvailable } from "../live";
 import { clearRoomError, roomsAvailable, useRoom } from "../room";
 import { dailySeed, localBest, useClimb } from "../store";
 import { towerTwist } from "../twists";
 import { FriendsCard, ROOM_ERRORS } from "./Lobby";
+
+/** The first floor past the Moon's own zone. */
+const zoneAfterMoon = ZONES.find((z) => z.from > MOON)?.from ?? Infinity;
 
 const MODES: { value: ClimbMode; label: string }[] = [
   { value: "daily", label: "Today's tower" },
@@ -331,7 +334,9 @@ export function Results() {
   const zone = [...ZONES].reverse().find((z) => floor >= z.from) ?? ZONES[0];
   // The summit's few floors count as the summit; past them, space has its own zones.
   const summit = zone.id === "summit";
-  const moon = floor >= MOON;
+  // Reaching a zone past the Moon counts as that zone; the Moon itself, and the very top, are their own.
+  const moon = floor >= MOON && floor < zoneAfterMoon;
+  const escaped = floor >= TOP;
   const unlocked = useClimb((s) => s.unlocked);
   const balance = useClimb((s) => s.profile.coins.balance);
   const openLocker = useClimb((s) => s.setLockerOpen);
@@ -345,11 +350,13 @@ export function Results() {
   const share = async () => {
     const url = `${window.location.origin}${SKY_CLIMB_PATH}?challenge=${shareRunId}`;
     const on = twist ? ` (${TWISTS[twist].emoji} ${TWISTS[twist].name})` : "";
-    const text = moon
-      ? `I climbed Sky Climb all the way to the Moon${on} in ${formatDuration(seconds)}. Can you beat me?`
-      : summit
-        ? `I reached the summit of Sky Climb${on} in ${formatDuration(seconds)}. Can you beat me?`
-        : `I reached floor ${floor} on Sky Climb${on}. Can you beat me?`;
+    const text = escaped
+      ? `I climbed Sky Climb all the way to floor ${TOP}, out in deep space${on}, in ${formatDuration(seconds)}. Can you beat me?`
+      : moon
+        ? `I climbed Sky Climb all the way to the Moon${on} in ${formatDuration(seconds)}. Can you beat me?`
+        : summit
+          ? `I reached the summit of Sky Climb${on} in ${formatDuration(seconds)}. Can you beat me?`
+          : `I reached floor ${floor} on Sky Climb${on}. Can you beat me?`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Sky Climb challenge", text, url });
@@ -376,9 +383,9 @@ export function Results() {
   return (
     <div className="absolute inset-0 flex touch-pan-y flex-col items-center overflow-y-auto overscroll-contain bg-stone-950/40 p-4 backdrop-blur-[2px]">
       <div className="glass my-auto w-full max-w-md animate-pop rounded-[1.75rem] p-6 text-center sm:p-8">
-        <div className="text-5xl">{moon ? "🌕" : summit ? "🏁" : zone.emoji}</div>
+        <div className="text-5xl">{escaped ? "✨" : moon ? "🌕" : summit ? "🏁" : zone.emoji}</div>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight">
-          {moon ? "You reached the Moon!" : summit ? "You reached the summit!" : `You reached floor ${floor}`}
+          {escaped ? "You escaped into deep space!" : moon ? "You reached the Moon!" : summit ? "You reached the summit!" : `You reached floor ${floor}`}
         </h2>
         {twist && (
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-lamp-400/15 px-3 py-1 text-xs font-medium text-lamp-300 ring-1 ring-lamp-400/30">
@@ -386,7 +393,7 @@ export function Results() {
           </p>
         )}
         <p className="mt-2 text-stone-400">
-          {moon ? "The very top of the sky. Nobody climbs higher." : summit ? "Above the storm, under the stars." : newBest && floor > 0 ? "That's a new personal best!" : `Made it to ${zone.name}. Keep climbing!`}
+          {escaped ? "The very top of the tower. Nobody climbs higher." : moon ? "The Moon is yours. Deep space is still above." : summit ? "Above the storm, under the stars." : newBest && floor > 0 ? "That's a new personal best!" : `Made it to ${zone.name}. Keep climbing!`}
         </p>
 
         <dl className="mt-6 grid grid-cols-4 gap-2">

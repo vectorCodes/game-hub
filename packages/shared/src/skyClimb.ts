@@ -11,6 +11,8 @@ import type { AvatarConfig } from "./avatar";
 export const CLIMB_FLOORS = 100;
 /** The top of a version 3 tower: past the summit, through space, to the Moon. */
 export const CLIMB_MOON_FLOOR = 150;
+/** The top of a version 4 tower: on past the Moon, through deep space. */
+export const CLIMB_TOP_FLOOR = 250;
 /** The fastest a floor can honestly be climbed, in seconds. Faster progress is rejected. */
 export const CLIMB_MIN_SECONDS_PER_FLOOR = 0.45;
 
@@ -26,7 +28,7 @@ export const StartClimbBody = z.object({
 });
 
 export const ClimbProgressBody = z.object({
-  floor: z.int().min(0).max(CLIMB_MOON_FLOOR),
+  floor: z.int().min(0).max(CLIMB_TOP_FLOOR),
   coins: z.int().min(0).max(10_000),
   falls: z.int().min(0).max(100_000),
 });
@@ -147,6 +149,7 @@ export const CLIMB_ITEMS: ClimbItem[] = [
   trail("gold", "Summit gold", 0, "summit"),
   trail("stardust", "Stardust", 200),
   trail("comet", "Comet", 0, "moonwalker"),
+  trail("blackhole", "Black Hole", 0, "escape-velocity"),
   hat("none", "No hat", 0),
   hat("cap", "Cap", 0),
   hat("beanie", "Beanie", 40),
@@ -216,6 +219,16 @@ export const CLIMB_ACHIEVEMENTS: ClimbAchievementDef[] = [
   { id: "summit", emoji: "🏁", name: "Summit", description: "Reach the summit (floor 100). Unlocks the gold trail", metric: "summits", target: 1 },
   { id: "lift-off", emoji: "🚀", name: "Lift-off", description: "Climb on past the summit into Low Orbit (floor 105)", metric: "bestFloor", target: 105 },
   { id: "moonwalker", emoji: "🌕", name: "Moonwalker", description: "Reach the Moon (floor 150). Unlocks the comet trail", metric: "bestFloor", target: CLIMB_MOON_FLOOR },
+  { id: "ringmaster", emoji: "🪐", name: "Ringmaster", description: "Climb on past the Moon into the Ring Belt (floor 165)", metric: "bestFloor", target: 165 },
+  { id: "event-horizon", emoji: "🕳️", name: "Event Horizon", description: "Reach the Black Hole (floor 215)", metric: "bestFloor", target: 215 },
+  {
+    id: "escape-velocity",
+    emoji: "✨",
+    name: "Escape Velocity",
+    description: `Reach the very top (floor ${CLIMB_TOP_FLOOR}). Unlocks the black hole trail`,
+    metric: "bestFloor",
+    target: CLIMB_TOP_FLOOR,
+  },
   { id: "clean-climb", emoji: "🧼", name: "Clean climb", description: "Reach floor 25 without a single fall", metric: "cleanFloor", target: 25 },
   { id: "speed-climber", emoji: "⚡", name: "Speed climber", description: "Reach the summit in under 5 minutes", metric: "fastSummit", target: 1 },
   { id: "treasure-hunter", emoji: "💰", name: "Treasure hunter", description: "Collect 40 coins in one climb", metric: "maxRunCoins", target: 40 },
@@ -447,22 +460,32 @@ export const TOWER_V2_FROM = "2026-10-07";
  * are built exactly as in version 2, so a version 2 ghost still fits a version 3 tower.
  */
 export const TOWER_V3_FROM = "2026-10-16";
+/**
+ * Daily towers from this date on are version 4: past the Moon into deep space. Floors 0–150
+ * are built exactly as in version 3.
+ */
+export const TOWER_V4_FROM = "2026-10-23";
 
 const DAILY_SEED = /^daily-(\d{4}-\d{2}-\d{2})$/;
 
-export function towerVersion(seed: string): 1 | 2 | 3 {
+export function towerVersion(seed: string): 1 | 2 | 3 | 4 {
   const daily = DAILY_SEED.exec(seed);
-  if (daily) return daily[1] >= TOWER_V3_FROM ? 3 : daily[1] >= TOWER_V2_FROM ? 2 : 1;
+  if (daily) return daily[1] >= TOWER_V4_FROM ? 4 : daily[1] >= TOWER_V3_FROM ? 3 : daily[1] >= TOWER_V2_FROM ? 2 : 1;
+  if (seed.startsWith("practice4-")) return 4;
   if (seed.startsWith("practice3-")) return 3;
-  // Room races stay version 2: a race to the summit, not the Moon.
+  // Room races go all the way to deep space too (older `room2-` races stopped at the summit).
+  if (seed.startsWith("room4-")) return 4;
   return seed.startsWith("practice2-") || seed.startsWith("room2-") ? 2 : 1;
 }
 
-/** A tower's last floor: the summit, or the Moon on a version 3 tower. */
-export const climbTop = (seed: string) => (towerVersion(seed) >= 3 ? CLIMB_MOON_FLOOR : CLIMB_FLOORS);
+/** A tower's last floor: the summit, the Moon on a version 3 tower, or deep space on a version 4 one. */
+export function climbTop(seed: string) {
+  const version = towerVersion(seed);
+  return version >= 4 ? CLIMB_TOP_FLOOR : version >= 3 ? CLIMB_MOON_FLOOR : CLIMB_FLOORS;
+}
 
-/** A new practice tower (version 3). */
-export const practiceSeed = (id: string) => `practice3-${id}`;
+/** A new practice tower (version 4). */
+export const practiceSeed = (id: string) => `practice4-${id}`;
 
 export const TWIST_IDS = ["moon", "ice", "mirror", "night", "turbo", "gale", "gold"] as const;
 export type TwistId = (typeof TWIST_IDS)[number];

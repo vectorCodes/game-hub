@@ -2,10 +2,10 @@
 // decorations, the saws, spikes and meteors, and the coins. Floors far from the climber are hidden.
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, type Group, type Mesh, type MeshBasicMaterial } from "three";
-import { METEOR, TOWER, ZONES, zoneOf } from "../config";
-import type { HazardState, PlatformState } from "../sim";
-import { floorAt, type Deco, type Tower } from "../tower";
+import { AdditiveBlending, DoubleSide, type Group, type Mesh, type MeshBasicMaterial } from "three";
+import { BEAM, COMET, METEOR, TOWER, WORMHOLE, ZONES, zoneOf } from "../config";
+import { beamReach, isGold, type HazardState, type PlatformState } from "../sim";
+import { floorAt, type Deco, type Tower, type Wormhole } from "../tower";
 import { materialsOf, useFloorRange, useKit, useSim } from "./shared";
 
 const S = TOWER.pieceScale;
@@ -87,16 +87,45 @@ function Spring({ ps, top }: { ps: PlatformState; top: number }) {
   );
 }
 
+/** A crater on the platform: a rocky rim round a glowing floor that flares as it throws you. */
+function BouncePad({ ps, top }: { ps: PlatformState; top: number }) {
+  const sim = useSim();
+  const rim = useRef<Mesh>(null);
+  const glow = useRef<Mesh>(null);
+  useFrame(() => {
+    const since = sim.t - ps.springAt;
+    const kick = since < 0.4 ? 1 - since / 0.4 : 0;
+    rim.current?.scale.setScalar(1 + kick * 0.25);
+    if (glow.current) {
+      (glow.current.material as MeshBasicMaterial).opacity = 0.35 + 0.15 * Math.sin(sim.t * 3 + ps.p.id) + kick * 0.5;
+      glow.current.scale.setScalar(1 + kick * 0.3);
+    }
+  });
+  return (
+    <group position-y={top}>
+      <mesh ref={rim} rotation-x={-Math.PI / 2} position-y={0.02} castShadow>
+        <torusGeometry args={[0.46, 0.09, 8, 24]} />
+        <meshStandardMaterial color="#9c9a92" roughness={1} flatShading />
+      </mesh>
+      <mesh ref={glow} rotation-x={-Math.PI / 2} position-y={0.03}>
+        <circleGeometry args={[0.42, 24]} />
+        <meshBasicMaterial color="#9fe8ff" transparent depthWrite={false} blending={AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
 function PlatformView({ ps }: { ps: PlatformState }) {
   const sim = useSim();
   const p = ps.p;
   const zone = zoneById(p.zone);
-  const fades = p.kind === "crumble" || p.kind === "vanish";
+  const fades = p.kind === "crumble" || p.kind === "vanish" || p.kind === "pulse" || p.kind === "drift";
   const group = useRef<Group>(null);
   const materials = useRef<ReturnType<typeof materialsOf>>([]);
   const collect = useMemo(() => (m: ReturnType<typeof materialsOf>) => void materials.current.push(...m), []);
-  // Crumbling ledges look cracked and dry; vanishing ones glow faintly.
-  const tint = p.kind === "crumble" ? "#d9b48f" : p.kind === "vanish" ? "#c9d8ff" : zone.tint;
+  // Crumbling ledges look cracked and dry; vanishing ones glow faintly, pulse ones white-hot, debris scorched.
+  const tint =
+    p.kind === "crumble" ? "#d9b48f" : p.kind === "vanish" ? "#c9d8ff" : p.kind === "pulse" ? "#f2f6ff" : p.kind === "drift" ? "#c98a62" : zone.tint;
 
   useFrame(() => {
     const g = group.current;
@@ -113,8 +142,11 @@ function PlatformView({ ps }: { ps: PlatformState }) {
         y -= (since - 0.65) ** 2 * 9;
         opacity = Math.max(0, 1 - (since - 0.65) * 1.4);
       }
-    } else if (p.kind === "vanish") {
+    } else if (p.kind === "vanish" || p.kind === "pulse") {
       opacity = !ps.solid ? 0.12 : ps.warn ? (Math.sin(sim.t * 32) > 0 ? 1 : 0.35) : 1;
+    } else if (p.kind === "drift") {
+      // Swallowed: gone until it's back where it started.
+      opacity = !ps.solid ? 0 : ps.warn ? (Math.sin(sim.t * 32) > 0 ? 1 : 0.35) : 1;
     }
     g.position.set(x, y, ps.z);
     if (fades) {
@@ -138,6 +170,7 @@ function PlatformView({ ps }: { ps: PlatformState }) {
         )}
       </group>
       {p.kind === "spring" && <Spring ps={ps} top={p.h} />}
+      {p.kind === "bounce" && <BouncePad ps={ps} top={p.h} />}
       {p.deco.map((d, i) => (
         <DecoView key={i} d={d} tint={zone.tint} top={p.h} />
       ))}
@@ -153,7 +186,17 @@ export function Hazards() {
       {sim.hazards
         .filter((hs) => hs.h.floor >= lo && hs.h.floor <= hi)
         .map((hs) =>
-          hs.h.type === "saw" ? <Saw key={hs.h.id} hs={hs} /> : hs.h.type === "meteor" ? <Meteor key={hs.h.id} hs={hs} /> : <Spikes key={hs.h.id} hs={hs} />,
+          hs.h.type === "saw" ? (
+            <Saw key={hs.h.id} hs={hs} />
+          ) : hs.h.type === "meteor" ? (
+            <Meteor key={hs.h.id} hs={hs} />
+          ) : hs.h.type === "comet" ? (
+            <Comet key={hs.h.id} hs={hs} />
+          ) : hs.h.type === "beam" ? (
+            <Beam key={hs.h.id} hs={hs} />
+          ) : (
+            <Spikes key={hs.h.id} hs={hs} />
+          ),
         )}
     </>
   );
@@ -242,6 +285,139 @@ function Meteor({ hs }: { hs: HazardState }) {
         <sphereGeometry args={[1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshBasicMaterial color="#ffc27a" transparent blending={AdditiveBlending} depthWrite={false} />
       </mesh>
+    </>
+  );
+}
+
+/** A cyan streak along the platform warns of it, then an icy comet with its tail shoots across. */
+function Comet({ hs }: { hs: HazardState }) {
+  const sim = useSim();
+  const ps = sim.platforms[hs.h.platform];
+  const dir = hs.h.amp;
+  const streak = useRef<Mesh>(null);
+  const comet = useRef<Group>(null);
+  useFrame(() => {
+    const s = streak.current;
+    const c = comet.current;
+    if (!s || !c) return;
+    s.visible = hs.extend > 0;
+    s.position.set(ps.x, ps.top + 0.04, ps.z);
+    // Blinks faster as it gets close, then burns steady while the comet crosses.
+    const blink = hs.falling ? 1 : Math.sin(sim.t * (8 + hs.extend * 22)) > -0.3 ? 1 : 0.4;
+    (s.material as MeshBasicMaterial).opacity = (0.2 + 0.5 * hs.extend) * blink;
+    s.scale.set(1, 1, 0.5 + 0.5 * hs.extend);
+    c.visible = hs.falling;
+    c.position.set(hs.x, hs.y, hs.z);
+    c.children[0].rotation.set(hs.spin, hs.spin * 0.6, 0);
+  });
+  return (
+    <>
+      <mesh ref={streak} rotation-y={ps.p.yaw} visible={false}>
+        <boxGeometry args={[ps.p.w + 0.4, 0.02, 0.36]} />
+        <meshBasicMaterial color="#5fe0ff" transparent depthWrite={false} blending={AdditiveBlending} />
+      </mesh>
+      <group ref={comet} rotation-y={ps.p.yaw} visible={false}>
+        <mesh castShadow>
+          <icosahedronGeometry args={[COMET.rock, 0]} />
+          <meshStandardMaterial color="#d6f4ff" emissive="#4fc9ff" emissiveIntensity={1.8} flatShading roughness={0.6} />
+        </mesh>
+        {/* The tail trails behind, pointing back the way it came. */}
+        <mesh position-x={-dir * 1.3} rotation-z={(dir * Math.PI) / 2}>
+          <coneGeometry args={[COMET.rock * 0.95, 2.6, 10, 1, true]} />
+          <meshBasicMaterial color="#9fe8ff" transparent opacity={0.55} blending={AdditiveBlending} depthWrite={false} />
+        </mesh>
+      </group>
+    </>
+  );
+}
+
+/** A laser bar turning round its emitter in the middle of the platform: a bright core in a magenta glow. */
+function Beam({ hs }: { hs: HazardState }) {
+  const sim = useSim();
+  const p = sim.platforms[hs.h.platform].p;
+  const length = beamReach(p) * 2;
+  const group = useRef<Group>(null);
+  const glow = useRef<Mesh>(null);
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    g.position.set(hs.x, hs.y, hs.z);
+    g.rotation.y = p.yaw + hs.spin;
+    if (glow.current) (glow.current.material as MeshBasicMaterial).opacity = 0.4 + 0.15 * Math.sin(sim.t * 30);
+  });
+  return (
+    <group ref={group}>
+      <mesh rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[BEAM.thick * 0.45, BEAM.thick * 0.45, length, 6]} />
+        <meshBasicMaterial color="#fff2fb" />
+      </mesh>
+      <mesh ref={glow} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[BEAM.thick * 1.6, BEAM.thick * 1.6, length, 8, 1, true]} />
+        <meshBasicMaterial color="#ff3fb4" transparent blending={AdditiveBlending} depthWrite={false} />
+      </mesh>
+      {/* The emitter it turns on. */}
+      <mesh position-y={-BEAM.height / 2}>
+        <cylinderGeometry args={[0.16, 0.22, BEAM.height + 0.06, 10]} />
+        <meshStandardMaterial color="#3a3f55" emissive="#ff3fb4" emissiveIntensity={0.6} roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+export function Wormholes() {
+  const sim = useSim();
+  const [lo, hi] = useFloorRange();
+  return (
+    <>
+      {sim.tower.wormholes
+        .filter((w) => w.floor >= lo && w.floor <= hi)
+        .map((w) => (
+          <WormholeView key={w.id} w={w} />
+        ))}
+    </>
+  );
+}
+
+const GOLD = "#ffc94d";
+const PURPLE = "#b45cff";
+
+/** A swirling ring standing on the platform, gold if it goes up, and a glowing mark where it comes out. */
+function WormholeView({ w }: { w: Wormhole }) {
+  const sim = useSim();
+  const ring = useRef<Mesh>(null);
+  const swirl = useRef<Mesh>(null);
+  const out = useRef<Mesh>(null);
+  const r = WORMHOLE.radius;
+  useFrame(() => {
+    const color = isGold(w, sim.t) ? GOLD : PURPLE;
+    if (ring.current) (ring.current.material as MeshBasicMaterial).color.set(color);
+    if (swirl.current) {
+      swirl.current.rotation.z = -sim.t * 4;
+      const m = swirl.current.material as MeshBasicMaterial;
+      m.color.set(color);
+      m.opacity = 0.45 + 0.15 * Math.sin(sim.t * 6 + w.id);
+    }
+    if (out.current) out.current.scale.setScalar(0.85 + 0.15 * Math.sin(sim.t * 3 + w.id));
+  });
+  return (
+    <>
+      <group position={[w.x, w.y, w.z]} rotation-y={w.yaw}>
+        <mesh ref={ring}>
+          <torusGeometry args={[r, 0.06, 8, 32]} />
+          <meshBasicMaterial toneMapped={false} />
+        </mesh>
+        <mesh ref={swirl}>
+          <circleGeometry args={[r * 0.95, 32, 0, Math.PI * 1.6]} />
+          <meshBasicMaterial transparent blending={AdditiveBlending} depthWrite={false} side={DoubleSide} toneMapped={false} />
+        </mesh>
+      </group>
+      {/* Where a gold one comes out: drawn once, by the Maze's first wormhole of each ledge or by a loose one. */}
+      {(!w.maze || w.maze.slot === 0) && (
+        <mesh ref={out} position={[w.up.x, w.up.y + 0.03, w.up.z]} rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[0.3, 0.42, 32]} />
+          <meshBasicMaterial color={GOLD} transparent opacity={0.7} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
     </>
   );
 }

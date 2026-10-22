@@ -6,16 +6,24 @@
 // platformer rule. Their sides are solid, though, so you can't walk into a block.
 import type { GhostPose } from "@shadow/shared";
 import {
+  BEAM,
+  BLACK_HOLE,
+  BOUNCE,
   CANNON,
   CHECKPOINTS,
+  COMET,
+  DRIFT,
   FLOORS,
   METEOR,
+  MOON,
   PHYS,
   POWER,
   POWERUPS,
   POWERUP_KINDS,
   TOWER,
   UPDRAFT,
+  WORMHOLE,
+  pullAt,
   zoneIndexOf,
   zoneOf,
   type CannonGrade,
@@ -23,7 +31,20 @@ import {
   type SetPieceId,
 } from "./config";
 import { rulesOf, type TwistRules } from "./twists";
-import { arcEnd, cannonPoint, floorAt, type ArcEnd, type Cannon, type Coin, type Hazard, type Platform, type Powerup, type Tower } from "./tower";
+import {
+  arcEnd,
+  cannonPoint,
+  floorAt,
+  type ArcEnd,
+  type Cannon,
+  type Coin,
+  type Hazard,
+  type Platform,
+  type Powerup,
+  type Spot,
+  type Tower,
+  type Wormhole,
+} from "./tower";
 
 export interface PlatformState {
   p: Platform;
@@ -49,21 +70,31 @@ export interface HazardState {
   x: number;
   y: number;
   z: number;
-  /** Spikes: 0 hidden … 1 fully out (deadly from 0.6). Meteors: the warning ring, 0 none … 1 landing now. */
+  /**
+   * Spikes: 0 hidden … 1 fully out (deadly from 0.6). Meteors: the warning ring, 0 none … 1
+   * landing now. Comets: the warning streak, 0 none … 1 coming now.
+   */
   extend: number;
+  /** Saws, meteors and comets: the rock's tumble. Beams: the bar's angle from along the platform. */
   spin: number;
   /** Meteors: the impact's burst, 1 as it lands fading to 0. */
   flash: number;
-  /** Meteors: the rock is falling (visible). */
+  /** Meteors: the rock is falling. Comets: the comet is crossing. (Visible.) */
   falling: boolean;
 }
 
 export type SimEvent =
-  | { type: "jump" | "airjump" | "spring" | "die" | "respawn" | "summit" | "shield" }
+  | { type: "jump" | "airjump" | "spring" | "bounce" | "die" | "respawn" | "summit" | "shield" }
   /** Passing the summit on a tower that goes on to the Moon. */
   | { type: "peak" }
+  /** Reaching the Moon on a tower that goes on to deep space. */
+  | { type: "moon" }
   /** A meteor landed near the climber. */
   | { type: "impact" }
+  /** A comet started across a platform near the climber. */
+  | { type: "comet" }
+  /** Through a wormhole: on up, or (a wrong one in the Maze) back down. */
+  | { type: "warp"; up: boolean }
   | { type: "powerup"; kind: PowerupKind; id: number }
   | { type: "expire"; kind: PowerupKind }
   | { type: "land"; speed: number }
@@ -129,7 +160,13 @@ export class Sim {
   /** Orbs picked up since the last respawn: dying puts them back. */
   collected = new Set<number>();
   /** Seconds left of each power-up (0 = not active). */
-  effects: Record<PowerupKind, number> = { feather: 0, doubleJump: 0, shield: 0, magnet: 0 };
+  effects: Record<PowerupKind, number> = { feather: 0, doubleJump: 0, shield: 0, magnet: 0, thruster: 0, anchor: 0 };
+  /** Thruster: burning this step (for the flame). */
+  thrusting = false;
+  /** 0…1 strength of the black hole's pull on the climber right now (0 with an anchor). */
+  pull = 0;
+  /** When the climber last came out of a wormhole. */
+  warpAt = -10;
   /** Coins the magnet has set flying, at their current position. */
   pulled = new Map<number, { x: number; y: number; z: number }>();
   /** Invulnerable for this long after a shield absorbs a hit. */
@@ -161,6 +198,8 @@ export class Sim {
     canCut: false,
     /** The mid-air jump (double jump) is spent until the next landing. */
     airJumped: false,
+    /** Thruster: seconds of burn left before the next landing. */
+    fuel: 0,
     facing: 0,
     /** Seconds left of the death animation; 0 while alive. */
     dead: 0,
@@ -270,6 +309,19 @@ export class Sim {
       pl.vz += -fz * push;
     }
 
+    // The black hole drags you towards it: sliding you along a platform, pushing you in the air.
+    this.pull = this.effects.anchor > 0 ? 0 : pullAt(pl.height);
+    if (this.pull > 0) {
+      const [hx, hz] = BLACK_HOLE.dir;
+      if (pl.grounded) {
+        pl.x += hx * BLACK_HOLE.walk * this.pull * dt;
+        pl.z += hz * BLACK_HOLE.walk * this.pull * dt;
+      } else {
+        pl.vx += hx * BLACK_HOLE.accel * this.pull * dt;
+        pl.vz += hz * BLACK_HOLE.accel * this.pull * dt;
+      }
+    }
+
     // Jump, with a buffer before landing and coyote time after leaving an edge.
     const pressed = input.jumpPressed;
     if (pressed) pl.buffer = this.phys.jumpBuffer;
@@ -297,6 +349,13 @@ export class Sim {
       pl.canCut = false;
     }
 
+    // Thruster: holding jump in mid-air burns upwards, once the jump itself has slowed to the thruster's speed.
+    this.thrusting = this.effects.thruster > 0 && !pl.grounded && input.jumpHeld && pl.fuel > 0 && pl.vy < POWER.thrustMaxRise;
+    if (this.thrusting) {
+      pl.fuel -= dt;
+      pl.vy = Math.min(POWER.thrustMaxRise, pl.vy + POWER.thrustAccel * dt);
+    }
+
     // Ride whatever we stand on, conveyors included.
     if (ground) {
       pl.x += ground.dx;
@@ -308,7 +367,7 @@ export class Sim {
       }
     }
 
-    if (!pl.grounded && !lifted) {
+    if (!pl.grounded && !lifted && !this.thrusting) {
       // Feather: while falling with jump held, gravity eases and the fall speed is capped.
       const float = this.effects.feather > 0 && input.jumpHeld && pl.vy < 0;
       // Thinner air past the summit, and less pull still in space.
@@ -334,10 +393,14 @@ export class Sim {
 
     this.blockSides(prevX, prevZ);
     this.land(prevFeet, fallSpeed);
-    if (pl.grounded) pl.airJumped = false;
+    if (pl.grounded) {
+      pl.airJumped = false;
+      pl.fuel = POWER.thrustFuel;
+    }
     this.touchHazards();
     this.collectCoins(dt);
     this.collectPowerups();
+    this.enterWormholes();
     this.boardCannon();
 
     if (Math.hypot(pl.vx, pl.vz) > 0.4) pl.facing = Math.atan2(pl.vx, pl.vz);
@@ -432,12 +495,14 @@ export class Sim {
       pl.canCut = false;
       if (!wasGrounded) this.events.push({ type: "land", speed: fallSpeed });
       this.reach(best);
-      if (best.p.kind === "spring") {
-        pl.vy = this.phys.springSpeed;
+      if (best.p.kind === "spring" || best.p.kind === "bounce") {
+        const bounce = best.p.kind === "bounce";
+        // A twist that changes springs changes crater pads alike.
+        pl.vy = bounce ? this.phys.springSpeed * (BOUNCE.speed / PHYS.springSpeed) : this.phys.springSpeed;
         pl.grounded = false;
         pl.ground = null;
         best.springAt = this.t;
-        this.events.push({ type: "spring" });
+        this.events.push({ type: bounce ? "bounce" : "spring" });
       } else if (best.p.chain !== undefined && best.crumbleAt === null) {
         this.collapseFrom(best);
       } else if (best.p.kind === "crumble" && best.crumbleAt === null) {
@@ -483,6 +548,8 @@ export class Sim {
       this.events.push({ type: "summit" });
     } else if (floor === FLOORS) {
       this.events.push({ type: "peak" });
+    } else if (floor === MOON) {
+      this.events.push({ type: "moon" });
     }
   }
 
@@ -499,6 +566,21 @@ export class Sim {
         if (hs.flash > 1 - METEOR.blast / 0.6 && pl.y - hs.y < 0.7 && pl.y - hs.y > -0.3 && Math.hypot(hs.x - pl.x, hs.z - pl.z) < METEOR.radius) {
           return this.hit();
         }
+      } else if (hs.h.type === "comet") {
+        if (!hs.falling) continue;
+        // Against the climber's body, from the feet to the top of the head.
+        const y = Math.min(Math.max(hs.y, pl.y), pl.y + this.phys.height);
+        if (Math.hypot(hs.x - pl.x, hs.y - y, hs.z - pl.z) < COMET.rock + this.phys.radius) return this.hit();
+      } else if (hs.h.type === "beam") {
+        // Feet below the top of the bar, and the body across it, inside its reach.
+        const ps = this.platforms[hs.h.platform];
+        if (pl.y > hs.y + BEAM.thick + 0.06 || pl.y + this.phys.height < hs.y) continue;
+        const a = ps.p.yaw + hs.spin;
+        const rx = pl.x - hs.x;
+        const rz = pl.z - hs.z;
+        const along = rx * Math.cos(a) - rz * Math.sin(a);
+        const across = rx * Math.sin(a) + rz * Math.cos(a);
+        if (Math.abs(across) < BEAM.thick + this.phys.radius && Math.abs(along) < beamReach(ps.p)) return this.hit();
       } else if (hs.extend > 0.6 && pl.grounded && pl.ground?.p.id === hs.h.platform) {
         if (Math.hypot(hs.x - pl.x, hs.z - pl.z) < 0.55) return this.hit();
       }
@@ -643,6 +725,34 @@ export class Sim {
     pl.height = floorAt(this.tower, pl.y);
   }
 
+  /** Touching a wormhole: out of the other end (in the Maze, up through the gold one, back through the rest). */
+  private enterWormholes() {
+    const pl = this.player;
+    if (this.t - this.warpAt < WORMHOLE.cooldown) return;
+    for (const w of this.tower.wormholes) {
+      if (Math.abs(w.y - (pl.y + 0.45)) > 0.7 || Math.hypot(w.x - pl.x, w.z - pl.z) > WORMHOLE.radius) continue;
+      const up = !w.maze || isGold(w, this.t);
+      this.warp(up ? w.up : w.maze!.back, up);
+      return;
+    }
+  }
+
+  private warp(to: Spot, up: boolean) {
+    const pl = this.player;
+    const ps = this.platforms[to.floor];
+    pl.x = to.x;
+    pl.y = ps.top;
+    pl.z = to.z;
+    pl.vx = pl.vy = pl.vz = 0;
+    pl.grounded = true;
+    pl.ground = ps;
+    pl.airJumped = false;
+    pl.buffer = 0;
+    this.warpAt = this.t;
+    this.events.push({ type: "warp", up });
+    this.reach(ps);
+  }
+
   /** Inside an updraft column? */
   private inUpdraft() {
     const pl = this.player;
@@ -691,6 +801,9 @@ export class Sim {
     pl.coyote = 0;
     pl.buffer = 0;
     pl.airJumped = false;
+    pl.fuel = 0;
+    this.thrusting = false;
+    this.warpAt = -10;
     // A fresh start for the section: orbs and flying coins go back where they were.
     for (const kind of POWERUP_KINDS) this.effects[kind] = 0;
     this.grace = 0;
@@ -719,6 +832,12 @@ export class Sim {
         top += m.ay * (m.orbit ? Math.cos(a) * m.amp : s);
         z += m.az * s;
       }
+      // Debris: how far through its slide into the dark (0…1).
+      const drift = p.drift ? ((t + p.drift.phase) % p.drift.period) / p.drift.period : 0;
+      if (p.drift) {
+        x += p.drift.ax * p.drift.distance * drift;
+        z += p.drift.az * p.drift.distance * drift;
+      }
       ps.dx = x - ps.x;
       ps.dy = top - ps.top;
       ps.dz = z - ps.z;
@@ -736,6 +855,9 @@ export class Sim {
           if (ps.solid) this.struck.add(p.id);
           else this.struck.delete(p.id);
         }
+      } else if (p.drift) {
+        ps.solid = drift < 1 - DRIFT.gone;
+        ps.warn = ps.solid && drift > 1 - DRIFT.gone - 0.2;
       } else if (ps.crumbleAt !== null) {
         const since = t - ps.crumbleAt;
         ps.solid = since < 0.65;
@@ -776,6 +898,27 @@ export class Sim {
         const landed = until <= 0 && -until < 0.6;
         if (landed && hs.flash === 0 && Math.abs(hs.h.floor - this.player.height) < 2.5) this.events.push({ type: "impact" });
         hs.flash = landed ? 1 + until / 0.6 : 0;
+      } else if (hs.h.type === "comet") {
+        // Crosses from `period × 0.7` into each cycle, after the streak warns.
+        const c = (t + hs.h.phase) % hs.h.period;
+        const start = hs.h.period * 0.7;
+        const until = start - c;
+        const u = (c - start) / COMET.cross;
+        const flying = u >= 0 && u < 1;
+        if (flying && !hs.falling && Math.abs(hs.h.floor - this.player.height) < 2.5) this.events.push({ type: "comet" });
+        hs.falling = flying;
+        hs.extend = flying ? 1 : until > 0 && until < COMET.warn ? 1 - until / COMET.warn : 0;
+        const half = ps.p.w / 2 + COMET.reach;
+        const along = hs.h.amp * (flying ? -half + 2 * half * u : -half);
+        hs.x = ps.x + ax * along;
+        hs.y = ps.top + COMET.height;
+        hs.z = ps.z + az * along;
+        hs.spin += dt * 6;
+      } else if (hs.h.type === "beam") {
+        hs.x = ps.x;
+        hs.y = ps.top + BEAM.height;
+        hs.z = ps.z;
+        hs.spin = hs.h.amp * 2 * Math.PI * ((t + hs.h.phase) / hs.h.period);
       } else {
         // Out for a third of the cycle, with a short warning poke before.
         const c = ((t + hs.h.phase) % hs.h.period) / hs.h.period;
@@ -800,6 +943,12 @@ export class Sim {
     }
   }
 }
+
+/** In the Wormhole Maze: is this one gold (the way up) right now? The gold one moves on every `shuffle` seconds. */
+export const isGold = (w: Wormhole, t: number) => !w.maze || (w.maze.gold + Math.floor(t / WORMHOLE.shuffle)) % 3 === w.maze.slot;
+
+/** How far each end of a beam reaches from the platform's centre: just past its corners. */
+export const beamReach = (p: Platform) => Math.hypot(p.w / 2, p.d / 2) + BEAM.reach;
 
 export const nextCheckpointAfter = (floor: number, top: number) => CHECKPOINTS.find((c) => c > floor && c <= top) ?? top;
 

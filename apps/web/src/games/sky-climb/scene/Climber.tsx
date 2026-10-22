@@ -66,7 +66,7 @@ export function Climber() {
     () =>
       onSimEvent((e) => {
         if (e.type === "land") fx.current.squash = Math.min(1, e.speed / 13);
-        if (e.type === "jump" || e.type === "airjump" || e.type === "spring") fx.current.stretch = 1;
+        if (e.type === "jump" || e.type === "airjump" || e.type === "spring" || e.type === "bounce") fx.current.stretch = 1;
         if (e.type === "checkpoint") fx.current.cheer = 1.1;
       }),
     [],
@@ -171,6 +171,8 @@ export function Bursts() {
         if (e.type === "land" && e.speed > 5) spawn(Math.min(10, Math.round(e.speed / 2)), "#f3eee2", { speed: 2.2, up: 0.6, gravity: 0, size: 0.13, life: 0.45 });
         if (e.type === "jump") spawn(4, "#f3eee2", { speed: 1.2, up: 0.4, gravity: 0, size: 0.1, life: 0.35 });
         if (e.type === "spring") spawn(8, "#eec266", { speed: 2.4, up: 1.5, gravity: 4, size: 0.1, life: 0.5 });
+        // Moon dust kicked up by a crater pad, slow to settle in the low gravity.
+        if (e.type === "bounce") spawn(14, "#d9d8cf", { speed: 2.8, up: 1.2, gravity: 1.5, size: 0.12, life: 0.9 });
         if (e.type === "airjump") spawn(8, "#d9b3ff", { speed: 2.2, up: 0.3, gravity: 0, size: 0.1, life: 0.4 });
         if (e.type === "powerup") spawn(14, POWERUPS[e.kind].color, { y: 0.6, speed: 2.2, up: 3, gravity: 4, size: 0.09, life: 0.7 });
         if (e.type === "shield") spawn(16, ["#9fd0ff", "#ffffff"], { y: 0.5, speed: 3.2, up: 1.5, gravity: 0, size: 0.12, life: 0.55 });
@@ -233,6 +235,7 @@ const TRAILS: Record<string, { color: (t: number, i: number) => string; rise: nu
   "trail:gold": { color: (_, i) => (i % 2 ? "#ffe08a" : "#eec266"), rise: -0.3, size: 0.1, rate: 45 },
   "trail:stardust": { color: (_, i) => (i % 4 === 0 ? "#ffffff" : i % 2 ? "#b9a6ff" : "#7fb4ff"), rise: 0.1, size: 0.06, rate: 55 },
   "trail:comet": { color: (_, i) => (i % 3 ? "#d8f3ff" : "#7fd8ff"), rise: -0.15, size: 0.12, rate: 70 },
+  "trail:blackhole": { color: (_, i) => (i % 3 === 0 ? "#ffb070" : i % 3 === 1 ? "#ff6a2a" : "#3a1a4a"), rise: -0.05, size: 0.11, rate: 65 },
 };
 
 /** The equipped trail: particles left behind while the climber moves. */

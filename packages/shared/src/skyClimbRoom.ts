@@ -1,21 +1,21 @@
 import { z } from "zod";
 import type { AvatarConfig } from "./avatar";
 import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf } from "./rooms";
-import { CLIMB_FLOORS, GHOST_POSES } from "./skyClimb";
+import { CLIMB_TOP_FLOOR, GHOST_POSES } from "./skyClimb";
 
 // Sky Climb rooms: 1–3 friends race the same freshly seeded tower. A room lives in a
 // Cloudflare Durable Object (apps/realtime); these are the messages both sides speak over
 // its WebSocket. See Multiplayer.md.
 
 export const ROOM_MAX_PLAYERS = 3;
-/** The race ends this long after the start, whoever is still climbing. */
-export const ROOM_RACE_SECONDS = 300;
+/** The race ends this long after the start, whoever is still climbing. Long enough to reach deep space. */
+export const ROOM_RACE_SECONDS = 900;
 /** Positions sent a second. */
 export const ROOM_POS_HZ = 10;
 /** From the host pressing Start to the race starting. */
 export const ROOM_COUNTDOWN_MS = 3500;
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const ROOM_PROTOCOL_VERSION = 1;
+export const ROOM_PROTOCOL_VERSION = 2;
 
 /** Packed position: x, y, z in cm, facing in 1/256 turns, pose index (as live climbers send). */
 const Cm = z.int().min(-1_000_000).max(1_000_000);
@@ -27,7 +27,7 @@ export const RoomClientMessage = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ready"), on: z.boolean() }),
   z.object({ type: z.literal("start") }),
   z.object({ type: z.literal("pos"), p: RoomPos }),
-  z.object({ type: z.literal("progress"), floor: z.int().min(0).max(CLIMB_FLOORS) }),
+  z.object({ type: z.literal("progress"), floor: z.int().min(0).max(CLIMB_TOP_FLOOR) }),
   z.object({ type: z.literal("finish") }),
   z.object({ type: z.literal("rematch") }),
   RoomLeave,
@@ -74,6 +74,7 @@ export interface RoomStanding {
   floor: number;
   /** Ms from the start to reaching `floor`. */
   ms: number | null;
+  /** Reached the top of the tower. */
   summit: boolean;
   dnf: boolean;
 }
@@ -88,11 +89,12 @@ export type RoomServerMessage =
 export type RoomPeek = RoomPeekOf<RoomStatus>;
 
 /**
- * Places: the summit first (soonest wins), then the highest floor, reached soonest. Players
- * who left during the race come last.
+ * Places: the top of the tower first (soonest wins), then the highest floor, reached soonest.
+ * Players who left during the race come last.
  */
 export function rankRoom(
   players: { id: string; name: string; avatar: AvatarConfig | null; floor: number; floorMs: number | null; dnf: boolean }[],
+  top: number,
 ): RoomStanding[] {
   return players
     .slice()
@@ -104,7 +106,7 @@ export function rankRoom(
       place: i + 1,
       floor: p.floor,
       ms: p.floorMs,
-      summit: p.floor >= CLIMB_FLOORS,
+      summit: p.floor >= top,
       dnf: p.dnf,
     }));
 }

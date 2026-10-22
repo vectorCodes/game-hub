@@ -2,17 +2,25 @@
 // exactly the same platforms, hazards and coins.
 import { climbTop, makeRng, towerVersion, type TwistId } from "@shadow/shared";
 import {
+  BEAM,
+  BLACK_HOLE,
+  BOUNCE,
   CANNON,
   CHECKPOINTS,
+  COMET,
+  DRIFT,
   FLOORS,
   METEOR,
+  MOON,
   ORBIT,
   PIECE_SIZE,
   POWERUP_MIN_FLOOR,
   POWERUP_SPACING,
+  PULSE,
   SET_PIECES,
   TOWER,
   UPDRAFT,
+  WORMHOLE,
   ZONE_POWERUPS,
   isCheckpoint,
   knobs,
@@ -69,13 +77,17 @@ export interface Platform {
   motion?: { ax: number; ay: number; az: number; amp: number; period: number; phase: number; orbit?: boolean };
   /** Solid for `on` seconds of every `period`. */
   vanish?: { period: number; on: number; phase: number };
+  /** Debris: slides `distance` along (ax, az) over each `period`, swallowed for the end of it. */
+  drift?: { ax: number; az: number; distance: number; period: number; phase: number };
   /** Conveyor speed along the platform's length (signed). */
   belt?: number;
   checkpoint: boolean;
   /** Floor 100: the summit (the top of the tower, unless it goes on to the Moon). */
   summit: boolean;
-  /** The Moon: the top of a version 3 tower. */
+  /** The Moon: the top of a version 3 tower, halfway up a version 4 one. */
   moon: boolean;
+  /** The top of a version 4 tower, out in deep space. */
+  final: boolean;
   deco: Deco[];
   /** Collapsing bridge plank: falls this many seconds after the bridge starts to go. */
   chain?: number;
@@ -91,7 +103,7 @@ export interface Hazard {
   type: HazardType;
   /**
    * Saws sweep along the platform's length this far either side of its centre. A meteor
-   * lands this far along it (signed).
+   * lands this far along it (signed). A comet crosses it, and a beam turns, this way (1 or −1).
    */
   amp: number;
   period: number;
@@ -152,11 +164,37 @@ export interface Updraft {
   top: number;
 }
 
+/** A point in the world, on a floor. */
+export interface Spot {
+  floor: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** A wormhole floating over a platform: touch it and come out on a platform further up (or back). */
+export interface Wormhole {
+  id: number;
+  floor: number;
+  /** The centre of the ring, and the way it faces (its platform's yaw). */
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  /** Where it takes you. */
+  up: Spot;
+  /**
+   * The Wormhole Maze: one of three on its platform, in `slot`; slot `gold` is gold at the start
+   * (and goes `up`), the others send you `back`.
+   */
+  maze?: { slot: number; gold: number; back: Spot };
+}
+
 export interface Tower {
   seed: string;
-  /** 1: the original towers. 2: twists, cannons and set-pieces. 3: on past the summit to the Moon. */
-  version: 1 | 2 | 3;
-  /** The last floor: the summit (100), or the Moon (150). */
+  /** 1: the original towers. 2: twists, cannons and set-pieces. 3: on past the summit to the Moon. 4: on to deep space. */
+  version: 1 | 2 | 3 | 4;
+  /** The last floor: the summit (100), the Moon (150), or deep space (250). */
   top: number;
   twist: TwistId | null;
   platforms: Platform[];
@@ -165,6 +203,7 @@ export interface Tower {
   powerups: Powerup[];
   cannons: Cannon[];
   updrafts: Updraft[];
+  wormholes: Wormhole[];
   /** The set-pieces this tower has (version 2 only). */
   setPieces: typeof SET_PIECES;
   /** Top surface height of each floor's platform, at rest (index = floor). */
@@ -256,7 +295,8 @@ export function generateTower(seed: string): Tower {
     const tempo = k.tempo * (rules.tempo ?? 1);
     const checkpoint = isCheckpoint(floor);
     const summit = floor === FLOORS;
-    const moon = floor === lastFloor && lastFloor > FLOORS;
+    const moon = floor === MOON && lastFloor >= MOON;
+    const final = floor === lastFloor && lastFloor > MOON;
 
     const sp = v2 ? setPieceAt(floor) : undefined;
     const step = sp ? SET_PIECE_STEPS[sp.id][floor - sp.from] : undefined;
@@ -264,10 +304,15 @@ export function generateTower(seed: string): Tower {
 
     let size: Size = step ? step.size : checkpoint || forced ? "big" : (weighted(rng, k.sizes) ?? "normal");
     let kind: Kind = step ? step.kind : "static";
+    // Springs and crater pads throw you high: what comes after is placed for the throw.
     const afterSpring = prev?.kind === "spring";
-    if (!step && !forced && !checkpoint && !afterSpring && floor > 1 && rng() < k.special) kind = weighted(rng, zone.specials) ?? "static";
+    const afterBounce = prev?.kind === "bounce";
+    const launched = afterSpring || afterBounce;
+    if (!step && !forced && !checkpoint && !launched && floor > 1 && rng() < k.special) kind = weighted(rng, zone.specials) ?? "static";
+    // A set-piece's first step is placed for walking on, not for a crater pad's throw.
+    if (!step && kind === "bounce" && v2 && setPieceAt(floor + 1)) kind = "static";
     // Land a spring's big bounce on something comfortable.
-    if (!step && afterSpring && (size === "narrow" || size === "normal")) size = "long";
+    if (!step && launched && (size === "narrow" || size === "normal")) size = "long";
 
     let piece = step?.piece ?? zone.pieces[size];
     let tiles = 1;
@@ -275,10 +320,12 @@ export function generateTower(seed: string): Tower {
       case "moving":
       case "lift":
       case "orbit":
+      case "drift":
         piece = "block-moving";
         size = "normal";
         break;
       case "vanish":
+      case "pulse":
         piece = "block-moving-blue";
         size = "normal";
         break;
@@ -288,6 +335,7 @@ export function generateTower(seed: string): Tower {
         size = "long";
         break;
       case "spring":
+      case "bounce":
         size = "normal";
         piece = zone.pieces.normal;
         break;
@@ -307,6 +355,9 @@ export function generateTower(seed: string): Tower {
     if (afterSpring) {
       rise = range(rng, 2.6, 3.1);
       gap = range(rng, 0.4, 0.9);
+    } else if (afterBounce) {
+      rise = range(rng, ...BOUNCE.rise);
+      gap = range(rng, ...BOUNCE.gap);
     }
     if (step) {
       rise = step.rise;
@@ -347,6 +398,7 @@ export function generateTower(seed: string): Tower {
       checkpoint,
       summit,
       moon,
+      final,
       deco: [],
     };
 
@@ -370,6 +422,14 @@ export function generateTower(seed: string): Tower {
         p.vanish = { period: every / pace, on: on / pace, phase: (every - (at % every)) / pace };
         p.strike = true;
       }
+    } else if (kind === "drift") {
+      // Always towards the black hole, whichever way round the tower that is.
+      const period = range(rng, ...DRIFT.period) / tempo;
+      p.drift = { ax: BLACK_HOLE.dir[0], az: BLACK_HOLE.dir[1], distance: DRIFT.distance, period, phase: rng() * period };
+    } else if (kind === "pulse") {
+      // The pulsar's beat, not the zone's tempo: every pulse platform keeps the same time.
+      const beat = PULSE.beat / (rules.tempo ?? 1);
+      p.vanish = { period: beat, on: beat * PULSE.on, phase: floor % 2 ? beat / 2 : 0 };
     } else if (kind === "conveyor") {
       // Pushes back against the way up.
       p.belt = -dir * range(rng, 1.5, 2.3) * tempo;
@@ -392,7 +452,7 @@ export function generateTower(seed: string): Tower {
     }
 
     // Decorations: on the inner half (local +z faces the column), clear of the walking line.
-    if (kind === "static" && !summit && !moon && !step && !cannonAt.has(floor) && (size === "big" || size === "long") && zone.deco.length) {
+    if (kind === "static" && !summit && !moon && !final && !step && !cannonAt.has(floor) && (size === "big" || size === "long") && zone.deco.length) {
       const count = size === "big" ? 1 + Math.floor(rng() * 3) : Math.floor(rng() * 2);
       for (let i = 0; i < count; i++) {
         const tall = pick(rng, zone.deco);
@@ -407,10 +467,10 @@ export function generateTower(seed: string): Tower {
         });
       }
     }
-    if (checkpoint && !summit && !moon && floor > 0) {
+    if (checkpoint && !summit && !moon && !final && floor > 0) {
       p.deco.push({ piece: "flag", x: w / 2 - 0.4, z: d / 2 - 0.4, yaw: -Math.PI / 2, scale: S * 1.2 });
     }
-    if (moon) {
+    if (moon || final) {
       p.deco.push({ piece: "chest", x: 0, z: d / 2 - 0.55, yaw: Math.PI, scale: S * 1.8 });
       p.deco.push({ piece: "star", x: -w / 2 + 0.45, z: d / 2 - 0.4, yaw: 0, scale: S * 1.4 });
       p.deco.push({ piece: "flag", x: w / 2 - 0.4, z: d / 2 - 0.35, yaw: -Math.PI / 2, scale: S * 1.8 });
@@ -430,6 +490,13 @@ export function generateTower(seed: string): Tower {
       const period = 3 / (rules.tempo ?? 1);
       const along = step.meteor.along * (w / 2);
       hazards.push({ id: hazards.length, floor, platform: p.id, type: "meteor", amp: along, period, phase: step.meteor.at * period });
+    } else if (step?.comet) {
+      // Like the shower, one beat for the whole run.
+      const period = 3 / (rules.tempo ?? 1);
+      hazards.push({ id: hazards.length, floor, platform: p.id, type: "comet", amp: step.comet.dir, period, phase: step.comet.at * period });
+    } else if (step?.beam) {
+      const period = BEAM.period[0] / (rules.tempo ?? 1);
+      hazards.push({ id: hazards.length, floor, platform: p.id, type: "beam", amp: step.beam.dir, period, phase: step.beam.at * period });
     } else if (kind === "static" && !checkpoint && !forced && !step && floor > 2 && (size === "big" || size === "long") && rng() < k.hazard) {
       const type = weighted(rng, zone.hazards);
       if (type === "meteor") {
@@ -440,6 +507,16 @@ export function generateTower(seed: string): Tower {
           type,
           amp: range(rng, -1, 1) * Math.max(0.1, w / 2 - 0.5),
           period: range(rng, ...METEOR.period) / tempo,
+          phase: rng() * 10,
+        });
+      } else if (type === "comet" || type === "beam") {
+        hazards.push({
+          id: hazards.length,
+          floor,
+          platform: p.id,
+          type,
+          amp: rng() < 0.5 ? 1 : -1,
+          period: range(rng, ...(type === "comet" ? COMET.period : BEAM.period)) / tempo,
           phase: rng() * 10,
         });
       } else if (type) {
@@ -456,7 +533,7 @@ export function generateTower(seed: string): Tower {
     }
 
     // Coins: over some gaps (a reward for jumping well), and a little row on some big platforms.
-    if (prev && !afterSpring && rng() < coinOdds.gap) {
+    if (prev && !launched && rng() < coinOdds.gap) {
       coins.push({
         id: coins.length,
         floor,
@@ -521,13 +598,61 @@ export function generateTower(seed: string): Tower {
     powerups: placePowerups(seed, platforms, hazards),
     cannons,
     updrafts,
+    wormholes: placeWormholes(seed, platforms, hazards, lastFloor, cannonFloors, dir),
     setPieces,
     floorTops,
   };
 }
 
 /** Platforms that ask for something: a hazard, or a platform that moves, crumbles or vanishes. */
-const RISKY: readonly Kind[] = ["moving", "lift", "vanish", "crumble", "conveyor", "orbit"];
+const RISKY: readonly Kind[] = ["moving", "lift", "vanish", "crumble", "conveyor", "orbit", "pulse", "drift"];
+
+/** A point on a platform, from its own frame (x along it, z across, towards the column). */
+function spotOn(p: Platform, lx: number, lz: number, up = 0): Spot {
+  const c = Math.cos(p.yaw);
+  const s = Math.sin(p.yaw);
+  return { floor: p.floor, x: p.x + lx * c + lz * s, y: p.top + up, z: p.z - lx * s + lz * c };
+}
+
+/** The Maze's three wormholes, along the inner half of the platform; you come out on the outer half. */
+const MAZE_SLOTS = [-0.8, 0, 0.8];
+const MAZE_IN = 0.55;
+const MAZE_OUT = -0.5;
+
+/**
+ * The Wormhole Maze's wormholes, and loose ones on some plain platforms in the black hole,
+ * each to the platform `WORMHOLE.lift` floors up. Their own random stream, like the orbs.
+ */
+function placeWormholes(seed: string, platforms: Platform[], hazards: Hazard[], top: number, cannonFloors: number[], dir: number): Wormhole[] {
+  const rng = makeRng(`${seed}:wormholes`);
+  const hazardous = new Set(hazards.map((h) => h.platform));
+  const out: Wormhole[] = [];
+  let last = -Infinity;
+  for (const p of platforms) {
+    const roll = rng();
+    const step = p.setPiece ? SET_PIECE_STEPS[p.setPiece][p.floor - SET_PIECES.find((sp) => sp.id === p.setPiece)!.from] : undefined;
+    if (step?.maze !== undefined) {
+      const up = spotOn(platforms[p.floor + 1], 0, MAZE_OUT);
+      // Back a floor: to the outer half of the Maze ledge below, or the middle of the checkpoint before it.
+      const below = platforms[p.floor - 1];
+      const back = spotOn(below, 0, below.setPiece === p.setPiece ? MAZE_OUT : 0);
+      MAZE_SLOTS.forEach((lx, slot) => {
+        const at = spotOn(p, lx, MAZE_IN, WORMHOLE.height);
+        out.push({ id: out.length, floor: p.floor, ...at, yaw: p.yaw, up, maze: { slot, gold: step.maze!, back } });
+      });
+      continue;
+    }
+    const to = p.floor + WORMHOLE.lift;
+    if (!zoneOf(p.floor).pull || roll >= WORMHOLE.odds || p.floor - last <= WORMHOLE.lift) continue;
+    if (p.kind !== "static" || p.checkpoint || p.setPiece || p.w < 2 || hazardous.has(p.id) || cannonFloors.includes(p.floor)) continue;
+    // Never out past the top, onto anything that moves, or over any of a set-piece.
+    if (to >= top || platforms[to].kind !== "static" || platforms.slice(p.floor + 1, to + 1).some((o) => o.setPiece)) continue;
+    const at = spotOn(p, dir * (p.w / 2 - 0.45), 0, WORMHOLE.height);
+    out.push({ id: out.length, floor: p.floor, ...at, yaw: p.yaw, up: spotOn(platforms[to], 0, 0) });
+    last = p.floor;
+  }
+  return out;
+}
 
 /**
  * Orbs go on a safe platform just before a risky one. They use their own random stream, so
@@ -543,7 +668,7 @@ function placePowerups(seed: string, platforms: Platform[], hazards: Hazard[]): 
     // doesn't reshuffle the rest of the tower.
     const roll = rng();
     const roll2 = rng();
-    if (p.floor < POWERUP_MIN_FLOOR || p.summit || p.moon || p.floor - last < POWERUP_SPACING) continue;
+    if (p.floor < POWERUP_MIN_FLOOR || p.summit || p.moon || p.final || p.floor - last < POWERUP_SPACING) continue;
     if (!hazardous.has(p.id) && !RISKY.includes(p.kind)) continue;
     if (roll >= 0.7 + 0.2 * Math.min(1, p.floor / (FLOORS - 1))) continue;
     const kind = weighted(() => roll2, ZONE_POWERUPS[p.zone]);

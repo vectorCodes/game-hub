@@ -1,10 +1,11 @@
 // Everything that tunes Sky Climb: movement physics, the zones, and how difficulty ramps
 // with height. Balancing the game should only ever mean editing this file.
-import { CLIMB_FLOORS, CLIMB_MOON_FLOOR } from "@shadow/shared";
+import { CLIMB_FLOORS, CLIMB_MOON_FLOOR, CLIMB_TOP_FLOOR } from "@shadow/shared";
 
-/** The summit. Version 3 towers go on past it to the Moon (`MOON`). */
+/** The summit. Version 3 towers go on past it to the Moon (`MOON`), version 4 on to deep space (`TOP`). */
 export const FLOORS = CLIMB_FLOORS;
 export const MOON = CLIMB_MOON_FLOOR;
+export const TOP = CLIMB_TOP_FLOOR;
 export const SKY_CLIMB_HOME = "/games/sky-climb";
 export const SKY_CLIMB_PATH = `${SKY_CLIMB_HOME}/play`;
 
@@ -39,11 +40,20 @@ export const TOWER = {
   pieceScale: 1.3,
 } as const;
 
-export type ZoneId = "meadow" | "treetops" | "cliffs" | "snow" | "storm" | "summit" | "orbit" | "nebula" | "moon";
-/** `orbit`: an asteroid that circles round its spot, along the path and up and down. */
-export type Special = "moving" | "lift" | "spring" | "conveyor" | "crumble" | "vanish" | "orbit";
-export type Weather = "petals" | "leaves" | "dust" | "snow" | "rain" | "stars" | "stardust";
-export type HazardType = "saw" | "spikes" | "meteor";
+export type ZoneId = "meadow" | "treetops" | "cliffs" | "snow" | "storm" | "summit" | "orbit" | "nebula" | "moon" | "rings" | "pulsar" | "blackhole" | "escape";
+/**
+ * `orbit`: an asteroid that circles round its spot, along the path and up and down.
+ * `bounce`: a crater pad that throws you high and far in low gravity.
+ * `pulse`: there and gone in time with the pulsar, every pulse platform on the same beat.
+ * `drift`: debris sliding off towards the black hole until it's swallowed, then back again.
+ */
+export type Special = "moving" | "lift" | "spring" | "conveyor" | "crumble" | "vanish" | "orbit" | "bounce" | "pulse" | "drift";
+export type Weather = "petals" | "leaves" | "dust" | "snow" | "rain" | "stars" | "stardust" | "frost" | "sparks" | "infall";
+/**
+ * `comet`: streaks along a platform at knee height, after a glowing warning streak.
+ * `beam`: a laser bar at knee height, turning round the platform's centre.
+ */
+export type HazardType = "saw" | "spikes" | "meteor" | "comet" | "beam";
 
 export interface SkyLook {
   top: string;
@@ -77,6 +87,8 @@ export interface Zone {
   wind: boolean;
   /** Multiplies gravity: jumps go higher and hang longer in thin air and space. */
   gravity?: number;
+  /** The black hole pulls (see `BLACK_HOLE`). */
+  pull?: boolean;
   weather: Weather;
   sky: SkyLook;
 }
@@ -299,13 +311,14 @@ export const ZONES: Zone[] = [
     name: "The Moon",
     emoji: "🌕",
     from: MOON,
-    blurb: "The very top of the sky. Plant your flag.",
+    blurb: "Plant your flag, then bounce on: crater pads throw you high.",
     pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
     core: "block-snow-large-tall",
     tint: "#ecebe4",
-    deco: [],
-    specials: {},
-    hazards: {},
+    deco: ["rocks", "stones"],
+    // Past the Moon (version 4 towers only); on a version 3 tower the Moon is just its top floor.
+    specials: { bounce: 3, moving: 1, lift: 1 },
+    hazards: { meteor: 1 },
     ice: false,
     wind: false,
     gravity: 0.6,
@@ -321,6 +334,116 @@ export const ZONES: Zone[] = [
       hemiIntensity: 0.85,
     },
   },
+  // Past the Moon (version 4 towers only): deep space.
+  {
+    id: "rings",
+    name: "Ring Belt",
+    emoji: "🪐",
+    from: 165,
+    blurb: "Slippery ice from the rings, and comets streaking past.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#bfe2ff",
+    deco: ["rocks"],
+    specials: { orbit: 3, crumble: 1, lift: 1, bounce: 1 },
+    hazards: { comet: 3, meteor: 1 },
+    ice: true,
+    wind: false,
+    gravity: 0.65,
+    weather: "frost",
+    sky: {
+      top: "#020814",
+      bottom: "#173a5c",
+      fog: "#0f2a45",
+      sun: "#ffe9c4",
+      sunIntensity: 2,
+      hemiSky: "#8fc8f0",
+      hemiGround: "#0a1626",
+      hemiIntensity: 0.8,
+    },
+  },
+  {
+    id: "pulsar",
+    name: "Pulsar",
+    emoji: "💫",
+    from: 190,
+    blurb: "Platforms on the pulsar's beat, and laser beams sweeping round.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#d8e4ff",
+    deco: ["rocks"],
+    specials: { pulse: 4, orbit: 1, lift: 1, crumble: 1 },
+    hazards: { beam: 3, comet: 1 },
+    ice: false,
+    wind: false,
+    gravity: 0.65,
+    weather: "sparks",
+    sky: {
+      top: "#01030a",
+      bottom: "#1b2f5e",
+      fog: "#14244a",
+      sun: "#e6f0ff",
+      sunIntensity: 2.4,
+      hemiSky: "#a8c4ff",
+      hemiGround: "#070b18",
+      hemiIntensity: 0.85,
+    },
+  },
+  {
+    id: "blackhole",
+    name: "Black Hole",
+    emoji: "🕳️",
+    from: 215,
+    blurb: "It pulls you in. Debris drifts into the dark; wormholes jump you up.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#ffd2a8",
+    deco: ["rocks"],
+    specials: { drift: 4, pulse: 1, orbit: 1, crumble: 1 },
+    hazards: { comet: 2, beam: 1, meteor: 1 },
+    ice: false,
+    wind: false,
+    gravity: 0.7,
+    pull: true,
+    weather: "infall",
+    sky: {
+      top: "#000000",
+      bottom: "#2a1206",
+      fog: "#1a0b05",
+      sun: "#ffc890",
+      sunIntensity: 1.8,
+      hemiSky: "#ff9f5a",
+      hemiGround: "#050202",
+      hemiIntensity: 0.75,
+    },
+  },
+  {
+    id: "escape",
+    name: "Escape Velocity",
+    emoji: "✨",
+    from: TOP,
+    blurb: "Out through the wormhole into the light. The very top of the tower.",
+    pieces: { big: "block-snow-low-large", long: "block-snow-low-long", normal: "block-snow-low", narrow: "block-snow-low-narrow" },
+    core: "block-snow-large-tall",
+    tint: "#fff6ea",
+    deco: [],
+    specials: {},
+    hazards: {},
+    ice: false,
+    wind: false,
+    gravity: 0.6,
+    weather: "stars",
+    sky: {
+      top: "#fdf6ff",
+      bottom: "#ffe2bd",
+      fog: "#fff0dc",
+      sun: "#ffffff",
+      sunIntensity: 2.6,
+      hemiSky: "#fff4e6",
+      hemiGround: "#e8c9a6",
+      hemiIntensity: 1.2,
+    },
+  },
 ];
 
 /** The zones a tower climbs through, up to its top floor. */
@@ -334,9 +457,9 @@ export function zoneIndexOf(floor: number): number {
 
 export const zoneOf = (floor: number) => ZONES[zoneIndexOf(floor)];
 
-export type PowerupKind = "feather" | "doubleJump" | "shield" | "magnet";
+export type PowerupKind = "feather" | "doubleJump" | "shield" | "magnet" | "thruster" | "anchor";
 
-export const POWERUP_KINDS: PowerupKind[] = ["feather", "doubleJump", "shield", "magnet"];
+export const POWERUP_KINDS: PowerupKind[] = ["feather", "doubleJump", "shield", "magnet", "thruster", "anchor"];
 
 /** The pickups: touch an orb and the effect starts. `duration` is in seconds. */
 export const POWERUPS: Record<PowerupKind, { name: string; emoji: string; color: string; duration: number; blurb: string }> = {
@@ -344,6 +467,8 @@ export const POWERUPS: Record<PowerupKind, { name: string; emoji: string; color:
   doubleJump: { name: "Double Jump", emoji: "🌀", color: "#c78bff", duration: 12, blurb: "Press jump again in mid-air" },
   shield: { name: "Shield", emoji: "🛡️", color: "#4da3ff", duration: 25, blurb: "Absorbs one saw or spike hit" },
   magnet: { name: "Magnet", emoji: "🧲", color: "#ff6b6b", duration: 10, blurb: "Coins fly to you" },
+  thruster: { name: "Thruster", emoji: "🚀", color: "#ffa94d", duration: 12, blurb: "Hold jump in mid-air to fly up" },
+  anchor: { name: "Anchor", emoji: "⚓", color: "#b8c2cc", duration: 12, blurb: "The black hole can't pull you" },
 };
 
 /** Tuning for the effects themselves. */
@@ -360,6 +485,10 @@ export const POWER = {
   /** Magnet: coins this close fly to the climber at this speed. */
   magnetRadius: 3.5,
   magnetSpeed: 10,
+  /** Thruster: lift while burning, the top speed it lifts to, and seconds of burn per jump (back on landing). */
+  thrustAccel: 34,
+  thrustMaxRise: 5.5,
+  thrustFuel: 1.5,
 } as const;
 
 /** Which power-ups each zone's orbs can be, with relative weights. The meadow has none: learn the basics first. */
@@ -372,7 +501,11 @@ export const ZONE_POWERUPS: Record<ZoneId, Partial<Record<PowerupKind, number>>>
   summit: {},
   orbit: { doubleJump: 2, feather: 1, shield: 1, magnet: 1 },
   nebula: { shield: 2, doubleJump: 1, feather: 1 },
-  moon: {},
+  moon: { feather: 2, doubleJump: 1, magnet: 1 },
+  rings: { shield: 2, doubleJump: 1, feather: 1, thruster: 1 },
+  pulsar: { shield: 2, doubleJump: 1, feather: 1, thruster: 1 },
+  blackhole: { anchor: 3, thruster: 2, shield: 1 },
+  escape: {},
 };
 
 /** Orbs never appear below this floor, and are at least this many floors apart. */
@@ -394,6 +527,8 @@ export const CANNON = {
     [73, 84],
     // Version 3 towers only: a shot through Low Orbit.
     [106, 111],
+    // Version 4 towers only: a shot across the Ring Belt.
+    [166, 170],
   ] as [number, number][],
   lift: { weak: 2, good: 5, perfect: 8 } as Record<CannonGrade, number>,
   /** The meter sweeps 0 → 1 → 0 in this many seconds (divided by tempo). */
@@ -416,7 +551,7 @@ export const CANNON = {
   coins: 7,
 } as const;
 
-export type SetPieceId = "bridge" | "saws" | "canyon" | "lightning" | "asteroids" | "meteors";
+export type SetPieceId = "bridge" | "saws" | "canyon" | "lightning" | "asteroids" | "meteors" | "craters" | "comets" | "beams" | "maze" | "horizon";
 
 /**
  * Hand-built finales between two checkpoints (version 2 towers; the space ones on version 3).
@@ -429,6 +564,11 @@ export const SET_PIECES: { id: SetPieceId; name: string; emoji: string; call: st
   { id: "lightning", name: "Lightning Sprint", emoji: "⚡", call: "Chase the strikes to the summit", from: 94, to: 99, prize: "The summit is yours" },
   { id: "asteroids", name: "Asteroid Belt", emoji: "🪐", call: "Ride the circling rocks across", from: 123, to: 127, prize: "Bonus coins on the checkpoint" },
   { id: "meteors", name: "Meteor Shower", emoji: "☄️", call: "Watch for the red rings. Keep moving!", from: 144, to: 149, prize: "The Moon is yours" },
+  { id: "craters", name: "Crater Hop", emoji: "🌑", call: "Bounce, bounce, bounce: steer in the air", from: 160, to: 163, prize: "Bonus coins on the checkpoint" },
+  { id: "comets", name: "Comet Run", emoji: "🌠", call: "Watch the streaks. Jump the comets!", from: 179, to: 184, prize: "Bonus coins on the checkpoint" },
+  { id: "beams", name: "Beam Dance", emoji: "🔦", call: "Read the sweep. Jump the beams!", from: 207, to: 212, prize: "Bonus coins on the checkpoint" },
+  { id: "maze", name: "Wormhole Maze", emoji: "🌀", call: "Gold goes up, purple sends you back. They swap!", from: 227, to: 231, prize: "Bonus coins on the checkpoint" },
+  { id: "horizon", name: "Event Horizon", emoji: "🕳️", call: "It's swallowing the tower. RUN!", from: 245, to: 249, prize: "You escaped the black hole" },
 ];
 
 export const setPieceAt = (floor: number) => SET_PIECES.find((sp) => floor >= sp.from && floor <= sp.to);
@@ -448,8 +588,65 @@ export const ORBIT = { rise: 0.45, period: [3.6, 4.6] as [number, number] } as c
  */
 export const METEOR = { period: [3.4, 4.4] as [number, number], warn: 1.2, fall: 0.7, drop: 10, blast: 0.3, radius: 0.85, rock: 0.42 } as const;
 
-/** Respawn points: every 5 floors low down, every 7 or 8 higher up (where floors are harder). */
-export const CHECKPOINTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS, 107, 114, 121, 128, 135, 142, MOON];
+/**
+ * Comets: a glowing streak warns along the platform `warn` seconds before one comes, then it
+ * crosses in `cross` seconds, from `reach` beyond one end to `reach` beyond the other, at
+ * `height` over the top: jump it.
+ */
+export const COMET = { period: [3.2, 4.2] as [number, number], warn: 1, cross: 0.6, reach: 5, height: 0.4, rock: 0.3 } as const;
+
+/**
+ * Crater bounce pads: the launch speed (a spring's is PHYS.springSpeed), and how far above
+ * and round the spiral the next platform is.
+ */
+export const BOUNCE = { speed: 13, rise: [3.1, 3.6] as [number, number], gap: [1.4, 2.1] as [number, number] } as const;
+
+/**
+ * The pulsar's beat, in seconds (only the Turbo twist changes it). Pulse platforms are solid
+ * for `on` of each beat: even floors from the start of the beat, odd ones from halfway, so
+ * neighbours take turns and are both there for a moment at each hand-over.
+ */
+export const PULSE = { beat: 2.6, on: 0.65 } as const;
+
+/**
+ * Laser beams: a bar `height` over the platform and `thick` across, reaching a little past its
+ * corners, that turns round once every `period` seconds. Each end sweeps the platform: jump it.
+ */
+export const BEAM = { period: [4.2, 5] as [number, number], height: 0.35, thick: 0.08, reach: 0.15 } as const;
+
+/**
+ * The black hole, off in the direction `dir` (horizontal, from the column). Its pull grows from
+ * `min` at the zone's start to full strength near the top: in the air it's a push of `accel`,
+ * on a platform it slides you along at up to `walk` (less than a run, so you can always beat it).
+ */
+export const BLACK_HOLE = { dir: [-0.8, -0.6] as [number, number], accel: 6, walk: 1.1, min: 0.35 } as const;
+
+const PULL_FROM = ZONES.find((z) => z.pull)!.from;
+
+/** The black hole's pull at a height, 0…1 (0 outside its zone). */
+export function pullAt(height: number) {
+  if (!zoneOf(Math.floor(height)).pull) return 0;
+  return BLACK_HOLE.min + (1 - BLACK_HOLE.min) * Math.min(1, Math.max(0, (height - PULL_FROM) / (TOP - 1 - PULL_FROM)));
+}
+
+/**
+ * Drifting debris slides `distance` towards the black hole over each `period`, is swallowed
+ * for the last `gone` of it, and comes back where it started.
+ */
+export const DRIFT = { distance: 1.8, period: [3.8, 4.8] as [number, number], gone: 0.18 } as const;
+
+/**
+ * Wormholes: touch one (within `radius`, floating `height` over its platform) and come out on
+ * the platform `lift` floors up. Loose ones turn up on this share of plain platforms in the
+ * black hole. In the Wormhole Maze the gold one moves on every `shuffle` seconds; after a
+ * jump through, the next one can't take you for `cooldown`.
+ */
+export const WORMHOLE = { radius: 0.45, height: 0.65, lift: 3, odds: 0.22, shuffle: 1.6, cooldown: 0.7 } as const;
+/** Respawn points: every 5 floors low down, every 7 or 8 higher up (where floors are harder), every 6 near the black hole. */
+export const CHECKPOINTS = [
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 58, 65, 72, 79, 86, 93, FLOORS, 107, 114, 121, 128, 135, 142, MOON,
+  157, 164, 171, 178, 185, 192, 199, 206, 213, 220, 226, 232, 238, 244, TOP,
+];
 
 export const isCheckpoint = (floor: number) => CHECKPOINTS.includes(floor);
 
@@ -461,6 +658,7 @@ const ease = (t: number) => t * t * (3 - 2 * t);
  * the meadow is a staircase, the storm asks for long, precise jumps.
  */
 export function knobs(floor: number) {
+  if (floor > MOON) return deepKnobs(floor);
   if (floor > FLOORS) return spaceKnobs(floor);
   const d = Math.min(1, floor / (FLOORS - 1));
   const e = ease(d);
@@ -495,6 +693,23 @@ function spaceKnobs(floor: number) {
     special: lerp(0.55, 0.72, e),
     hazard: lerp(0.5, 0.68, e),
     tempo: lerp(1.25, 1.6, e),
+    wander: 0.45,
+  };
+}
+
+/**
+ * Past the Moon (version 4 towers): a breather on the Moon, then a long ramp to the top. The
+ * gaps barely grow (they're near what a jump can reach); the zones' mechanics make it harder.
+ */
+function deepKnobs(floor: number) {
+  const e = ease(Math.min(1, (floor - MOON) / (TOP - MOON)));
+  return {
+    rise: lerp(1.2, 1.5, e),
+    gap: lerp(2.1, 2.8, e),
+    sizes: { big: 0.08, long: 0.3, normal: 0.4, narrow: 0.22 },
+    special: lerp(0.5, 0.8, e),
+    hazard: lerp(0.45, 0.72, e),
+    tempo: lerp(1.3, 1.8, e),
     wander: 0.45,
   };
 }
