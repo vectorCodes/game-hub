@@ -416,6 +416,19 @@
     var(--shadow);
   backdrop-filter: blur(16px);
 }
+/* HUD corner brackets, drawn in the element's text colour. */
+@utility brackets {
+  background:
+    linear-gradient(currentColor, currentColor) top left / 14px 1px,
+    linear-gradient(currentColor, currentColor) top left / 1px 14px,
+    linear-gradient(currentColor, currentColor) top right / 14px 1px,
+    linear-gradient(currentColor, currentColor) top right / 1px 14px,
+    linear-gradient(currentColor, currentColor) bottom left / 14px 1px,
+    linear-gradient(currentColor, currentColor) bottom left / 1px 14px,
+    linear-gradient(currentColor, currentColor) bottom right / 14px 1px,
+    linear-gradient(currentColor, currentColor) bottom right / 1px 14px;
+  background-repeat: no-repeat;
+}
 /* A hairline rule, the system's main divider. */
 @utility hairline {
   border-color: var(--hairline);
@@ -490,6 +503,11 @@ body,
 }
 
 /* Hub covers: slow, small motions, like a print that's barely alive. */
+/* Paused while out of view (the hub sets this on its reel and hero). Important, so it
+   outranks the animation shorthands below and in each cover. */
+[data-paused] * {
+  animation-play-state: paused !important;
+}
 @keyframes cover-sway {
   0%, 100% { transform: skewX(-7deg); }
   50% { transform: skewX(7deg); }
