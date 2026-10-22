@@ -172,8 +172,7 @@ function PropHuntGame() {
   }, []);
   const house = useRef<Group>(null);
   const others = useRef<Group>(null);
-  const touch = useMemo(isTouch, []);
-  const [level, setLevel] = useState(touch ? 1 : 0);
+  const [level, setLevel] = useState(0);
   const q = LEVELS[level];
   // Never sharper than the screen itself.
   const dpr = Math.min(q.dpr, Math.max(1, window.devicePixelRatio || 1));
@@ -310,21 +309,18 @@ function PropHuntGame() {
         )}
       </Canvas>
 
-      {walking && !card && <Hud sim={sim} touch={touch} />}
+      {walking && !card && <Hud sim={sim} />}
       <MatchBanner />
       <Blindfold />
       <Countdown />
-      {walking && <SeekerBar touch={touch} />}
+      {walking && <SeekerBar />}
       <Announcements />
       {showFriends && <FriendsCard onBack={() => setFriends(false)} />}
       {showLobby && <Lobby />}
       <RoundCard />
 
-      {/* On phones while walking, only the buttons (the HUD needs the room). */}
-      <div
-        className={`glass absolute left-4 flex max-w-[calc(100%-2rem)] flex-col gap-3 text-sm text-stone-100 sm:max-w-xs ${touch && walking ? "top-16 p-2" : "top-4 p-4"}`}
-      >
-        <div className={touch && walking ? "hidden" : ""}>
+      <div className="glass absolute top-4 left-4 flex max-w-[calc(100%-2rem)] flex-col gap-3 p-4 text-sm text-stone-100 sm:max-w-xs">
+        <div>
           <div className="label-mono text-stone-400">Prop Hunt</div>
           <div className="font-display text-lg font-bold">The Big House</div>
           <div className="text-stone-400">
@@ -349,15 +345,15 @@ function PropHuntGame() {
           )}
           {roomsAvailable && !roomCode && (
             <button className="rounded-xs bg-lamp-400 px-3 py-1.5 font-semibold text-ink" onClick={() => setFriends(true)}>
-              {touch && walking ? "Friends" : "Play with friends"}
+              Play with friends
             </button>
           )}
           <Link to={PROP_HUNT_HOME} className="rounded-xs px-3 py-1.5 ring-1 ring-stone-100/30">
-            {touch && walking ? "Back" : "Leave"}
+            Leave
           </Link>
         </div>
         {!walking && (
-          <div className="text-xs text-stone-400">{touch ? "Drag to orbit · pinch to zoom · two-finger drag to pan" : "Drag to orbit · scroll to zoom · right-drag to pan · Tab to walk"}</div>
+          <div className="text-xs text-stone-400">Drag to orbit · scroll to zoom · right-drag to pan · Tab to walk</div>
         )}
       </div>
     </div>

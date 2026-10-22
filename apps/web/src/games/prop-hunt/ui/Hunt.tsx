@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HUNT_FORCED_TAUNT, HUNT_HP, HUNT_POINTS, HUNT_SONAR_FROM_SECONDS_LEFT, HUNT_SONAR_SMALL_ROOM, type HuntView } from "@shadow/shared";
 import { play } from "../../../lib/sound";
-import { actions } from "../input";
 import { onScan, onSonar } from "../net";
 import { onHuntMessage, toLocalTime, useHuntRoom } from "../room";
 
@@ -67,7 +66,7 @@ function sonarFrom(room: HuntView) {
 }
 
 /** A seeker while seeking: health, how to zap, dizziness, the scanner and the sonar. */
-export function SeekerBar({ touch }: { touch: boolean }) {
+export function SeekerBar() {
   const { room, you } = useHuntRoom();
   const me = room?.players.find((p) => p.id === you);
   const dizzyLeft = useSecondsLeft(me?.dizzyUntil ?? null);
@@ -84,53 +83,26 @@ export function SeekerBar({ touch }: { touch: boolean }) {
   const dizzy = dizzyLeft > 0;
   return (
     <>
-      <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 w-64 -translate-x-1/2 sm:bottom-6">
+      <div className="pointer-events-none absolute bottom-6 left-1/2 z-10 w-64 -translate-x-1/2">
         <div className="glass px-4 py-2.5 text-xs text-stone-100">
           <div className="mb-1 flex justify-between">
-            <span>{dizzy ? `Dizzy! ${dizzyLeft} s` : touch ? "Tap Zap to zap" : "Click or Enter to zap · misses cost health"}</span>
+            <span>{dizzy ? `Dizzy! ${dizzyLeft} s` : "Click or Enter to zap · misses cost health"}</span>
             <span className="tabular-nums">{hp} HP</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-stone-100/15">
             <div className={`h-full rounded-full transition-[width] ${hp > 40 ? "bg-moss-400" : "bg-ember-400"}`} style={{ width: `${(hp / HUNT_HP) * 100}%` }} />
           </div>
           <div className={`mt-2 flex justify-between ${scanReady ? "text-[#7ef0ff]" : "text-stone-400"}`}>
-            <span>{touch ? "Scan" : "V · Scan"}: real props glow, hiders don't</span>
+            <span>V · Scan: real props glow, hiders don't</span>
             <span className="tabular-nums">{scanReady ? "ready!" : "used"}</span>
           </div>
           <div className={`mt-1 flex justify-between ${sonar === "ready" ? "text-[#4fb8c9]" : "text-stone-400"}`}>
-            <span>{touch ? "Sonar" : "R · Sonar"}: points to the nearest hider</span>
+            <span>R · Sonar: points to the nearest hider</span>
             <span className="tabular-nums">{sonar === "used" ? "used" : sonar === "ready" ? "ready!" : `in ${sonarIn} s`}</span>
           </div>
         </div>
       </div>
       {dizzy && <div className="pointer-events-none absolute inset-0 z-10 animate-pulse bg-[radial-gradient(circle,transparent_40%,rgba(120,80,200,0.35))]" />}
-      {touch && (
-        <button
-          style={{ right: "calc(1.5rem + env(safe-area-inset-right))", bottom: "calc(12.25rem + env(safe-area-inset-bottom))" }}
-          className="absolute z-20 grid h-16 w-16 touch-none place-items-center rounded-full bg-ember-400 font-display font-bold text-white shadow-lg select-none active:scale-95"
-          onPointerDown={() => (actions.zap = true)}
-        >
-          Zap
-        </button>
-      )}
-      {touch && scanReady && (
-        <button
-          style={{ right: "calc(1.5rem + env(safe-area-inset-right))", bottom: "calc(17rem + env(safe-area-inset-bottom))" }}
-          className="absolute z-20 grid h-14 w-14 touch-none place-items-center rounded-full bg-[#2f9fb3] text-sm font-bold text-white shadow-lg select-none active:scale-95"
-          onPointerDown={() => (actions.scan = true)}
-        >
-          Scan
-        </button>
-      )}
-      {touch && sonar === "ready" && (
-        <button
-          style={{ right: "calc(6.5rem + env(safe-area-inset-right))", bottom: "calc(12.25rem + env(safe-area-inset-bottom))" }}
-          className="absolute z-20 grid h-14 w-14 touch-none place-items-center rounded-full bg-[#4fb8c9] text-sm font-bold text-white shadow-lg select-none active:scale-95"
-          onPointerDown={() => (actions.sonar = true)}
-        >
-          Sonar
-        </button>
-      )}
     </>
   );
 }

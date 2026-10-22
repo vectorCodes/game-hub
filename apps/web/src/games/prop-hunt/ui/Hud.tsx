@@ -1,13 +1,10 @@
 // The sandbox HUD: where you are, a stopwatch for timing routes, the sprint and taunt meters,
 // the crosshair with what E, Q, X and G do right now, the minimap, and the controls (H shows and hides them).
-// On phones the prompts are buttons and the touch controls take the bottom corners.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { HUNT_TAUNT_COOLDOWN_MS } from "@shadow/shared";
-import { actions } from "../input";
 import { useHuntRoom } from "../room";
 import { useHunt } from "../store";
 import { Minimap } from "./Minimap";
-import { TouchControls } from "./Touch";
 import type { HuntSim } from "../sim";
 
 function Key({ children }: { children: ReactNode }) {
@@ -36,8 +33,8 @@ const formatWatch = (ms: number) => {
   return `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
 };
 
-/** Top centre: the room you're in, and the stopwatch (T, or a tap on phones, starts, stops, and starts again from zero). */
-function WhereAndWatch({ touch }: { touch: boolean }) {
+/** Top centre: the room you're in, and the stopwatch (T starts, stops, and starts again from zero). */
+function WhereAndWatch() {
   const area = useHunt((s) => s.area);
   const level = useHunt((s) => s.level);
   const [watch, setWatch] = useState<{ start: number; stop: number | null } | null>(null);
@@ -62,7 +59,9 @@ function WhereAndWatch({ touch }: { touch: boolean }) {
       <span ref={text}>0:00.0</span>
     </span>
   ) : (
-    <span className="text-stone-400">{touch ? "⏱ stopwatch" : <><Key>T</Key> stopwatch</>}</span>
+    <span className="text-stone-400">
+      <Key>T</Key> stopwatch
+    </span>
   );
   return (
     <div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center px-4">
@@ -72,20 +71,14 @@ function WhereAndWatch({ touch }: { touch: boolean }) {
           <span className="ml-2 label-mono text-stone-400">{level}</span>
         </span>
         <span className="h-4 w-px bg-stone-100/20" />
-        {touch ? (
-          <button className="pointer-events-auto" onClick={toggle}>
-            {face}
-          </button>
-        ) : (
-          face
-        )}
+        {face}
       </div>
     </div>
   );
 }
 
-/** Bottom left (top right on phones): the sprint bar and the taunt meter, read straight from the simulation. */
-function Meters({ sim, touch }: { sim: HuntSim; touch: boolean }) {
+/** Bottom left: the sprint bar and the taunt meter, read straight from the simulation. */
+function Meters({ sim }: { sim: HuntSim }) {
   const sprint = useRef<HTMLDivElement>(null);
   const taunt = useRef<HTMLDivElement>(null);
   const tauntLabel = useRef<HTMLSpanElement>(null);
@@ -98,10 +91,12 @@ function Meters({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   });
 
   return (
-    <div className={`glass pointer-events-none absolute flex flex-col gap-2 px-4 py-3 text-xs text-stone-100 ${touch ? "top-16 right-4 w-36" : "bottom-6 left-4 w-48"}`}>
+    <div className="glass pointer-events-none absolute bottom-6 left-4 flex w-48 flex-col gap-2 px-4 py-3 text-xs text-stone-100">
       <div>
         <div className="mb-1 flex justify-between">
-          <span>{touch ? "Run" : <><Key>Shift</Key> Sprint</>}</span>
+          <span>
+            <Key>Shift</Key> Sprint
+          </span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-stone-100/15">
           <div ref={sprint} className="h-full rounded-full bg-jade" />
@@ -109,7 +104,9 @@ function Meters({ sim, touch }: { sim: HuntSim; touch: boolean }) {
       </div>
       <div>
         <div className="mb-1 flex justify-between">
-          <span>{touch ? "Taunt" : <><Key>F</Key> Taunt</>}</span>
+          <span>
+            <Key>F</Key> Taunt
+          </span>
           <span ref={tauntLabel} className="text-stone-400" />
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-stone-100/15">
@@ -120,16 +117,8 @@ function Meters({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   );
 }
 
-function PromptButton({ children, onTap }: { children: ReactNode; onTap: () => void }) {
-  return (
-    <button className="pointer-events-auto rounded-xs bg-stone-100 px-3 py-2 text-sm text-stone-950 active:scale-95" onClick={onTap}>
-      {children}
-    </button>
-  );
-}
-
-/** The crosshair, and what E, Q, X and G do right now (on phones, buttons that do it). */
-function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
+/** The crosshair, and what E, Q, X and G do right now. */
+function PropPrompt({ sim }: { sim: HuntSim }) {
   const aimed = useHunt((s) => s.aimed);
   const disguise = useHunt((s) => s.disguise);
   const locked = useHunt((s) => s.locked);
@@ -145,14 +134,6 @@ function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <span className={`block h-2 w-2 rounded-full ring-2 transition-colors ${target ? "bg-lamp-400 ring-lamp-400/40" : "bg-white/80 ring-black/30"}`} />
       </div>
-      {touch ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-44 flex flex-wrap items-center justify-center gap-2 px-4">
-          {target && target.id !== disguise && <PromptButton onTap={() => (actions.become = true)}>Become the {target.name.toLowerCase()}</PromptButton>}
-          {self && <PromptButton onTap={() => (actions.lock = true)}>{locked ? "Unlock" : "Lock"}</PromptButton>}
-          {self && <PromptButton onTap={() => (actions.unbecome = true)}>Be yourself</PromptButton>}
-          {self && decoys !== 0 && <PromptButton onTap={() => (actions.decoy = true)}>Decoy{decoys !== null && ` (${decoys})`}</PromptButton>}
-        </div>
-      ) : (
       <div className="pointer-events-none absolute inset-x-0 bottom-6 flex flex-col items-center gap-2 px-4 text-center">
         {target && target.id !== disguise && (
           <div className="glass px-4 py-2 text-sm text-stone-100">
@@ -175,7 +156,6 @@ function PropPrompt({ sim, touch }: { sim: HuntSim; touch: boolean }) {
           </div>
         )}
       </div>
-      )}
     </>
   );
 }
@@ -293,16 +273,15 @@ function MouseTip() {
   );
 }
 
-export function Hud({ sim, touch }: { sim: HuntSim; touch: boolean }) {
+export function Hud({ sim }: { sim: HuntSim }) {
   return (
     <>
-      {touch && <TouchControls />}
-      <WhereAndWatch touch={touch} />
-      {!touch && <MouseTip />}
-      <Meters sim={sim} touch={touch} />
-      <PropPrompt sim={sim} touch={touch} />
-      <Minimap sim={sim} touch={touch} />
-      {!touch && <Controls />}
+      <WhereAndWatch />
+      <MouseTip />
+      <Meters sim={sim} />
+      <PropPrompt sim={sim} />
+      <Minimap sim={sim} />
+      <Controls />
     </>
   );
 }

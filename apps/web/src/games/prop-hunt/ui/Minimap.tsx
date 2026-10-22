@@ -156,8 +156,8 @@ function MapView({ sim, floor, px, big }: { sim: HuntSim; floor: Floor; px: numb
   );
 }
 
-/** Top right (under the meters on phones). */
-export function Minimap({ sim, touch }: { sim: HuntSim; touch: boolean }) {
+/** Top right. */
+export function Minimap({ sim }: { sim: HuntSim }) {
   const level = useHunt((s) => s.level);
   const floor: Floor = level === "first floor" ? "first" : "ground";
   const [big, setBig] = useState(false);
@@ -178,7 +178,7 @@ export function Minimap({ sim, touch }: { sim: HuntSim; touch: boolean }) {
           <div className="mb-2 flex items-center justify-between gap-4 text-sm">
             <b>{label}</b>
             <button className="rounded-xs px-2 py-0.5 text-xs ring-1 ring-stone-100/30" onClick={() => setBig(false)}>
-              {touch ? "Close" : "M · close"}
+              M · close
             </button>
           </div>
           <MapView sim={sim} floor={floor} px={px} big />
@@ -188,14 +188,14 @@ export function Minimap({ sim, touch }: { sim: HuntSim; touch: boolean }) {
   }
   return (
     <button
-      className={`glass pointer-events-auto absolute right-4 p-2 text-left text-stone-100 ${touch ? "top-44" : "top-4"}`}
+      className="glass pointer-events-auto absolute top-4 right-4 p-2 text-left text-stone-100"
       onClick={() => setBig(true)}
       aria-label="Open the map"
     >
-      <MapView sim={sim} floor={floor} px={touch ? 120 : 188} big={false} />
+      <MapView sim={sim} floor={floor} px={188} big={false} />
       <div className="mt-1 flex justify-between text-[10px] text-stone-300">
         <span className="label-mono">{label}</span>
-        {!touch && <span className="text-stone-400">M · bigger</span>}
+        <span className="text-stone-400">M · bigger</span>
       </div>
     </button>
   );

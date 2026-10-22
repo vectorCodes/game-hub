@@ -1,4 +1,4 @@
-// One input state for Prop Hunt, filled by the keyboard and mouse or by the touch controls.
+// One input state for Prop Hunt, filled by the keyboard and mouse.
 // WASD moves; the arrow keys (or the mouse) turn the camera, so the game plays on a keyboard
 // alone. The simulation reads the movement; the camera reads the look.
 import { useEffect } from "react";
@@ -15,35 +15,22 @@ export const lookKeys = { x: 0, y: 0 };
 /** One-shot actions, cleared by whoever handles them. */
 export const actions = { respawn: false, become: false, unbecome: false, lock: false, taunt: false, zap: false, sonar: false, decoy: false, scan: false };
 
-/** Phones and tablets: touch controls instead of keys and a captured mouse. */
+/** Phones and tablets: Prop Hunt is keyboard and mouse only, so they get a desktop-only note. */
 export const isTouch = () => window.matchMedia("(pointer: coarse)").matches;
 
 const keys = new Set<string>();
-/** The touch joystick's axes and the sprint button, merged with the keys. */
-const touch = { x: 0, y: 0, sprint: false };
 
 const held = (code: string) => (keys.has(code) ? 1 : 0);
 
 function refresh() {
-  input.x = Math.max(-1, Math.min(1, held("KeyD") - held("KeyA") + touch.x));
-  input.y = Math.max(-1, Math.min(1, held("KeyW") - held("KeyS") + touch.y));
-  input.sprint = keys.has("ShiftLeft") || keys.has("ShiftRight") || touch.sprint;
+  input.x = held("KeyD") - held("KeyA");
+  input.y = held("KeyW") - held("KeyS");
+  input.sprint = keys.has("ShiftLeft") || keys.has("ShiftRight");
   lookKeys.x = held("ArrowRight") - held("ArrowLeft");
   lookKeys.y = held("ArrowDown") - held("ArrowUp");
 }
 
-export function setStick(x: number, y: number) {
-  touch.x = x;
-  touch.y = y;
-  refresh();
-}
-
-export function setSprint(on: boolean) {
-  touch.sprint = on;
-  refresh();
-}
-
-export function pressJump(down: boolean) {
+function pressJump(down: boolean) {
   if (down && !input.jumpHeld) input.jumpPressed = true;
   input.jumpHeld = down;
 }
@@ -95,7 +82,7 @@ export function useControls(active: boolean, target: HTMLElement | null) {
       if (e.button === 0 && document.pointerLockElement === target) actions.zap = true;
     };
     const lock = () => {
-      if (isTouch() || document.pointerLockElement === target) return;
+      if (document.pointerLockElement === target) return;
       // Some browsers return a promise that rejects if the lock is refused; that's fine.
       void Promise.resolve(target?.requestPointerLock?.()).catch(() => {});
     };

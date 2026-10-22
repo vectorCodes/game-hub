@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { useSearchParams } from "react-router";
 import { DEFAULT_AVATAR, HUNT_FORCED_TAUNT, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYERS, ROOM_CODE_LENGTH, normalizeRoomCode, type HuntPlayerView, type HuntStanding, type HuntView } from "@shadow/shared";
 import { AvatarImage } from "../../../avatar/AvatarImage";
-import { isTouch } from "../input";
 import { useHunt } from "../store";
 import { LevelBadge, TauntPicker, XpPanel } from "./Levels";
 import { createHuntRoom, huntRematch, leaveHuntRoom, peekHuntRoom, setHuntReady, startHunt, toLocalTime, useHuntRoom, type RoomError } from "../room";
@@ -325,7 +324,7 @@ export function MatchBanner() {
   const seeker = me?.role === "seeker";
   const out = me?.role === "hider" && me.found && room.status === "seek";
   const watched = room.players.find((p) => p.id === watching)?.name;
-  const next = isTouch() ? "Jump" : "Space";
+  const next = "Space";
   const hint =
     room.status === "countdown" || room.status === "hide"
       ? seeker
