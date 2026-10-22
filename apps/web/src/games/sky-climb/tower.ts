@@ -638,7 +638,7 @@ function placeWormholes(seed: string, platforms: Platform[], hazards: Hazard[], 
       const back = spotOn(below, 0, below.setPiece === p.setPiece ? MAZE_OUT : 0);
       MAZE_SLOTS.forEach((lx, slot) => {
         const at = spotOn(p, lx, MAZE_IN, WORMHOLE.height);
-        out.push({ id: out.length, floor: p.floor, ...at, yaw: p.yaw, up, maze: { slot, gold: step.maze!, back } });
+        out.push({ id: out.length, ...at, yaw: p.yaw, up, maze: { slot, gold: step.maze!, back } });
       });
       continue;
     }
@@ -648,7 +648,7 @@ function placeWormholes(seed: string, platforms: Platform[], hazards: Hazard[], 
     // Never out past the top, onto anything that moves, or over any of a set-piece.
     if (to >= top || platforms[to].kind !== "static" || platforms.slice(p.floor + 1, to + 1).some((o) => o.setPiece)) continue;
     const at = spotOn(p, dir * (p.w / 2 - 0.45), 0, WORMHOLE.height);
-    out.push({ id: out.length, floor: p.floor, ...at, yaw: p.yaw, up: spotOn(platforms[to], 0, 0) });
+    out.push({ id: out.length, ...at, yaw: p.yaw, up: spotOn(platforms[to], 0, 0) });
     last = p.floor;
   }
   return out;
