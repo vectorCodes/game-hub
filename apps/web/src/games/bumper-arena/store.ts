@@ -172,8 +172,8 @@ interface State {
   feed: FeedLine[];
   showTuning: boolean;
 
-  /** The menu, with a bots-only round playing behind it. */
-  openMenu: () => void;
+  /** The menu, with a bots-only round playing behind it (on Picnic Plate, or `map`). */
+  openMenu: (map?: string) => void;
   /** A party room between matches: bots playing on `map` behind the lobby. */
   partyBackdrop: (map: string) => void;
   /** A party room's round, as the room sees it (net.ts keeps it in step). */
@@ -230,9 +230,9 @@ export const useBumper = create<State>((set, get) => ({
   feed: [],
   showTuning: false,
 
-  openMenu: () => {
+  openMenu: (map = "picnic-plate") => {
     epoch++;
-    set({ mode: "menu", backdrop: true, map: "picnic-plate", gauntlet: null, wins: {} });
+    set({ mode: "menu", backdrop: true, map, gauntlet: null, wins: {} });
     get().next();
   },
 

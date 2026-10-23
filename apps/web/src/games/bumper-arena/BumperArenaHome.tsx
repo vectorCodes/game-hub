@@ -1,155 +1,324 @@
-// /games/bumper-arena: the landing page. Bumper rings bobbing on the paper, today's
-// Gauntlet, playing with friends, and how to play. The game itself is on /play (computers and tablets only).
-import { useState } from "react";
+// /games/bumper-arena: the landing page, on night. The hero is a live window onto the game
+// (today's arena, five bots at it), then today's Gauntlet, the controls, the arenas, and the
+// ways to play. The game itself is on /play (computers and tablets only).
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { BUMPER_MAPS, BUMPER_MAX_PLAYERS, BUMPER_MIN_PLAYERS, BUMPER_MODIFIERS, bumperDay } from "@shadow/shared";
+import {
+  GameHero,
+  Kbd,
+  LastCall,
+  lastCallButton,
+  LivePill,
+  MetaLink,
+  SectionHead,
+  StatTiles,
+  StepCards,
+  TodayPanel,
+  WayCards,
+  type Step,
+} from "../../components/landing";
 import { Reveal } from "../../components/Reveal";
+import { gsap, useGsap } from "../../lib/motion";
 import { savedBest, savedDaily, today } from "./guest";
 import { useBumperDaily } from "./HubCard";
 import { roomsAvailable } from "./room";
+import { game, useBumper } from "./store";
 import { isPhone } from "./ui/NoPhones";
+
+const Game = lazy(() => import("./scene/Game"));
 
 const PLAY_PATH = "/games/bumper-arena/play";
 
-/** Hero rings: [colour, left %, top %, size rem, wide only]. */
-const HERO: [string, number, number, number, boolean][] = [
-  ["#d9582c", 7, 16, 6, false],
-  ["#2f8a73", 15, 64, 4.5, true],
-  ["#cc922f", 82, 12, 5, false],
-  ["#3d6f8f", 86, 62, 5.5, true],
-  ["#8c4a6b", 72, 84, 3.5, false],
-  ["#e2a940", 30, 6, 3.5, false],
-  ["#4f7a72", 8, 86, 3.5, false],
-];
+/** Ring colours, as the riders wear them. */
+const RINGS = ["#d9582c", "#2f8a73", "#cc922f", "#3d6f8f", "#8c4a6b"];
 
-const STEPS = [
-  { title: "Drive", body: "Your ring slides and keeps its momentum. Steer with WASD, the arrow keys, or the stick on a tablet." },
-  { title: "Dash", body: "A burst of speed with a short cooldown. Dash hits push hardest, but a miss can carry you off the edge." },
-  { title: "Brace", body: "Hold to turn heavy and slow. Brace at the edge and they bounce off you instead." },
-  { title: "Wobble", body: "Every hit you take raises your Wobble %. The higher it is, the further the next hit sends you flying." },
-];
+/** The live arena: today's map with five bots at it, drawing only while it's on screen. */
+function LiveArena({ map }: { map: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [onscreen, setOnscreen] = useState(true);
 
-function Ring({ color, size, delay, className = "", style }: { color: string; size: number; delay: number; className?: string; style: React.CSSProperties }) {
+  useEffect(() => {
+    useBumper.getState().openMenu(map);
+    return () => {
+      // The bots' next-round timer checks `backdrop`; the play page's menu sets it again.
+      useBumper.setState({ backdrop: false });
+      game.sim = null;
+      game.brains = [];
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const io = new IntersectionObserver(([entry]) => setOnscreen(entry.isIntersecting));
+    io.observe(ref.current!);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div aria-hidden className={`absolute ${className}`} style={{ ...style, animation: `pp-bob ${6 + delay}s ease-in-out ${-delay}s infinite` }}>
-      <div
-        className="rounded-full shadow-[0_8px_0_rgba(42,34,22,0.25),0_22px_40px_-14px_rgba(60,45,20,0.5)]"
-        style={{ width: `calc(${size}rem * var(--s))`, height: `calc(${size * 0.62}rem * var(--s))`, background: `radial-gradient(ellipse at 50% 45%, #2a2216 0 28%, ${color} 30% 100%)` }}
-      />
+    <div ref={ref} className="absolute inset-0">
+      <Suspense fallback={<StillArena />}>
+        <Game preview paused={!onscreen} />
+      </Suspense>
     </div>
+  );
+}
+
+/** The arena drawn, for phones and for readers who asked for less motion: a gingham plate in the sky. */
+function StillArena() {
+  return (
+    <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden="true">
+      <defs>
+        <pattern id="ba-hero-gingham" width="26" height="26" patternUnits="userSpaceOnUse">
+          <rect width="26" height="26" fill="#f3ead9" />
+          <rect width="13" height="26" fill="#d9582c" fillOpacity="0.35" />
+          <rect width="26" height="13" fill="#d9582c" fillOpacity="0.35" />
+        </pattern>
+      </defs>
+      <rect width="400" height="260" fill="#cfe6ee" />
+      <ellipse cx="200" cy="150" rx="160" ry="74" fill="#2a2216" fillOpacity="0.14" />
+      <ellipse cx="200" cy="138" rx="160" ry="74" fill="url(#ba-hero-gingham)" stroke="#2a2216" strokeOpacity="0.3" />
+      {RINGS.map((c, i) => {
+        const [x, y] = [[150, 120], [236, 150], [196, 102], [276, 112], [128, 160]][i];
+        return (
+          <g key={c}>
+            <ellipse cx={x} cy={y + 6} rx="22" ry="11" fill="#2a2216" fillOpacity="0.18" />
+            <ellipse cx={x} cy={y} rx="22" ry="12" fill={c} />
+            <ellipse cx={x} cy={y - 1} rx="10" ry="5" fill="#2a2216" fillOpacity="0.55" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const STEPS: Step[] = [
+  {
+    title: "Drive",
+    body: "Your ring slides and keeps its momentum. Steer with WASD, the arrow keys, or the stick on a tablet.",
+    visual: (
+      <div className="grid grid-cols-3 gap-1.5">
+        <span />
+        <Kbd>W</Kbd>
+        <span />
+        <Kbd>A</Kbd>
+        <Kbd>S</Kbd>
+        <Kbd>D</Kbd>
+      </div>
+    ),
+  },
+  {
+    title: "Dash",
+    body: "A burst of speed with a short cooldown. Dash hits push hardest, but a miss can carry you off the edge.",
+    visual: <Kbd wide>Space</Kbd>,
+  },
+  {
+    title: "Brace",
+    body: "Hold to turn heavy and slow. Brace at the edge and they bounce off you instead.",
+    visual: <Kbd wide>Shift</Kbd>,
+  },
+  {
+    title: "Wobble",
+    body: "Every hit you take raises your Wobble %. The higher it is, the further the next hit sends you flying.",
+    visual: (
+      <div className="w-full max-w-44">
+        <div className="h-3 overflow-hidden rounded-full bg-stone-800">
+          <div data-wobble className="h-full origin-left rounded-full bg-gradient-to-r from-moss-400 via-lamp-400 to-ember-400" />
+        </div>
+        <div className="mt-2 flex justify-between label-mono text-stone-500">
+          <span>0%</span>
+          <span>Flying</span>
+        </div>
+      </div>
+    ),
+  },
+];
+
+/** Each arena, drawn from above in a few strokes. */
+function ArenaMark({ kind }: { kind: string }) {
+  return (
+    <svg viewBox="0 0 120 80" className="h-20 w-full" aria-hidden="true">
+      <ellipse cx="60" cy="46" rx="50" ry="24" fill="#000" fillOpacity="0.3" />
+      {kind === "hex" ? (
+        <g fill="var(--accent)" fillOpacity="0.85" stroke="var(--n-950)" strokeWidth="2">
+          {[
+            [40, 36],
+            [60, 30],
+            [80, 36],
+            [50, 46],
+            [70, 46],
+            [60, 56],
+          ].map(([x, y]) => (
+            <polygon key={`${x}-${y}`} points={`${x - 10},${y} ${x - 5},${y - 6} ${x + 5},${y - 6} ${x + 10},${y} ${x + 5},${y + 6} ${x - 5},${y + 6}`} />
+          ))}
+        </g>
+      ) : (
+        <ellipse cx="60" cy="40" rx="50" ry="24" fill={kind === "ice" ? "#cfeef7" : "var(--n-100)"} />
+      )}
+      {kind === "plate" && <ellipse cx="60" cy="40" rx="38" ry="17" fill="none" stroke="var(--accent)" strokeWidth="3" strokeDasharray="6 5" />}
+      {kind === "ice" && <path d="M30 34 l18 6 l14 -10 M64 44 l20 4" stroke="#7cc7dc" strokeWidth="2" fill="none" />}
+      {kind === "spinner" && <rect x="18" y="37" width="84" height="6" rx="3" fill="var(--accent)" transform="rotate(-14 60 40)" />}
+    </svg>
   );
 }
 
 export default function BumperArenaHome() {
   const board = useBumperDaily();
   const [phone] = useState(isPhone);
+  const [still] = useState(() => phone || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const day = board?.day ?? bumperDay(today());
-  const map = BUMPER_MAPS[day.map]?.name ?? day.map;
+  const map = BUMPER_MAPS[day.map];
   const twist = BUMPER_MODIFIERS[day.modifier];
   const mine = savedDaily(day.date);
   const best = savedBest();
   const rank = board?.mine?.rank;
+  const cta = mine ? "Play again" : "Run today's Gauntlet";
+
+  // The wobble meter fills, holds, and drains, over and over, while it's in view.
+  const howRef = useGsap<HTMLElement>((root, reduced) => {
+    if (reduced) return;
+    gsap.fromTo(
+      "[data-wobble]",
+      { scaleX: 0.04 },
+      { scaleX: 1, duration: 2.6, ease: "power2.in", repeat: -1, repeatDelay: 0.5, scrollTrigger: { trigger: root, toggleActions: "play pause resume pause" } },
+    );
+  });
 
   return (
-    <div className="overflow-x-clip pb-24">
-      {/* ---------- Hero ---------- */}
-      <section className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-b hairline py-20 [--s:0.55] sm:py-16 sm:[--s:0.8] lg:[--s:1]">
-        {HERO.map(([color, left, top, size, wide], i) => (
-          <Ring key={i} color={color} size={size} delay={i * 0.7} className={wide ? "max-lg:hidden" : ""} style={{ left: `${left}%`, top: `${top}%`, opacity: size < 4 ? 0.75 : 1 }} />
-        ))}
-
-        <div className="container-page relative z-10 text-center">
-          <p className="eyebrow inline-flex animate-rise items-center gap-2">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-moss-500" />
-            Gauntlet #{day.number} is live{board?.players ? ` · ${board.players} played` : ""}
-          </p>
-          <h1 className="mt-5 animate-rise text-display [animation-delay:80ms]">
-            Bumper <span className="text-ember-400">Arena</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl animate-rise text-lead [animation-delay:160ms]">
+    <div className="relative overflow-x-clip pb-24">
+      <GameHero
+        pill={<LivePill>Gauntlet #{day.number} is live{board?.players ? ` · ${board.players} played` : ""}</LivePill>}
+        title="Bumper"
+        accent="Arena"
+        lead={
+          <>
             Sumo in bumper rings. Drive, dash and shove the bots, or {BUMPER_MIN_PLAYERS}–{BUMPER_MAX_PLAYERS} friends, off a floating arena. The last ring rolling wins.
-          </p>
-
-          <div className="mx-auto mt-9 flex max-w-xs animate-rise flex-col items-stretch justify-center gap-3 [animation-delay:240ms] sm:max-w-none sm:flex-row sm:items-center">
-            {phone ? (
-              <p className="inline-flex items-center gap-2 rounded-sm border hairline px-4 py-3 text-left font-serif text-sm text-stone-300">
-                <span aria-hidden className="text-lg">💻</span>
-                Bumper Arena is played on a computer or a tablet. Open it there to play.
-              </p>
-            ) : (
-              <>
-                <Link to={PLAY_PATH} className="btn btn-primary">
-                  {mine ? "Play again" : "Run today's Gauntlet"} <span aria-hidden>→</span>
+          </>
+        }
+        actions={
+          phone ? (
+            <p className="surface inline-flex items-center gap-3 px-4 py-3 text-sm text-stone-300">
+              <span aria-hidden className="text-lg">💻</span>
+              Bumper Arena is played on a computer or a tablet. Open it there to play.
+            </p>
+          ) : (
+            <>
+              <Link to={PLAY_PATH} className="btn btn-primary">
+                {cta} <span aria-hidden>→</span>
+              </Link>
+              {roomsAvailable && (
+                <Link to={`${PLAY_PATH}?friends=1`} className="btn btn-secondary">
+                  Play with friends
                 </Link>
-                {roomsAvailable && (
-                  <Link to={`${PLAY_PATH}?friends=1`} className="btn btn-secondary">
-                    Play with friends
-                  </Link>
-                )}
-              </>
+              )}
+            </>
+          )
+        }
+        meta={
+          <>
+            {mine && (
+              <span>
+                Today: <span className="text-stone-100">{mine.waves} {mine.waves === 1 ? "wave" : "waves"} · {mine.kos} KOs · {mine.score} pts</span>
+                {rank ? <span className="font-semibold text-accent-text"> · #{rank}</span> : null}
+              </span>
             )}
-          </div>
-
-          <Link to="/leaderboard?game=bumper-arena" className="mt-6 inline-block animate-rise label-mono text-stone-300 underline decoration-stone-600 underline-offset-4 transition-colors [animation-delay:300ms] hover:text-stone-50">
-            See the leaderboard →
-          </Link>
-          <br />
-          {mine && (
-            <div className="mx-auto mt-6 inline-flex max-w-full animate-rise flex-wrap items-center justify-center gap-x-3 gap-y-1 border-y hairline px-4 py-2.5 font-serif text-sm text-stone-300 [animation-delay:320ms]">
-              Today: {mine.waves} {mine.waves === 1 ? "wave" : "waves"} · {mine.kos} KOs · {mine.score} pts
-              {rank ? <span className="font-semibold text-ember-400">· #{rank} today</span> : null}
-            </div>
-          )}
-        </div>
-      </section>
+            <MetaLink to="/leaderboard?game=bumper-arena">See the leaderboard →</MetaLink>
+          </>
+        }
+        screen={still ? <StillArena /> : <LiveArena map={day.map} />}
+        screenGround="#cfe6ee"
+        live={still ? "Today's arena" : "Live · bots only"}
+        corner={map?.name}
+        caption={`Twist · ${twist.name}`}
+      />
 
       {/* ---------- Today's Gauntlet ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal>
+      <section className="container-page mt-12 sm:mt-20">
+        <TodayPanel
+          aside={
+            <StatTiles
+              stacked
+              stats={[
+                ["Players today", board?.players],
+                ["Best today", board?.best, " waves"],
+                ["Your best ever", best, " waves"],
+              ]}
+            />
+          }
+        >
           <p className="eyebrow">Daily Gauntlet #{day.number}</p>
-          <h2 className="mt-3 text-section">
-            {map}, {twist.name}
-          </h2>
-          <p className="mt-4 max-w-2xl text-lead">
-            {twist.blurb} Everyone gets the same arena and the same twist today. Bots come in waves, each one bigger and sharper than the last, and you have one life.
-            Your first run of the day goes on the leaderboard.
+          <h2 className="mt-4 text-section">{map?.name}</h2>
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-1.5 font-display text-sm font-bold text-accent-ink">
+            Today&rsquo;s twist: {twist.name}
           </p>
-        </Reveal>
-        <div className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-4">
-          {[
-            ["Players today", board?.players ?? "—"],
-            ["Best today", board ? `${board.best} waves` : "—"],
-            ["Your best ever", best ? `${best} waves` : "—"],
-          ].map(([label, value]) => (
-            <Reveal key={label} className="surface p-5">
-              <div className="label-mono text-stone-500">{label}</div>
-              <div className="mt-2 font-display text-4xl font-light">{value}</div>
-            </Reveal>
-          ))}
-        </div>
+          <p className="mt-6 max-w-xl text-lead">
+            {twist.blurb} Everyone gets the same arena and the same twist today. Bots come in waves, each one bigger and sharper than the last, and you have one life.
+          </p>
+        </TodayPanel>
       </section>
 
       {/* ---------- How to play ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal>
-          <p className="eyebrow">How to play</p>
-          <h2 className="mt-3 text-section">Drive, dash, brace, bump</h2>
-          <p className="mt-4 max-w-2xl text-lead">
-            Play a party room with {BUMPER_MIN_PLAYERS}–{BUMPER_MAX_PLAYERS} friends: a few rounds, points for lasting and for every knockout. Practice is always open too: any arena, up to seven bots, easy to hard.
-          </p>
-        </Reveal>
-        <div className="mt-8 grid gap-8 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((s, i) => (
-            <Reveal key={s.title} delay={i * 90} className="border-t hairline pt-6">
-              <span className="grid h-10 w-10 place-items-center rounded-full ring-1 ring-lamp-400 font-mono text-xs font-semibold text-lamp-300">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <h3 className="mt-5 font-display text-2xl font-light uppercase">{s.title}</h3>
-              <p className="mt-2 font-serif text-stone-400">{s.body}</p>
-            </Reveal>
-          ))}
+      <section ref={howRef} className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow="How to play" title="Drive, dash, brace, bump" />
+        <StepCards steps={STEPS} />
+      </section>
+
+      {/* ---------- Arenas ---------- */}
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow={`${Object.keys(BUMPER_MAPS).length} arenas`} title="Every floor fights back" />
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Object.values(BUMPER_MAPS).map((m, i) => {
+            const isToday = m.id === day.map;
+            return (
+              <Reveal key={m.id} delay={i * 80} className={`surface relative p-6 ${isToday ? "shadow-glow ring-2 ring-accent" : ""}`}>
+                {isToday && <span className="absolute top-4 right-4 rounded-full bg-accent px-2.5 py-1 label-mono text-accent-ink">Today</span>}
+                <ArenaMark kind={m.id === "ice-floe" ? "ice" : m.kind} />
+                <h3 className="mt-5 font-display text-2xl font-bold tracking-tight">{m.name}</h3>
+                <p className="mt-2 text-stone-400">{m.blurb}</p>
+              </Reveal>
+            );
+          })}
         </div>
       </section>
+
+      {/* ---------- Ways to play ---------- */}
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow="Pick your fight" title="Alone, against the day, or with friends" />
+        <WayCards
+          playable={!phone}
+          ways={[
+            {
+              title: "Daily Gauntlet",
+              body: "One life against waves of bots, each bigger and sharper. Your first run of the day goes on the leaderboard.",
+              to: PLAY_PATH,
+              cta: mine ? "Play again" : "Run it",
+            },
+            { title: "Practice", body: "Any arena, up to seven bots, easy to hard. Pickups on or off. Always open.", to: PLAY_PATH, cta: "Practise" },
+            ...(roomsAvailable
+              ? [
+                  {
+                    title: "Party room",
+                    body: `${BUMPER_MIN_PLAYERS}–${BUMPER_MAX_PLAYERS} friends, a few rounds, points for lasting and for every knockout. Share a code and go.`,
+                    to: `${PLAY_PATH}?friends=1`,
+                    cta: "Make a room",
+                  },
+                ]
+              : []),
+          ]}
+        />
+      </section>
+
+      <LastCall
+        title="Last ring rolling wins."
+        action={
+          !phone && (
+            <Link to={PLAY_PATH} className={lastCallButton}>
+              {cta} <span aria-hidden>→</span>
+            </Link>
+          )
+        }
+      >
+        Gauntlet #{day.number} on {map?.name}, {day.modifier === "classic" ? "no twist, just the edge" : `with ${twist.name} on`}. Same arena for everyone, all day.
+      </LastCall>
     </div>
   );
 }

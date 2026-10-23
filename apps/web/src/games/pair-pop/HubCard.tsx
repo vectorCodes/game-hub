@@ -39,7 +39,7 @@ export function PairPopCover() {
           return (
             <g key={i} className={i === TURNING ? "cover-flip" : undefined}>
               <rect x={x + 0.5} y={y + 0.5} width={TILE - 1} height={TILE - 1} fill={i === TURNING ? "#cc922f" : "#f3ead9"} stroke="#2a2216" strokeOpacity="0.3" strokeWidth="1" />
-              <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Chakra Petch, sans-serif" fontWeight="300" fontSize="16" fill="#2a2216" fillOpacity={i === TURNING ? 0.9 : 0.35}>
+              <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Bricolage Grotesque, sans-serif" fontWeight="800" fontSize="16" fill="#2a2216" fillOpacity={i === TURNING ? 0.9 : 0.35}>
                 ?
               </text>
             </g>

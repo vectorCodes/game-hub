@@ -32,7 +32,8 @@ const STOPS = [
   { time: "Tomorrow", title: "Keep the streak", body: "Sign in and your streak, stats and unlocks carry across every game, day after day." },
 ];
 
-const INK = "#2a2216";
+/** The pen: ink on paper, rice on night. */
+const INK = "var(--n-100)";
 
 export function DayRoute() {
   const rootRef = useRef<HTMLElement>(null);
@@ -122,9 +123,9 @@ export function DayRoute() {
 
             <circle cx={SUN.cx} cy={SUN.cy} r={SUN.r * 1.25} fill="url(#day-glow)" />
             <circle cx={SUN.cx} cy={SUN.cy} r={SUN.r} fill="url(#day-sun)" />
-            {/* Tomorrow: the night, in ink, with its craters in paper. */}
+            {/* Tomorrow: the moon, in the pen's colour, with its craters in the ground's. */}
             <circle cx={MOON.cx} cy={MOON.cy} r={MOON.r} fill={INK} />
-            <g fill="#dfcfb2" opacity="0.3">
+            <g fill="var(--n-800)" opacity="0.3">
               <circle cx={MOON.cx - 14} cy={MOON.cy - 10} r="7" />
               <circle cx={MOON.cx + 12} cy={MOON.cy + 14} r="5" />
               <circle cx={MOON.cx + 18} cy={MOON.cy - 18} r="3.5" />
@@ -156,7 +157,7 @@ export function DayRoute() {
               <circle r="5" fill="#d9582c" />
             </g>
 
-            <g fontFamily="Azeret Mono, monospace" fontSize="13" letterSpacing="2" fill="#857660">
+            <g fontFamily="Azeret Mono, monospace" fontSize="13" letterSpacing="2" fill="var(--n-500)">
               <text x={SUN.cx} y={SUN.cy + SUN.r + 58} textAnchor="middle">
                 TODAY
               </text>
@@ -173,12 +174,12 @@ export function DayRoute() {
             {stop.time} · Leg {leg + 1}/{STOPS.length}
           </p>
           <div key={leg} className="animate-rise" aria-live="polite">
-            <h3 className="font-display text-lg font-light tracking-tight uppercase md:text-2xl">{stop.title}</h3>
-            <p className="mt-1.5 max-w-[40rem] font-serif text-stone-400">{stop.body}</p>
+            <h3 className="font-display text-xl font-bold tracking-tight md:text-3xl">{stop.title}</h3>
+            <p className="mt-1.5 max-w-[40rem] text-stone-400">{stop.body}</p>
           </div>
           <div className="flex gap-1.5" aria-hidden>
             {STOPS.map((_, i) => (
-              <span key={i} className={`h-1 w-8 rounded-full transition-colors duration-500 ${i <= leg ? "bg-gold" : "bg-ink/15"}`} />
+              <span key={i} className={`h-1 w-8 rounded-full transition-colors duration-500 ${i <= leg ? "bg-accent" : "bg-stone-100/15"}`} />
             ))}
           </div>
         </div>

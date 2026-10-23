@@ -355,7 +355,7 @@ function PracticeOver() {
       <button className="btn btn-primary mt-5 w-full" onClick={next}>
         Next round
       </button>
-      <button className="btn btn-secondary mt-2 w-full" onClick={openMenu}>
+      <button className="btn btn-secondary mt-2 w-full" onClick={() => openMenu()}>
         Menu
       </button>
       <p className="mt-2 hidden text-center text-xs text-stone-400 sm:block">
@@ -463,7 +463,7 @@ function GauntletOver() {
         <button className="btn btn-secondary" onClick={startGauntlet}>
           Run again
         </button>
-        <button className="btn btn-secondary" onClick={openMenu}>
+        <button className="btn btn-secondary" onClick={() => openMenu()}>
           Menu
         </button>
       </div>
@@ -492,7 +492,7 @@ function Corner() {
           ← Leave room
         </button>
       ) : (
-        <button className="glass px-3 py-2 text-stone-100" onClick={openMenu}>
+        <button className="glass px-3 py-2 text-stone-100" onClick={() => openMenu()}>
           ← Menu
         </button>
       )}

@@ -4,7 +4,7 @@ import { Link } from "react-router";
 /** The note in place of the play buttons on the landing page. */
 export function DesktopOnlyNote({ className = "" }: { className?: string }) {
   return (
-    <p className={`inline-flex items-center gap-2 rounded-sm border hairline px-4 py-3 font-serif text-sm text-stone-300 ${className}`}>
+    <p className={`surface inline-flex items-center gap-3 px-4 py-3 text-sm text-stone-300 ${className}`}>
       <span aria-hidden className="text-lg">🖥️</span>
       Prop Hunt is played on a computer, with a keyboard and mouse. Open it on your Mac or PC to play.
     </p>

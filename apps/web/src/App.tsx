@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router";
 import HubHome from "./pages/hub/HubHome";
 import Profile from "./pages/Profile";
@@ -13,8 +13,6 @@ import { games, playPath } from "./games/registry";
 const Album = lazy(() => import("./games/shadow-guess/album/AlbumPage"));
 const AvatarPage = lazy(() => import("./pages/AvatarPage"));
 
-/** Pages that are a single night scene end to end. None today: the whole site is paper. */
-const NIGHT_PAGES = new Set<string>();
 
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;
@@ -121,18 +119,29 @@ export default function App() {
   // Games get the full viewport (no header or footer); landing pages (the hub's and each game's) lay out their
   // own sections; other pages sit in a centered column.
   const game = games.some((g) => pathname === playPath(g));
-  const landing = pathname === "/" || games.some((g) => pathname === g.path);
-  // Paper everywhere, game screens included; night only for pages that are one night scene.
-  const scheme = NIGHT_PAGES.has(pathname) ? "night" : "paper";
+  const landingOf = games.find((g) => pathname === g.path);
+  const landing = pathname === "/" || !!landingOf;
+  // The game whose page this is (its landing or its screen): its accent and night tint.
+  const current = landingOf ?? games.find((g) => pathname === playPath(g));
+  // The hub and the game landings are night (unless the game says paper); game screens and the
+  // other pages are paper.
+  const scheme = pathname === "/" ? "night" : (landingOf?.scheme ?? "paper");
+  const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const { classList } = document.body;
     classList.toggle("theme-night", scheme === "night");
     classList.toggle("theme-paper", scheme === "paper");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", scheme === "night" ? "#0c1f1e" : "#f3ead9");
-  }, [scheme]);
+    // The browser's chrome matches the page's ground, tint included.
+    const ground = getComputedStyle(rootRef.current!).getPropertyValue("--n-950").trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", ground || "#f3ead9");
+  }, [scheme, current]);
 
   return (
-    <div className={`theme-${scheme} relative flex min-h-dvh flex-col text-stone-100`}>
+    <div
+      ref={rootRef}
+      data-game={current?.id}
+      className={`theme-${scheme} ${scheme === "night" ? "night-ground" : ""} relative flex min-h-dvh flex-col text-stone-100`}
+    >
       {/* Games take the whole screen; each has its own way back. */}
       {!game && <Header />}
       <main

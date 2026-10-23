@@ -24,8 +24,8 @@ function Countdown() {
   return (
     <div className="mt-3 flex gap-2 md:gap-3" role="timer" aria-label={`${Number(t.h)} hours, ${Number(t.m)} minutes until the next daily`}>
       {units.map(([label, v]) => (
-        <div key={label} className="brackets min-w-[4.25rem] px-3 py-3 text-center text-ink/30 md:min-w-[5.5rem]">
-          <span className="block font-display text-[1.5rem] font-light text-stone-100 tabular-nums md:text-[2.25rem]">{v}</span>
+        <div key={label} className="brackets min-w-[4.25rem] px-3 py-3 text-center text-stone-100/30 md:min-w-[5.5rem]">
+          <span className="block font-display text-[1.75rem] font-extrabold tracking-tight text-stone-100 tabular-nums md:text-[2.75rem]">{v}</span>
           <span className="mt-1 block label-mono text-stone-500">{label}</span>
         </div>
       ))}
@@ -43,7 +43,7 @@ export function Today() {
       {/* A sliver of the sun rising at the bottom edge: the hero, bookended. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-[62vw] left-1/2 size-[90vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_50%_30%,rgb(217_88_44/0.3),rgb(232_196_120/0.12)_55%,transparent_70%)]"
+        className="pointer-events-none absolute -bottom-[62vw] left-1/2 size-[90vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_50%_30%,rgb(217_88_44/0.26),rgb(232_196_120/0.05)_45%,transparent_68%)]"
       />
 
       <div className="container-page relative">
@@ -62,25 +62,25 @@ export function Today() {
           </Reveal>
 
           <Reveal delay={100}>
-            <ol className="divide-y divide-ink/15 border-y hairline">
+            <ol className="divide-y divide-stone-100/15 border-y hairline">
               {games.map((g, i) => (
-                <li key={g.id}>
-                  <Link to={g.path} className="group flex items-center gap-4 py-5 transition-colors hover:bg-ink/[0.03]">
-                    <span className="label-mono text-ember-500">{String(i + 1).padStart(2, "0")}</span>
+                <li key={g.id} data-game={g.id}>
+                  <Link to={g.path} className="group flex items-center gap-4 px-2 py-5 transition-colors hover:bg-stone-100/[0.04]">
+                    <span className="label-mono text-accent">{String(i + 1).padStart(2, "0")}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-display text-lg font-light tracking-tight uppercase">{g.title}</span>
+                      <span className="block font-display text-xl font-bold tracking-tight">{g.title}</span>
                       <span className="mt-1 block label-mono text-stone-500">
                         <g.Status />
                       </span>
                     </span>
-                    <span aria-hidden className="label-mono text-stone-300 transition-transform group-hover:translate-x-1">
+                    <span aria-hidden className="font-display font-bold text-accent transition-transform group-hover:translate-x-1">
                       Play →
                     </span>
                   </Link>
                 </li>
               ))}
             </ol>
-            <p className="mt-5 font-serif text-sm text-stone-500">Free to play · No sign-up needed · New challenges every day</p>
+            <p className="mt-5 text-sm text-stone-500">Free to play · No sign-up needed · New challenges every day</p>
         </Reveal>
         </div>
       </div>

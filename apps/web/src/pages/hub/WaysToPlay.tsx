@@ -54,27 +54,27 @@ export function WaysToPlay() {
             <Reveal delay={i * 110} className="h-full">
               <div
                 className={`group relative flex h-full flex-col overflow-hidden p-6 transition-[transform,box-shadow] duration-500 ease-mirai hover:-translate-y-1.5 md:p-8 ${
-                  w.featured ? "surface shadow-[inset_0_0_0_1px_var(--color-gold)] hover:shadow-[inset_0_0_0_1px_var(--color-gold),0_30px_80px_-30px_rgb(204_146_47/0.5)]" : "surface"
+                  w.featured ? "surface shadow-[inset_0_0_0_2px_var(--accent)] hover:shadow-[inset_0_0_0_2px_var(--accent),0_30px_80px_-30px_color-mix(in_oklch,var(--glow)_55%,transparent)]" : "surface"
                 }`}
               >
                 {/* Orbit rings: one per step out, from you to your friends. */}
-                <svg aria-hidden viewBox="0 0 200 200" className="absolute -top-10 -right-10 size-48 text-ink/12 transition-transform duration-[1.2s] group-hover:rotate-45">
+                <svg aria-hidden viewBox="0 0 200 200" className="absolute -top-10 -right-10 size-48 text-stone-100/12 transition-transform duration-[1.2s] group-hover:rotate-45">
                   {Array.from({ length: i + 1 }, (_, k) => (
                     <ellipse key={k} cx="100" cy="100" rx={40 + k * 18} ry={18 + k * 8} fill="none" stroke="currentColor" transform={`rotate(${-20 + k * 14} 100 100)`} />
                   ))}
                   <circle cx="100" cy="100" r="9" fill="#d9582c" opacity="0.6" />
                 </svg>
 
-                {w.featured && <span className="self-start rounded-xs bg-gold px-2 py-1 label-mono text-ink">Recommended</span>}
-                <h3 className={`font-display text-xl tracking-[0.12em] uppercase ${w.featured ? "mt-5" : ""}`}>{w.name}</h3>
+                {w.featured && <span className="self-start rounded-full bg-accent px-2.5 py-1 label-mono text-accent-ink">Recommended</span>}
+                <h3 className={`font-display text-2xl font-bold tracking-tight ${w.featured ? "mt-5" : ""}`}>{w.name}</h3>
                 <p className="mt-6 flex items-baseline gap-2">
-                  <span className="font-display text-[3.5rem] leading-none font-light">{w.count}</span>
+                  <span className="font-display text-[4rem] leading-none font-extrabold tracking-tight">{w.count}</span>
                   <span className="label-mono text-stone-500">{w.unit}</span>
                 </p>
                 <ul className="mt-8 space-y-2.5 border-t hairline pt-6">
                   {w.lines.map((l) => (
-                    <li key={l} className="flex gap-3 font-serif text-stone-300">
-                      <span aria-hidden className="mt-2.5 size-1 shrink-0 rounded-full bg-ember-500" />
+                    <li key={l} className="flex gap-3 text-stone-300">
+                      <span aria-hidden className="mt-2.5 size-1 shrink-0 rounded-full bg-accent" />
                       {l}
                     </li>
                   ))}
