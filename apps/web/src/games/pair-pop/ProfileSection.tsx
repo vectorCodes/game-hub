@@ -25,7 +25,7 @@ export function PairPopProfileSection() {
   const rank = board?.mine?.rank;
 
   return (
-    <section className="animate-rise [animation-delay:280ms]">
+    <section data-game="pair-pop" className="animate-rise [animation-delay:280ms]">
       <ChapterHeader number="03" title="Pair Pop" note="Flip the tiles, find the twins." link={{ to: PAIR_POP_HOME, label: "Today's board" }} />
       <StatStrip
         stats={[
@@ -37,7 +37,7 @@ export function PairPopProfileSection() {
       />
       <div className="pt-6">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <span className="font-display text-lg font-light uppercase">Levels</span>
+          <span className="font-display text-xl font-bold tracking-tight">Levels</span>
           <span className="label-mono text-stone-500">Three stars, barely a wrong move</span>
         </div>
         <ol className="grid grid-cols-4 gap-2 sm:grid-cols-7 sm:gap-3">
@@ -46,11 +46,11 @@ export function PairPopProfileSection() {
             const got = stars[i] ?? 0;
             const tile = (
               <div
-                className={`flex aspect-square flex-col items-center justify-center rounded-xs text-center transition-transform duration-300 ease-mirai ${
-                  open ? "surface hover:-translate-y-0.5" : "border border-dashed border-white/20"
+                className={`flex aspect-square flex-col items-center justify-center rounded-(--radius-ui) text-center transition-[transform,box-shadow] duration-300 ease-mirai ${
+                  open ? "surface hover:-translate-y-0.5 hover:shadow-glow" : "border border-dashed border-white/20"
                 }`}
               >
-                <span className={`font-display text-2xl leading-none font-light sm:text-3xl ${open ? "" : "text-stone-600"}`}>{i + 1}</span>
+                <span className={`font-display text-2xl leading-none font-extrabold sm:text-3xl ${open ? "" : "text-stone-600"}`}>{i + 1}</span>
                 <span className="mt-1 text-xs tracking-tight sm:text-sm" aria-label={`${got} stars`}>
                   {[0, 1, 2].map((s) => (
                     <span key={s} className={s < got ? "text-lamp-400" : "text-white/20"}>

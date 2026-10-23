@@ -1,6 +1,7 @@
-// /album: the Shadow Album, set like a collection catalogue. A masthead with a progress ring
-// and an index of categories, then each category's plates: numbered specimen cards for the
-// objects found, dashed placeholders for the ones still hidden.
+// /album: the Shadow Album, a collection catalogue on night. A masthead with a progress ring
+// and an index of categories, then each category's plates: numbered specimen cards (lit
+// paper, like the wall the shadows fall on) for the objects found, dashed placeholders for
+// the ones still hidden.
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { AlbumCategory, AlbumEntry, AlbumView } from "@shadow/shared";
@@ -16,7 +17,7 @@ import { thumbnail } from "./thumbnails";
 const plate = (n: number) => `No. ${String(n).padStart(3, "0")}`;
 const slug = (name: string) => `cat-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-/** The share of the collection found, as a ring that fills in sun red. */
+/** The share of the collection found, as a ring that fills in the accent. */
 function ProgressRing({ found, total }: { found: number; total: number }) {
   const [grown, setGrown] = useState(false);
   useEffect(() => {
@@ -35,16 +36,17 @@ function ProgressRing({ found, total }: { found: number; total: number }) {
           cy="60"
           r={r}
           fill="none"
-          stroke="#d9582c"
-          strokeWidth="6"
+          stroke="var(--accent)"
+          strokeWidth="7"
+          strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={grown ? c * (1 - share) : c}
-          className="transition-[stroke-dashoffset] duration-1000 ease-mirai"
+          className="transition-[stroke-dashoffset] duration-1000 ease-mirai [filter:drop-shadow(0_0_6px_var(--glow))]"
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <div className="font-display text-4xl leading-none font-light tabular-nums sm:text-5xl">{found}</div>
+          <div className="font-display text-4xl leading-none font-extrabold tracking-tight tabular-nums sm:text-5xl">{found}</div>
           <div className="mt-1 label-mono text-stone-500">of {total}</div>
         </div>
       </div>
@@ -69,7 +71,7 @@ function FoundPlate({ entry, number, onOpen }: { entry: AlbumEntry; number: numb
     <li>
       <button
         onClick={onOpen}
-        className="group block w-full overflow-hidden rounded-xs bg-paper-soft text-left text-ink ring-1 ring-ink/12 transition duration-300 ease-mirai hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(60,45,20,0.55)]"
+        className="group block w-full overflow-hidden rounded-(--radius-ui) bg-paper-soft text-left text-ink transition duration-300 ease-mirai hover:-translate-y-1 hover:shadow-glow"
       >
         <div className="relative aspect-square bg-wall">
           {src ? (
@@ -81,7 +83,7 @@ function FoundPlate({ entry, number, onOpen }: { entry: AlbumEntry; number: numb
           {entry.bestAngle === 1 && <span title="Solved on the first angle" className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-sun" />}
         </div>
         <div className="border-t border-ink/10 px-2.5 py-2 sm:px-3">
-          <div className="truncate font-serif text-sm font-semibold">{entry.name}</div>
+          <div className="truncate font-display text-sm font-bold tracking-tight">{entry.name}</div>
           <div className="truncate font-mono text-[10px] tracking-[0.08em] text-ink/55 uppercase">
             Angle {entry.bestAngle}
             {entry.solves > 1 && ` · ×${entry.solves}`}
@@ -94,13 +96,13 @@ function FoundPlate({ entry, number, onOpen }: { entry: AlbumEntry; number: numb
 
 function LockedPlate({ number }: { number: number }) {
   return (
-    <li aria-hidden className="overflow-hidden rounded-xs border border-dashed border-white/25">
+    <li aria-hidden className="overflow-hidden rounded-(--radius-ui) border border-dashed border-white/15">
       <div className="relative grid aspect-square place-items-center">
-        <span className="font-display text-3xl font-light text-stone-600">?</span>
+        <span className="font-display text-4xl font-extrabold text-stone-700">?</span>
         <span className="absolute top-2 left-2 font-mono text-[9px] tracking-[0.12em] text-stone-600 uppercase">{plate(number)}</span>
       </div>
       <div className="border-t border-dashed border-white/20 px-2.5 py-2 sm:px-3">
-        <div className="font-serif text-sm text-stone-600">Still in shadow</div>
+        <div className="text-sm text-stone-600">Still in shadow</div>
         <div className="font-mono text-[10px] text-stone-700">· · ·</div>
       </div>
     </li>
@@ -115,15 +117,15 @@ function CategorySection({ category, index, firstPlate, onOpen }: { category: Al
     <section id={slug(category.name)} className="scroll-mt-24">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b hairline pb-3">
         <div>
-          <div className="label-mono text-ember-400">{String(index + 1).padStart(2, "0")}</div>
-          <h2 className="mt-1 flex items-center gap-3 font-display text-2xl leading-none font-light uppercase sm:text-3xl">
+          <div className="label-mono text-accent-text">{String(index + 1).padStart(2, "0")}</div>
+          <h2 className="mt-2 flex items-center gap-3 font-display text-3xl leading-none font-bold tracking-tight sm:text-4xl">
             {category.name}
-            {complete && <span className="rounded-full bg-gold px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.14em] text-ink">Complete</span>}
+            {complete && <span className="rounded-full bg-accent px-2.5 py-1 label-mono text-accent-ink">Complete</span>}
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-1 w-24 overflow-hidden bg-white/12 sm:w-32">
-            <div className="h-full bg-sun" style={{ width: `${category.total ? (found / category.total) * 100 : 0}%` }} />
+          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10 sm:w-32">
+            <div className="h-full rounded-full bg-accent" style={{ width: `${category.total ? (found / category.total) * 100 : 0}%` }} />
           </div>
           <span className="label-mono text-stone-400 tabular-nums">
             {found}/{category.total}
@@ -166,7 +168,7 @@ function Viewer({ entry, category, onClose }: { entry: AlbumEntry; category: str
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg animate-rise overflow-hidden rounded-t-sm bg-paper text-ink shadow-[0_40px_90px_-30px_rgba(0,0,0,0.6)] sm:rounded-xs"
+        className="w-full max-w-lg animate-rise overflow-hidden rounded-t-[1.75rem] bg-paper text-ink shadow-[0_40px_90px_-30px_rgba(0,0,0,0.6)] sm:rounded-[1.75rem]"
       >
         <div className="relative aspect-[4/3] bg-wall">
           <ShadowScene modelUrl={entry.modelUrl} angle={REVEAL_ANGLE} revealed orbit />
@@ -183,12 +185,12 @@ function Viewer({ entry, category, onClose }: { entry: AlbumEntry; category: str
         </div>
         <div className="p-5 sm:p-6">
           <div className="font-mono text-[10px] tracking-[0.14em] text-sun uppercase">{category}</div>
-          <h3 className="mt-1 font-display text-3xl font-light uppercase">{entry.name}</h3>
+          <h3 className="mt-1 font-display text-3xl font-bold tracking-tight">{entry.name}</h3>
           <dl className="mt-4 grid grid-cols-3 border-y border-ink/15">
             {facts.map(([label, value], i) => (
               <div key={label} className={`py-3 ${i ? "border-l border-ink/15 pl-3" : ""}`}>
                 <dt className="font-mono text-[10px] tracking-[0.12em] text-ink/50 uppercase">{label}</dt>
-                <dd className="mt-1 font-serif text-sm font-semibold">{value}</dd>
+                <dd className="mt-1 text-sm font-semibold">{value}</dd>
               </div>
             ))}
           </dl>
@@ -220,18 +222,18 @@ export default function AlbumPage() {
   }, [authKey]);
 
   if (failed) {
-    return <p className="py-16 text-center font-serif text-stone-400">Couldn't load your album. Try again in a moment.</p>;
+    return <p className="py-16 text-center text-stone-400">Couldn't load your album. Try again in a moment.</p>;
   }
   if (!album) {
     return (
       <div className="space-y-10">
-        <div className="flex items-end justify-between gap-6 border-b hairline pb-8">
-          <div className="h-16 w-72 max-w-[60%] animate-pulse bg-white/[0.06]" />
+        <div className="flex items-end justify-between gap-6 pb-8">
+          <div className="h-16 w-72 max-w-[60%] animate-pulse rounded-xl bg-white/[0.06]" />
           <div className="h-32 w-32 animate-pulse rounded-full bg-white/[0.06]" />
         </div>
         <div className="grid grid-cols-2 gap-3 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6">
           {Array.from({ length: 12 }, (_, i) => (
-            <div key={i} className="aspect-[4/5] animate-pulse rounded-xs bg-white/[0.04]" />
+            <div key={i} className="aspect-[4/5] animate-pulse rounded-(--radius-ui) bg-white/[0.04]" />
           ))}
         </div>
       </div>
@@ -249,8 +251,9 @@ export default function AlbumPage() {
   return (
     <div className="space-y-12 sm:space-y-16">
       {/* ---------- Masthead ---------- */}
-      <header className="animate-rise border-b hairline pb-8">
-        <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <header className="surface relative animate-rise overflow-hidden p-6 sm:p-10">
+        <div aria-hidden className="absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/15 blur-3xl" />
+        <div className="relative flex flex-col-reverse gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="eyebrow">Shadow Album · The collection</p>
             <h1 className="mt-3 text-display">Album</h1>
@@ -258,7 +261,7 @@ export default function AlbumPage() {
           </div>
           <ProgressRing found={album.found} total={album.total} />
         </div>
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 label-mono text-stone-500">
+        <div className="relative mt-6 flex flex-wrap gap-x-6 gap-y-2 label-mono text-stone-500">
           <span>{categories.length} categories</span>
           <span>{completeCount} complete</span>
           <span className="flex items-center gap-2">
@@ -269,12 +272,12 @@ export default function AlbumPage() {
 
       {/* ---------- Index ---------- */}
       {album.found > 0 && (
-        <nav aria-label="Categories" className="-mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] sm:-mt-8 sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+        <nav aria-label="Categories" className="-mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] sm:-mt-6 sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => (
             <a
               key={c.name}
               href={`#${slug(c.name)}`}
-              className="shrink-0 rounded-full px-3.5 py-2 label-mono text-stone-300 ring-1 ring-white/15 transition-colors hover:bg-stone-100 hover:text-stone-950"
+              className="shrink-0 rounded-full px-3.5 py-2 label-mono text-stone-300 ring-1 ring-white/15 transition-colors hover:bg-accent hover:text-accent-ink hover:ring-accent"
             >
               {c.name} <span className="text-stone-500">{c.found.length}/{c.total}</span>
             </a>
@@ -283,9 +286,9 @@ export default function AlbumPage() {
       )}
 
       {enabled && !user && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-y hairline py-4">
-          <p className="flex items-center gap-3 font-serif text-stone-300">
-            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-sun" />
+        <div className="surface flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="flex items-center gap-3 text-stone-300">
+            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-accent" />
             Sign in to keep your album on every device.
           </p>
           <button onClick={() => void signIn()} className="btn btn-primary">
@@ -295,8 +298,8 @@ export default function AlbumPage() {
       )}
 
       {album.found === 0 && (
-        <div className="grid place-items-center border-y hairline py-16 text-center">
-          <span aria-hidden className="h-14 w-14 rounded-full ring-1 ring-ember-400" />
+        <div className="surface grid place-items-center py-16 text-center">
+          <span aria-hidden className="h-14 w-14 rounded-full ring-2 ring-accent" />
           <h2 className="mt-6 text-section">An empty album</h2>
           <p className="mt-3 max-w-sm text-lead">Solve a shadow and its object becomes your first plate.</p>
           <Link to={SHADOW_GUESS_PATH} className="btn btn-primary mt-8">
