@@ -91,7 +91,7 @@ export interface BumperMap {
   /** One line for menus. */
   blurb: string;
   kind: BumperMapKind;
-  /** Arena radius (m) for 8 rings; fewer rings get a smaller arena (see arenaRadius). */
+  /** Arena radius (m) from 4 rings up; 2 or 3 rings get a slightly smaller arena (see arenaRadius). */
   radius: number;
   /** Grip, as a share of normal: under 1 is slippery (acceleration, drag and braking all scale). */
   grip: number;
@@ -235,8 +235,8 @@ export function hexAt(x: number, z: number): { q: number; r: number } {
   return { q, r };
 }
 
-/** The arena shrinks with fewer rings, so 2 players don't spend a round looking for each other. */
+/** Full size from 4 rings (a full party room); a little smaller for 2 or 3, so they don't spend a round looking for each other. */
 export function arenaRadius(map: BumperMap, rings: number): number {
-  const share = Math.min(1, Math.max(0, (rings - 2) / 6));
-  return map.radius * (0.75 + 0.25 * share);
+  const share = Math.min(1, Math.max(0, (rings - 2) / 2));
+  return map.radius * (0.85 + 0.15 * share);
 }

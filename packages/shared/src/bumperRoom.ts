@@ -10,7 +10,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // (predicting their own ring in between). See Bumper-arena-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const BUMPER_PROTOCOL_VERSION = 1;
+export const BUMPER_PROTOCOL_VERSION = 2;
 export const BUMPER_MIN_PLAYERS = 2;
 export const BUMPER_MAX_PLAYERS = 4;
 

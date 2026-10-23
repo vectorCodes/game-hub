@@ -191,7 +191,7 @@ Every skin can be earned through its challenge or bought with coins.
 
 All arenas float in the sky above a soft, far-away world (falling off is falling into the
 clouds), so the edge is always obvious and falls read clearly. Each map is a flat-ish arena,
-about 14–18 m across for 8 players (scaled down for fewer players), with **one twist**.
+full size from 4 rings (a full party room), 85% for 2 rings, with **one twist**.
 Built from Kenney Platformer Kit / Nature Kit / Food Kit pieces and simple meshes.
 
 **8 maps: 4 at launch, 4 later.**
