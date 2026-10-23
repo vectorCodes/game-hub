@@ -23,6 +23,7 @@ import {
   BUMPER_STEP,
   BumperClientMessage,
   BumperSim,
+  bumperTitles,
   packPatches,
   packPickups,
   packRing,
@@ -30,6 +31,7 @@ import {
   placePoints,
   rankBumper,
   roundPlaces,
+  suddenDeathEnd,
   type BumperEvent,
   type BumperResultsBody,
   type BumperRoundResult,
@@ -55,6 +57,11 @@ interface Player extends CorePlayer {
   score: number;
   roundWins: number;
   kos: number;
+  /** For the podium titles (bumperTitles), over the match. */
+  wobbleTaken: number;
+  selfOuts: number;
+  peakSurvived: number;
+  lastSecond: number;
   /** The latest stick (-1–1) and brace. */
   input: { x: number; z: number; brace: boolean };
   /** The last dash count heard; a new one waits for the next step. */
@@ -86,6 +93,8 @@ interface Room extends CoreRoom<Player, BumperStatus> {
 type Msg = BumperServerMessage;
 
 const STILL = { x: 0, z: 0, brace: false };
+/** A player's match totals at the start. */
+const NO_SCORE = { score: 0, roundWins: 0, kos: 0, wobbleTaken: 0, selfOuts: 0, peakSurvived: 0, lastSecond: 0 };
 
 export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClientMessage, BumperView, Msg> {
   protected readonly maxPlayers = BUMPER_MAX_PLAYERS;
@@ -101,6 +110,9 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
   /** The sim's events since the last snapshot. */
   private events: BumperEvent[] = [];
   private stopAt: number | null = null;
+  /** This round: each ring's Wobble a step ago, and the highest it reached. */
+  private wobbleWas = new Map<string, number>();
+  private roundPeak = new Map<string, number>();
 
   protected newRoom(code: string): Room {
     return {
@@ -124,7 +136,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
   protected newPlayer(core: CorePlayer): Player {
     const taken = new Set(this.room!.players.map((p) => p.color));
     const color = [0, 1, 2, 3].find((c) => !taken.has(c)) ?? 0;
-    return { ...core, color, score: 0, roundWins: 0, kos: 0, input: { ...STILL }, dashCount: 0, dashPending: false, ack: -1, since: 0 };
+    return { ...core, color, ...NO_SCORE, input: { ...STILL }, dashCount: 0, dashPending: false, ack: -1, since: 0 };
   }
 
   protected parse(data: unknown) {
@@ -178,7 +190,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
         if (seated.length < BUMPER_MIN_PLAYERS || seated.some((p) => p.id !== me.id && (!p.ready || !p.connected))) {
           return this.send(ws, { type: "error", code: "not_ready" });
         }
-        for (const p of seated) Object.assign(p, { score: 0, roundWins: 0, kos: 0, xp: undefined });
+        for (const p of seated) Object.assign(p, NO_SCORE, { xp: undefined });
         const { map, rounds } = room.settings;
         Object.assign(room, {
           round: 0,
@@ -195,7 +207,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       case "rematch":
         if (room.status !== "results") return;
         room.players = room.players.filter((p) => !p.dnf);
-        for (const p of room.players) Object.assign(p, { ready: false, score: 0, roundWins: 0, kos: 0 });
+        for (const p of room.players) Object.assign(p, NO_SCORE, { ready: false });
         Object.assign(room, { status: "lobby", round: 0, rounds: 0, maps: [], map: null, entrants: [], phaseEndsAt: null, lastRound: null, standings: null });
         this.fixHost();
         break;
@@ -230,6 +242,8 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     this.steps = 0;
     this.events = [];
     this.stopAt = null;
+    this.wobbleWas.clear();
+    this.roundPeak.clear();
     this.loop ??= setInterval(() => this.run(), 25);
   }
 
@@ -259,6 +273,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       }
       sim.step(BUMPER_STEP);
       if (sim.phase === "play" && sim.t >= BUMPER_ROUND_MAX_SECONDS) sim.timeUp();
+      this.count(sim);
       const over = sim.events.some((e) => e.type === "over");
       this.events.push(...sim.events);
       sim.events.length = 0;
@@ -269,6 +284,21 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       this.snapshot();
       this.sim = null;
       this.stopLoop();
+    }
+  }
+
+  /** The titles' stats, each step: Wobble taken and the round's highest, falls nobody caused. */
+  private count(sim: BumperSim) {
+    for (const r of sim.rings) {
+      const p = this.player(r.id);
+      const was = this.wobbleWas.get(r.id) ?? 0;
+      if (p && r.state === "in" && r.wobble > was) p.wobbleTaken = (p.wobbleTaken ?? 0) + (r.wobble - was);
+      this.wobbleWas.set(r.id, r.wobble);
+      if (r.state === "in") this.roundPeak.set(r.id, Math.max(this.roundPeak.get(r.id) ?? 0, r.wobble));
+    }
+    for (const e of sim.events) {
+      const p = e.type === "out" && e.by === null ? this.player(e.id) : undefined;
+      if (p) p.selfOuts = (p.selfOuts ?? 0) + 1;
     }
   }
 
@@ -308,6 +338,8 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     const places = roundPlaces(sim.rings);
     const points: Record<string, number> = {};
     const kos: Record<string, number> = {};
+    // Won with the arena (all but) shrunk away.
+    const late = sim.t >= suddenDeathEnd(sim.map.suddenDeath, sim.startRadius) - 5;
     for (const r of sim.rings) {
       kos[r.id] = r.kos;
       points[r.id] = placePoints(places[r.id], places) + r.kos * BUMPER_KO_POINTS;
@@ -316,6 +348,8 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       p.score += points[r.id];
       p.kos += r.kos;
       if (places[r.id] === 1) p.roundWins += 1;
+      if (places[r.id] === 1 && late && sim.winner === r.id) p.lastSecond = (p.lastSecond ?? 0) + 1;
+      if (r.state === "in") p.peakSurvived = Math.max(p.peakSurvived ?? 0, this.roundPeak.get(r.id) ?? 0);
     }
     room.lastRound = { round: room.round, map: room.map!, places, points, kos };
     room.status = "roundOver";
@@ -329,9 +363,16 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     const room = this.room!;
     room.status = "results";
     room.phaseEndsAt = null;
-    room.standings = rankBumper(
+    const ranked = rankBumper(
       room.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, color: p.color, score: p.score, roundWins: p.roundWins, kos: p.kos, dnf: p.dnf })),
     );
+    const titles = bumperTitles(
+      ranked.map((s) => {
+        const p = this.player(s.id)!;
+        return { id: s.id, dnf: s.dnf, stats: { kos: p.kos, wobbleTaken: p.wobbleTaken ?? 0, selfOuts: p.selfOuts ?? 0, peakSurvived: p.peakSurvived ?? 0, lastSecond: p.lastSecond ?? 0 } };
+      }),
+    );
+    room.standings = ranked.map((s) => ({ ...s, title: titles[s.id] ?? null }));
     this.broadcast({ type: "results", standings: room.standings });
     this.ctx.waitUntil(this.reportResults(room.matchId ?? `${room.code}-${Date.now()}`, room.standings));
   }

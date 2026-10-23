@@ -127,6 +127,66 @@ export interface BumperStanding {
   roundWins: number;
   kos: number;
   dnf: boolean;
+  /** A fun title from the match (bumperTitles), at most one each. */
+  title: BumperTitle | null;
+}
+
+// ---------- Podium titles ----------
+
+/** Just for fun, on the podium and in the share text. Rarest first: that's the order they're handed out in. */
+export const BUMPER_TITLES = {
+  lastSecond: { name: "Last Second", blurb: "Won a round in the last 5 s of sudden death" },
+  pinball: { name: "Pinball", blurb: "Survived a round at the highest Wobble" },
+  gravity: { name: "Gravity's Friend", blurb: "Fell off the most with nobody touching them" },
+  bully: { name: "Bully", blurb: "Most knockouts" },
+  unbudgeable: { name: "Unbudgeable", blurb: "Took the least Wobble" },
+} as const;
+export type BumperTitle = keyof typeof BUMPER_TITLES;
+
+/** What the room counts over a match for the titles. */
+export interface BumperMatchStats {
+  kos: number;
+  /** Wobble added by hits, all match (%). */
+  wobbleTaken: number;
+  /** Fell off with nobody's hit to blame. */
+  selfOuts: number;
+  /** The highest Wobble reached in a round they were still on at the end (%). */
+  peakSurvived: number;
+  /** Rounds won in the last 5 s of sudden death. */
+  lastSecond: number;
+}
+
+/** The round time sudden death has shrunk the arena all the way by (s). */
+export function suddenDeathEnd(sd: { at: number; every: number; step: number; minRadius: number }, startRadius: number): number {
+  const drops = Math.max(1, Math.ceil((startRadius - sd.minRadius) / sd.step));
+  return sd.at + (drops - 1) * sd.every;
+}
+
+/**
+ * Hands out the titles: each to the player who leads in it (ties to the better-placed), and
+ * nobody gets two. `players` is in final order; players who left get none.
+ */
+export function bumperTitles(players: { id: string; dnf: boolean; stats: BumperMatchStats }[]): Record<string, BumperTitle> {
+  const out: Record<string, BumperTitle> = {};
+  const here = players.filter((p) => !p.dnf);
+  if (here.length < 2) return out;
+  const rules: Record<BumperTitle, { value: (s: BumperMatchStats) => number; min: number; most: boolean }> = {
+    lastSecond: { value: (s) => s.lastSecond, min: 1, most: true },
+    pinball: { value: (s) => s.peakSurvived, min: 60, most: true },
+    gravity: { value: (s) => s.selfOuts, min: 1, most: true },
+    bully: { value: (s) => s.kos, min: 1, most: true },
+    unbudgeable: { value: (s) => s.wobbleTaken, min: 0, most: false },
+  };
+  for (const title of Object.keys(BUMPER_TITLES) as BumperTitle[]) {
+    const { value, min, most } = rules[title];
+    let best: (typeof here)[number] | null = null;
+    for (const p of here) {
+      if (out[p.id] || value(p.stats) < min) continue;
+      if (!best || (most ? value(p.stats) > value(best.stats) : value(p.stats) < value(best.stats))) best = p;
+    }
+    if (best) out[best.id] = title;
+  }
+  return out;
 }
 
 /**
@@ -263,11 +323,11 @@ export function placePoints(place: number, places: Record<string, number>): numb
 }
 
 /** Final places: the most points; then more rounds won, then more knockouts. Players who left come last. */
-export function rankBumper(players: Omit<BumperStanding, "place">[]): BumperStanding[] {
-  const cmp = (a: Omit<BumperStanding, "place">, b: Omit<BumperStanding, "place">) =>
+export function rankBumper(players: Omit<BumperStanding, "place" | "title">[]): Omit<BumperStanding, "title">[] {
+  const cmp = (a: Omit<BumperStanding, "place" | "title">, b: Omit<BumperStanding, "place" | "title">) =>
     Number(a.dnf) - Number(b.dnf) || b.score - a.score || b.roundWins - a.roundWins || b.kos - a.kos;
   const sorted = players.slice().sort(cmp);
-  const out: BumperStanding[] = [];
+  const out: Omit<BumperStanding, "title">[] = [];
   sorted.forEach((p, i) => {
     const prev = out[i - 1];
     out.push({ ...p, place: prev && cmp(sorted[i - 1], p) === 0 ? prev.place : i + 1 });

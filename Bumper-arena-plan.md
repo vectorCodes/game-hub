@@ -483,7 +483,7 @@ Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seve
 each one shippable on its own, in this order: rewards first (everything else builds on
 them), then the things that change how a round plays, then the things you collect.
 
-Status: 4.1–4.3 built; the rest ⬜ planned.
+Status: 4.1–4.4 built; the rest ⬜ planned.
 
 ### 4.1 Results → XP and coins ✅ built
 
@@ -540,7 +540,7 @@ The pickups from §2, in party rooms and the Gauntlet.
   and a sound. An out player's emote goes in the kill feed, since their car is gone. Bots
   laugh now and then after a knockout.
 
-### 4.4 Podium titles and share text ⬜
+### 4.4 Podium titles and share text ✅ built
 
 - The room keeps a few stats per player over the match: KOs, total Wobble taken, self-outs
   (fell with nobody touching them in the last 3 s), highest Wobble reached and survived the

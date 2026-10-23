@@ -1,6 +1,6 @@
 // Playing with friends: making or joining a room, the room's lobby (who's in, the arena and
 // rounds, ready/start), and once a match is on, the scores, each round's results, and the
-// podium. Joining is putting the code in the URL (?room=K7MPQ); the page does the rest, so a
+// podium with its titles, rewards and share text. Joining is putting the code in the URL (?room=K7MPQ); the page does the rest, so a
 // shared link and a typed code take the same path.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
@@ -12,6 +12,7 @@ import {
   BUMPER_PLACE_POINTS,
   BUMPER_ROTATION,
   BUMPER_ROUND_CHOICES,
+  BUMPER_TITLES,
   DEFAULT_AVATAR,
   ROOM_CODE_LENGTH,
   normalizeRoomCode,
@@ -237,6 +238,11 @@ function Podium({ standings, you }: { standings: BumperStanding[]; you: string |
             <AvatarImage config={s.avatar ?? DEFAULT_AVATAR} size={i === 1 ? "xl" : "lg"} className={s.id === you ? "ring-2 ring-gold" : ""} />
             <span className="mt-1.5 max-w-full truncate text-sm font-semibold">{s.name}</span>
             <span className="text-xs text-stone-400 tabular-nums">{s.score} pts</span>
+            {s.title && (
+              <span className="mt-0.5 max-w-full truncate rounded-xs bg-ink px-1.5 py-0.5 font-mono text-[10px] tracking-[0.06em] text-rice uppercase" title={BUMPER_TITLES[s.title].blurb}>
+                {BUMPER_TITLES[s.title].name}
+              </span>
+            )}
             <div className={`mt-1.5 grid w-full place-items-center rounded-t-xs text-2xl ${heights[i]}`} style={{ background: `${color(s)}55`, boxShadow: `inset 0 3px 0 ${color(s)}` }}>
               {MEDALS[s.place - 1] ?? s.place}
             </div>
@@ -246,6 +252,38 @@ function Podium({ standings, you }: { standings: BumperStanding[]; you: string |
         ),
       )}
     </div>
+  );
+}
+
+/** The match, ready to paste: how many played, and how you did. */
+function shareText(standings: BumperStanding[], rounds: number, you: string | null) {
+  const me = standings.find((s) => s.id === you);
+  const players = standings.filter((s) => !s.dnf).length;
+  const lines = [`Bumper Arena · party of ${players} · ${rounds} rounds`];
+  if (me) {
+    const parts = [`${MEDALS[me.place - 1] ?? `#${me.place}`} ${me.score} pts`, `${me.roundWins} ${me.roundWins === 1 ? "round" : "rounds"} won`, `${me.kos} KOs`];
+    if (me.title) parts.push(BUMPER_TITLES[me.title].name);
+    lines.push(parts.join(" · "));
+  }
+  lines.push(`${window.location.origin}/games/bumper-arena`);
+  return lines.join("\n");
+}
+
+function ShareResult({ standings, rounds, you }: { standings: BumperStanding[]; rounds: number; you: string | null }) {
+  const [copied, setCopied] = useState(false);
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText(standings, rounds, you));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard blocked: nothing to do.
+    }
+  };
+  return (
+    <button onClick={() => void share()} className="btn btn-secondary mt-4 w-full">
+      {copied ? "Copied!" : "Share"}
+    </button>
   );
 }
 
@@ -355,7 +393,10 @@ export function Lobby() {
               <li key={s.id} className={`flex items-center gap-2 py-1.5 ${s.id === you ? "font-semibold" : ""}`}>
                 <span className="w-6 text-center">{MEDALS[s.place - 1] ?? s.place}</span>
                 <span className="h-3 w-3 rounded-full" style={{ background: color(s) }} />
-                <span className="flex-1 truncate">{s.name}</span>
+                <span className="flex-1 truncate">
+                  {s.name}
+                  {s.title && <span className="ml-1.5 text-xs font-normal text-stone-400">· {BUMPER_TITLES[s.title].name}</span>}
+                </span>
                 <span className="text-xs text-stone-400 tabular-nums">
                   {s.roundWins} won · {s.kos} KOs
                 </span>
@@ -363,6 +404,7 @@ export function Lobby() {
               </li>
             ))}
           </ol>
+          <ShareResult standings={standings} rounds={room.rounds} you={you} />
         </>
       ) : (
         <>
