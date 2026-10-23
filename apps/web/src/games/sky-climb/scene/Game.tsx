@@ -258,6 +258,25 @@ function CameraRig() {
 }
 
 /**
+ * The landing page's window: at the foot of today's tower, swaying slowly round the climber
+ * and looking up the column at the climb to come.
+ */
+function PreviewRig() {
+  const sim = useSim();
+  const camera = useThree((s) => s.camera);
+  const look = useMemo(() => new Vector3(), []);
+  useFrame(({ clock }) => {
+    const pl = sim.player;
+    const a = Math.atan2(pl.z, pl.x) + 0.35 + Math.sin(clock.elapsedTime * 0.12) * 0.6;
+    const r = Math.hypot(pl.x, pl.z) + 9;
+    camera.position.set(Math.cos(a) * r, pl.y + 2.6, Math.sin(a) * r);
+    look.set(pl.x * 0.6, pl.y + 3.2, pl.z * 0.6);
+    camera.lookAt(look);
+  });
+  return null;
+}
+
+/**
  * Rendering quality, best first. Everyone starts sharp (phones one step down) and steps down
  * only if the frame rate can't keep up. Anti-aliasing is always on.
  */
@@ -270,14 +289,18 @@ const LEVELS = [
 
 const isPhone = () => window.matchMedia("(max-width: 768px), (pointer: coarse)").matches;
 
-export default function Game() {
+/**
+ * The climb, or with `preview` the landing page's window onto it: the camera sways round the
+ * climber at the foot of the tower, a step down in quality, and no frames while `paused`.
+ */
+export default function Game({ preview = false, paused = false }: { preview?: boolean; paused?: boolean }) {
   const seed = useClimb((s) => s.seed);
   const attempt = useClimb((s) => s.attempt);
   const tower = useMemo(() => generateTower(seed), [seed]);
   // A fresh simulation per attempt: retrying the same tower starts from the bottom.
   const sim = useMemo(() => new Sim(tower), [tower, attempt]);
   const weak = useMemo(isPhone, []);
-  const [level, setLevel] = useState(weak ? 1 : 0);
+  const [level, setLevel] = useState(weak || preview ? 1 : 0);
   const q = LEVELS[level];
   // Never sharper than the screen itself.
   const dpr = Math.min(q.dpr, Math.max(1, window.devicePixelRatio || 1));
@@ -287,6 +310,7 @@ export default function Game() {
       <Canvas
         shadows
         dpr={dpr}
+        frameloop={paused ? "never" : "always"}
         camera={{ fov: 50, near: 0.1, far: 600, position: [12, 3, 0] }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
@@ -303,7 +327,7 @@ export default function Game() {
           <Stars />
           <SpaceBackdrop />
           <Weather weak={weak} />
-          <CameraRig />
+          {preview ? <PreviewRig /> : <CameraRig />}
           <Suspense fallback={null}>
             <Clouds tower={tower} />
             <Island />

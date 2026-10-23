@@ -1,11 +1,11 @@
-// GameHub's front page: a sunrise over paper, the lineup as a reel, the daily loop drawn as
-// you scroll, three ways to play, and today's dailies. One rAF loop (./scroll) drives every
-// scroll-linked section; each game's own landing page opens from the reel.
+// GameHub's front page, on night: every game on the first screen, lit in its own colour,
+// then the daily loop drawn as you scroll, three ways to play, and today's dailies. One rAF
+// loop (./scroll) drives the scroll-linked section; each game's own landing page opens from
+// its card.
 import { useEffect } from "react";
 import { DayRoute } from "./DayRoute";
-import { Lineup } from "./Lineup";
+import { Hero } from "./Hero";
 import { startScroll, useReducedMotion } from "./scroll";
-import { Sunrise } from "./Sunrise";
 import { Today } from "./Today";
 import { WaysToPlay } from "./WaysToPlay";
 
@@ -15,8 +15,7 @@ export default function HubHome() {
 
   return (
     <>
-      <Sunrise reduced={reduced} />
-      <Lineup />
+      <Hero />
       <DayRoute />
       <WaysToPlay />
       <Today />

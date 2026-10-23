@@ -1,9 +1,11 @@
-// /games/prop-hunt: the landing page. A dollhouse cut open, with a seeker's flashlight
-// sweeping the rooms and eyes blinking open on the furniture; a shelf of mugs to try the zap on
-// (one of them is a hider); the two sides; and a round, to scale. The house itself is on /play.
+// /games/prop-hunt: the landing page, on night. A dollhouse cut open on the hero's screen,
+// with a seeker's flashlight sweeping the rooms and eyes blinking open on the furniture; a
+// shelf of mugs to try the zap on (one of them is a hider); the two sides; and a round, to
+// scale. The house itself is on /play.
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { HUNT_FORCED_TAUNT, HUNT_HIDE_SECONDS, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYERS, HUNT_MISS_DAMAGE, HUNT_POINTS, HUNT_ROUND_RESULTS_MS, HUNT_SEEK_SECONDS } from "@shadow/shared";
+import { GameHero, LastCall, lastCallButton, LivePill, SectionHead } from "../../components/landing";
 import { Reveal } from "../../components/Reveal";
 import { play } from "../../lib/sound";
 import { PROP_HUNT_PATH } from "./config";
@@ -33,7 +35,7 @@ function Eyes({ x, y, delay, size = 1 }: { x: number; y: number; delay: number; 
 /** The hero drawing: the Big House cut open, four rooms, a seeker with a torch. */
 function Dollhouse() {
   return (
-    <svg viewBox="0 0 520 430" className="h-auto w-full drop-shadow-[0_30px_40px_rgba(60,45,20,0.25)]" role="img" aria-label="A house cut open like a dollhouse. Eyes peek out of a mug, a jar, a toy box and a rubber duck while a seeker sweeps a torch across the rooms.">
+    <svg viewBox="0 0 520 430" className="h-full w-full drop-shadow-[0_30px_40px_rgba(60,45,20,0.25)]" role="img" aria-label="A house cut open like a dollhouse. Eyes peek out of a mug, a jar, a toy box and a rubber duck while a seeker sweeps a torch across the rooms.">
       <defs>
         <radialGradient id="ph-beam" cx="0" cy="0.5" r="1">
           <stop offset="0" stopColor="#ffe9a8" stopOpacity="0.85" />
@@ -184,9 +186,9 @@ function SpotTheHider() {
       : "One of these mugs is a player. Watch closely, then click to zap it.";
 
   return (
-    <div className="surface relative overflow-hidden rounded-sm p-5 sm:p-8">
+    <div className="surface relative overflow-hidden p-5 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className={`font-serif text-lg ${found ? "text-moss-300" : out ? "text-ember-400" : "text-stone-200"}`}>{message}</p>
+        <p className={`text-lg ${found ? "text-moss-300" : out ? "text-ember-400" : "text-stone-200"}`}>{message}</p>
         <div className="flex items-center gap-3">
           <span className="label-mono text-stone-400">{Math.max(0, hp)} HP</span>
           <div className="h-2 w-28 overflow-hidden rounded-full bg-white/10">
@@ -213,18 +215,18 @@ function SpotTheHider() {
 function Side({ tone, title, line, items }: { tone: "hider" | "seeker"; title: string; line: string; items: [string, ReactNode][] }) {
   const hider = tone === "hider";
   return (
-    <div className={`relative overflow-hidden rounded-sm p-6 ring-1 sm:p-8 ${hider ? "bg-jade/10 ring-jade/30" : "bg-sun/10 ring-sun/30"}`}>
+    <div className={`relative h-full overflow-hidden rounded-(--radius-ui) p-6 ring-1 sm:p-8 ${hider ? "bg-jade/10 ring-jade/30" : "bg-sun/10 ring-sun/30"}`}>
       <span aria-hidden className={`absolute -top-6 -right-4 font-display text-[7rem] leading-none font-bold opacity-[0.08] ${hider ? "text-jade" : "text-sun"}`}>
         {hider ? "?" : "⌖"}
       </span>
       <p className={`label-mono ${hider ? "text-jade" : "text-sun"}`}>{hider ? "Most of you" : "One or two of you"}</p>
       <h3 className="mt-2 font-display text-4xl font-bold tracking-tight">{title}</h3>
-      <p className="mt-2 font-serif text-stone-400">{line}</p>
+      <p className="mt-2 text-stone-400">{line}</p>
       <ul className="mt-6 space-y-3">
         {items.map(([key, what]) => (
           <li key={key} className="flex items-baseline gap-3">
-            <kbd className={`min-w-14 shrink-0 rounded-xs px-2 py-1 text-center font-mono text-xs font-semibold text-white ${hider ? "bg-jade" : "bg-sun"}`}>{key}</kbd>
-            <span className="font-serif text-stone-200">{what}</span>
+            <kbd className={`min-w-14 shrink-0 rounded-md px-2 py-1 text-center font-mono text-xs font-semibold text-white ${hider ? "bg-jade" : "bg-sun"}`}>{key}</kbd>
+            <span className="text-stone-200">{what}</span>
           </li>
         ))}
       </ul>
@@ -254,73 +256,63 @@ export default function PropHuntHome() {
   // Keyboard and mouse only: phones and tablets see a note instead of the way in.
   const touch = useMemo(isTouch, []);
   return (
-    <div className="overflow-x-clip pb-24">
-      {/* ---------- Hero: the house, cut open ---------- */}
-      <section className="relative isolate overflow-hidden border-b hairline">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,rgba(204,146,47,0.16),transparent_60%)]" />
-        <div className="container-page grid min-h-[calc(100svh-4rem)] items-center gap-10 py-16 lg:grid-cols-[1fr_1.1fr] lg:gap-6">
-          <div className="text-center lg:text-left">
-            <p className="eyebrow inline-flex animate-rise items-center gap-2">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sun" />
-              Multiplayer hide &amp; seek · {HUNT_MIN_PLAYERS}–{HUNT_MAX_PLAYERS} friends
-            </p>
-            <h1 className="mt-5 animate-rise text-display [animation-delay:80ms]">
-              Prop <span className="text-ember-400">Hunt</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-lg animate-rise text-lead [animation-delay:160ms] lg:mx-0">
-              You're toy-sized in a huge house. Hide by becoming a mug, a book, a rubber duck. Or hunt your friends with a zapper and a hunch.
-            </p>
-            {touch ? (
-              <DesktopOnlyNote className="mt-9 animate-rise text-left [animation-delay:240ms]" />
-            ) : (
-              <div className="mx-auto mt-9 flex max-w-xs animate-rise flex-col items-stretch gap-3 [animation-delay:240ms] sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:justify-start">
-                <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary">
-                  Play with friends <span aria-hidden>→</span>
-                </Link>
-                <Link to={PROP_HUNT_PATH} className="btn btn-secondary">
-                  Explore the house alone
-                </Link>
-              </div>
-            )}
-            <dl className="mx-auto mt-10 grid max-w-md animate-rise grid-cols-3 border-y hairline py-4 [animation-delay:320ms] lg:mx-0">
-              {[
-                [`${HUNT_HIDE_SECONDS} s`, "to hide"],
-                [clock(HUNT_SEEK_SECONDS), "to seek"],
-                ["200+", "things to be"],
-              ].map(([n, what]) => (
-                <div key={what} className="text-center lg:text-left">
-                  <dt className="font-display text-3xl font-bold tabular-nums">{n}</dt>
-                  <dd className="label-mono text-stone-400">{what}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          <div className="mx-auto w-full max-w-xl animate-rise [animation-delay:200ms]">
+    <div className="relative overflow-x-clip pb-24">
+      <GameHero
+        pill={
+          <LivePill>
+            Hide &amp; seek · {HUNT_MIN_PLAYERS}–{HUNT_MAX_PLAYERS} friends
+          </LivePill>
+        }
+        title="Prop"
+        accent="Hunt"
+        lead="You're toy-sized in a huge house. Hide by becoming a mug, a book, a rubber duck. Or hunt your friends with a zapper and a hunch."
+        actions={
+          touch ? (
+            <DesktopOnlyNote className="text-left" />
+          ) : (
+            <>
+              <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary">
+                Play with friends <span aria-hidden>→</span>
+              </Link>
+              <Link to={PROP_HUNT_PATH} className="btn btn-secondary">
+                Explore the house alone
+              </Link>
+            </>
+          )
+        }
+        meta={[
+          [`${HUNT_HIDE_SECONDS} s`, "to hide"],
+          [clock(HUNT_SEEK_SECONDS), "to seek"],
+          ["200+", "things to be"],
+        ].map(([n, what]) => (
+          <span key={what}>
+            <span className="font-display text-lg font-bold text-stone-50 tabular-nums">{n}</span> {what}
+          </span>
+        ))}
+        screen={
+          <div className="absolute inset-0 px-6 pt-14 pb-4">
             <Dollhouse />
-            <p className="mt-3 text-center label-mono text-stone-400">Count the eyes. Then imagine you're the one with the torch.</p>
           </div>
-        </div>
-      </section>
+        }
+        screenGround="radial-gradient(ellipse at 50% 30%, #fbf3e0, #e8dcc2)"
+        corner="The Big House"
+        caption="Count the eyes"
+      />
 
       {/* ---------- Try the zap ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal>
-          <p className="eyebrow">Try it</p>
-          <h2 className="mt-3 text-section">Spot the hider</h2>
-          <p className="mt-4 max-w-2xl text-lead">Real props never move. Players can't help it.</p>
-        </Reveal>
-        <Reveal delay={90} className="mt-8">
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow="Try it" title="Spot the hider">
+          Real props never move. Players can&rsquo;t help it.
+        </SectionHead>
+        <Reveal delay={90} className="mt-10">
           <SpotTheHider />
         </Reveal>
       </section>
 
       {/* ---------- Two sides ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal>
-          <p className="eyebrow">Two sides</p>
-          <h2 className="mt-3 text-section">Blend in, or find what doesn't</h2>
-        </Reveal>
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow="Two sides" title="Blend in, or find what doesn&rsquo;t" />
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
           <Reveal delay={60}>
             <Side
               tone="hider"
@@ -351,21 +343,19 @@ export default function PropHuntHome() {
       </section>
 
       {/* ---------- A round, to scale ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal>
-          <p className="eyebrow">A round, to scale</p>
-          <h2 className="mt-3 text-section">Everyone seeks once</h2>
-          <p className="mt-4 max-w-2xl text-lead">A match is one round per player. Seekers rotate, so the score at the end is fair.</p>
-        </Reveal>
-        <Reveal delay={90} className="mt-8">
-          <div className="flex h-12 overflow-hidden rounded-sm ring-1 ring-white/10">
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead eyebrow="A round, to scale" title="Everyone seeks once">
+          A match is one round per player. Seekers rotate, so the score at the end is fair.
+        </SectionHead>
+        <Reveal delay={90} className="mt-10">
+          <div className="flex h-14 overflow-hidden rounded-(--radius-ui) ring-1 ring-white/10">
             {ROUND.map((p) => (
               <div key={p.label} className={`${p.color} flex min-w-16 items-center px-3 font-mono text-xs font-semibold text-white uppercase`} style={{ flexGrow: p.seconds / total }}>
                 {p.label} · {clock(p.seconds)}
               </div>
             ))}
           </div>
-          <div className="mt-2 flex gap-2 font-serif text-sm text-stone-400">
+          <div className="mt-2 flex gap-2 text-sm text-stone-400">
             {ROUND.map((p) => (
               <span key={p.label} className="min-w-16" style={{ flexGrow: p.seconds / total }}>
                 {p.note}
@@ -375,30 +365,28 @@ export default function PropHuntHome() {
         </Reveal>
         <Reveal delay={150} className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {POINTS.map(([what, n]) => (
-            <div key={what} className="surface rounded-sm p-4">
-              <div className="font-display text-3xl font-bold text-lamp-400 tabular-nums">+{n}</div>
-              <div className="mt-1 font-serif text-sm text-stone-300">{what}</div>
+            <div key={what} className="surface p-4">
+              <div className="font-display text-4xl font-extrabold tracking-tight text-accent-text tabular-nums">+{n}</div>
+              <div className="mt-1 text-sm text-stone-300">{what}</div>
             </div>
           ))}
         </Reveal>
       </section>
 
-      {/* ---------- Way in ---------- */}
-      <section className="container-page mt-16 sm:mt-24">
-        <Reveal className="relative overflow-hidden rounded-sm bg-ink px-6 py-12 text-center text-[#f3ead9] sm:px-12 sm:py-16">
-          <div aria-hidden className="absolute -bottom-24 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,233,168,0.35),transparent)]" />
-          <p className="relative label-mono text-[#cc922f]">Rooms of {HUNT_MIN_PLAYERS} to {HUNT_MAX_PLAYERS}</p>
-          <h2 className="relative mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">Get your friends in the house.</h2>
-          <p className="relative mx-auto mt-3 max-w-lg font-serif text-[#f3ead9]/70">Make a room, send the code, and see who can stay a teapot the longest.</p>
-          {touch ? (
-            <p className="relative mt-8 font-serif text-sm text-[#f3ead9]/70">🖥️ Desktop only: open Prop Hunt on your Mac or PC to make a room.</p>
+      <LastCall
+        title="Get your friends in the house."
+        action={
+          touch ? (
+            <p className="text-sm opacity-80">🖥️ Desktop only: open Prop Hunt on your Mac or PC to make a room.</p>
           ) : (
-            <Link to={`${PROP_HUNT_PATH}?friends=1`} className="btn btn-primary relative mt-8">
+            <Link to={`${PROP_HUNT_PATH}?friends=1`} className={lastCallButton}>
               Make a room <span aria-hidden>→</span>
             </Link>
-          )}
-        </Reveal>
-      </section>
+          )
+        }
+      >
+        Rooms of {HUNT_MIN_PLAYERS} to {HUNT_MAX_PLAYERS}. Make a room, send the code, and see who can stay a teapot the longest.
+      </LastCall>
     </div>
   );
 }

@@ -56,13 +56,13 @@ const drawBack = (g: CanvasRenderingContext2D, s: number) => {
 
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.font = `300 ${s * 0.6}px "Chakra Petch", "Arial", system-ui, sans-serif`;
+  g.font = `800 ${s * 0.6}px "Bricolage Grotesque", "Arial", system-ui, sans-serif`;
   g.fillStyle = "#2a2216";
   g.fillText("?", s / 2, s / 2 + 12);
 };
 export const backTexture = canvas(512, drawBack);
 // Drawn before the display font may have loaded: redraw once it's in.
-void document.fonts?.load(`300 300px "Chakra Petch"`).then(() => {
+void document.fonts?.load(`800 300px "Bricolage Grotesque"`).then(() => {
   drawBack((backTexture.image as HTMLCanvasElement).getContext("2d")!, 512);
   backTexture.needsUpdate = true;
 });

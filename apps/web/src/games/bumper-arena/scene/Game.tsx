@@ -131,7 +131,7 @@ const VIEW_MARGIN = 2.8;
  * Frames the rings still on the arena (yours always among them while you're in), so riders
  * stay big on a big plate; it pulls back as they spread out, never past the whole plate.
  */
-function CameraRig() {
+function CameraRig({ close = false }: { close?: boolean }) {
   const { camera, size } = useThree();
   const shake = useRef(0);
   const view = useRef<{ x: number; z: number; hw: number; hd: number } | null>(null);
@@ -171,8 +171,8 @@ function CameraRig() {
     // Framing the whole plate: centre it.
     if (want.hw >= whole && want.hd >= whole) want.x = want.z = 0;
     // The countdown and a backdrop: the whole arena and what's around it, before the camera
-    // moves in on the action.
-    if (sim.phase === "countdown" || useBumper.getState().backdrop) {
+    // moves in on the action. `close` (the landing's window) stays in on the rings instead.
+    if (sim.phase === "countdown" || (useBumper.getState().backdrop && !close)) {
       want.x = want.z = 0;
       want.hw = want.hd = sim.startRadius + 5;
     }
@@ -199,9 +199,19 @@ function Riders() {
   return entrants.map((e) => <Rider key={e.id} entrant={e} />);
 }
 
-export default function Game() {
+/**
+ * The game, or with `preview` a silent window onto it (the landing page's: no sounds, a
+ * lighter resolution, and no frames at all while `paused`).
+ */
+export default function Game({ preview = false, paused = false }: { preview?: boolean; paused?: boolean }) {
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ fov: 40, near: 0.5, far: 200, position: [0, 14, 10] }} gl={{ antialias: true }}>
+    <Canvas
+      shadows
+      dpr={preview ? [1, 1.5] : [1, 2]}
+      frameloop={paused ? "never" : "always"}
+      camera={{ fov: 40, near: 0.5, far: 200, position: [0, 14, 10] }}
+      gl={{ antialias: true }}
+    >
       <color attach="background" args={["#cfe6ee"]} />
       <fog attach="fog" args={["#cfe6ee", 30, 75]} />
       <hemisphereLight args={["#fff8ea", "#9cb8c8", 1.6]} />
@@ -218,8 +228,8 @@ export default function Game() {
         shadow-bias={-0.0005}
       />
       <Loop />
-      <Sounds />
-      <CameraRig />
+      {!preview && <Sounds />}
+      <CameraRig close={preview} />
       <Arena />
       <Decor />
       <Clouds />

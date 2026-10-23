@@ -70,7 +70,7 @@ export function AuthMenu() {
           setTimeout(() => setRedirecting(false), 8000);
         }}
         disabled={redirecting}
-        className="flex h-9 items-center gap-2 rounded-xs bg-white px-3.5 label-mono text-stone-900 transition hover:bg-gold hover:text-ink active:scale-95 disabled:cursor-wait disabled:opacity-80"
+        className="flex h-9 items-center gap-2 rounded-full bg-white px-4 font-display text-sm font-bold text-stone-900 transition hover:bg-accent hover:text-accent-ink active:scale-95 disabled:cursor-wait disabled:opacity-80"
       >
         {redirecting ? (
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-stone-900" aria-hidden />

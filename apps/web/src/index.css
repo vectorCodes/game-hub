@@ -1,13 +1,21 @@
 @import "tailwindcss";
 
 /*
- * GameHub design tokens, after Neo-Mirai: warm paper and ink for pages, deep teal night for
- * the games, gold and sun for accents, hairlines and square corners throughout.
+ * GameHub design tokens, Neo-Mirai Arcade: a tinted night for the hub's landing pages, warm
+ * paper and ink for the printed pages and the game screens, a heavy grotesque for titles,
+ * and one accent per game.
  *
- * The colour names the UI uses (stone, lamp, moss, ember, white, black) point at scheme
- * variables, so one class reads right on both: `.theme-paper` (pages) and `.theme-night`
- * (game screens and the 3D night sections). In paper, the neutral scale runs the other way:
- * stone-950 is the paper, stone-100 the ink, and white is "towards the ink".
+ * Three layers:
+ *   1. Primitives: the scheme ramps (--n-*, --gold-*, --jade-*, --sun-*).
+ *   2. Schemes: `.theme-paper` and `.theme-night` fill the ramps, so the colour names the UI
+ *      uses (stone, lamp, moss, ember, white, black) read right on both. In paper the
+ *      neutral scale runs the other way: stone-950 is the paper, stone-100 the ink.
+ *   3. Games: `[data-game="…"]` sets the accent (--accent, --accent-deep, --accent-ink,
+ *      --accent-text, --glow) and, in night, the hue the neutrals are tinted with
+ *      (--tint-h, --tint-c). Classes: bg-accent, text-accent-text, shadow-glow…
+ *
+ * The night ramp is computed from --tint-h/--tint-c on the element that carries
+ * `.theme-night`, so a game's tint must sit on that same element (App's root does both).
  *
  * Hand-written CSS must use the scheme variables (--n-*, --gold-*, --jade-*, --sun-*, and
  * --surface/--hairline/--glass), never var(--color-stone-*): those resolve once at :root
@@ -15,9 +23,16 @@
  */
 @theme inline {
   --font-sans: var(--font-body);
-  --font-display: "Chakra Petch", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Zen Old Mincho", "Hiragino Mincho ProN", ui-serif, Georgia, serif;
   --font-mono: "Azeret Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* The current game's accent (gold on the hub). */
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-glow: var(--glow);
 
   --color-stone-50: var(--n-50);
   --color-stone-100: var(--n-100);
@@ -78,14 +93,29 @@
   --radius-2xl: 6px;
   --radius-3xl: 8px;
   --radius-4xl: 10px;
+  /* Things you press or pick up (buttons, cards, chips): rounder, so they read as touchable. */
+  --radius-ui: 0.875rem;
 
   --ease-mirai: cubic-bezier(0.16, 1, 0.3, 1);
+  /* A little overshoot, for things that land. */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Glow in the current accent, for what should feel lit. */
+  --shadow-glow-sm: 0 0 18px -4px color-mix(in oklch, var(--glow) 55%, transparent);
+  --shadow-glow: 0 0 44px -8px color-mix(in oklch, var(--glow) 55%, transparent);
+  --shadow-glow-lg: 0 0 120px -20px color-mix(in oklch, var(--glow) 60%, transparent);
+}
+
+:root {
+  --dur-fast: 150ms;
+  --dur-base: 300ms;
+  --dur-slow: 700ms;
 }
 
 :root,
 .theme-paper {
   color-scheme: light;
-  --font-body: var(--font-serif);
+  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
   --n-min: #f3ead9;
   --n-950: #f3ead9; /* paper */
   --n-900: #ece0c9; /* paper-soft */
@@ -121,24 +151,35 @@
   --glass: rgb(243 234 217 / 0.86);
   --shadow: 0 28px 90px -30px rgb(60 45 20 / 0.35);
   --legible-halo: rgb(243 234 217 / 0.85);
+
+  /* The hub's accent: gold. Each game swaps these (see "Games" below). */
+  --accent: #e2a940;
+  --accent-deep: #a8721f;
+  --accent-ink: #2a2216;
+  --accent-text: var(--gold-300);
+  --glow: #e2a940;
 }
 
 .theme-night {
   color-scheme: dark;
-  --font-body: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
-  --n-min: #0c1f1e;
-  --n-950: #0c1f1e; /* night */
-  --n-900: #122826;
-  --n-800: #1b3532; /* night-soft */
-  --n-700: #2c4743;
-  --n-600: #4a615b;
-  --n-500: #6f7f76;
-  --n-400: #9a9f90;
-  --n-300: #c3bea9;
-  --n-200: #ddd4bf;
-  --n-100: #efe6d4;
-  --n-50: #f8f2e7; /* rice */
-  --n-max: #fbf6ec;
+  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  /* The night's tint: teal on the hub; each game sets its own. */
+  --tint-h: 190;
+  --tint-c: 0.032;
+  /* Neutrals, tinted at the dark end and warming to rice at the light end. */
+  --n-min: oklch(0.15 var(--tint-c) var(--tint-h));
+  --n-950: oklch(0.15 var(--tint-c) var(--tint-h)); /* night */
+  --n-900: oklch(0.19 var(--tint-c) var(--tint-h));
+  --n-800: oklch(0.24 var(--tint-c) var(--tint-h)); /* night-soft */
+  --n-700: oklch(0.33 calc(var(--tint-c) * 0.9) var(--tint-h));
+  --n-600: oklch(0.46 calc(var(--tint-c) * 0.7) var(--tint-h));
+  --n-500: oklch(0.6 calc(var(--tint-c) * 0.5) var(--tint-h));
+  --n-400: oklch(0.72 0.02 85);
+  --n-300: oklch(0.82 0.03 85);
+  --n-200: oklch(0.88 0.03 85);
+  --n-100: oklch(0.93 0.025 85);
+  --n-50: oklch(0.965 0.015 85); /* rice */
+  --n-max: oklch(0.98 0.012 85);
   --gold-100: #fbecc9;
   --gold-200: #f5d898;
   --gold-300: #eec266;
@@ -156,12 +197,62 @@
   --sun-300: #f29c7a;
   --sun-400: #e8774f;
   --sun-500: #d9582c;
-  --surface: rgb(248 242 231 / 0.035);
+  --surface: rgb(248 242 231 / 0.045);
   --hairline: rgb(248 242 231 / 0.12);
-  --glass: rgb(12 31 30 / 0.78);
+  --glass: color-mix(in oklch, var(--n-950) 78%, transparent);
   --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
-  --legible-halo: rgb(12 31 30 / 0.8);
+  --legible-halo: color-mix(in oklch, var(--n-950) 80%, transparent);
+  --accent-text: var(--gold-300);
 }
+
+/*
+ * Games. Each game's accent, in both schemes, and the tint of its night. On night the
+ * accent's text tone is a lighter step of the accent, so it reads on the dark.
+ */
+[data-game="shadow-guess"] {
+  --accent: oklch(0.79 0.14 75);
+  --accent-deep: oklch(0.56 0.12 65);
+  --accent-ink: #2a2216;
+  --glow: oklch(0.82 0.15 80);
+}
+[data-game="sky-climb"] {
+  --accent: oklch(0.83 0.13 215);
+  --accent-deep: oklch(0.55 0.12 235);
+  --accent-ink: oklch(0.2 0.05 240);
+  --glow: oklch(0.65 0.2 290);
+  --tint-h: 275;
+  --tint-c: 0.06;
+}
+[data-game="pair-pop"] {
+  --accent: oklch(0.74 0.18 355);
+  --accent-deep: oklch(0.5 0.17 355);
+  --accent-ink: oklch(0.22 0.07 355);
+  --glow: oklch(0.87 0.14 170);
+  --tint-h: 305;
+  --tint-c: 0.055;
+}
+[data-game="prop-hunt"] {
+  --accent: oklch(0.85 0.16 88);
+  --accent-deep: oklch(0.6 0.13 70);
+  --accent-ink: oklch(0.24 0.05 70);
+  --glow: oklch(0.9 0.08 90);
+  --tint-h: 335;
+  --tint-c: 0.05;
+}
+[data-game="bumper-arena"] {
+  --accent: oklch(0.69 0.2 38);
+  --accent-deep: oklch(0.48 0.17 35);
+  --accent-ink: oklch(0.99 0.01 85);
+  --glow: oklch(0.85 0.14 205);
+  --tint-h: 250;
+  --tint-c: 0.022;
+}
+.theme-night[data-game="shadow-guess"] { --accent-text: oklch(0.85 0.12 80); }
+.theme-night[data-game="sky-climb"] { --accent-text: oklch(0.88 0.1 215); }
+.theme-night[data-game="pair-pop"] { --accent-text: oklch(0.82 0.13 355); }
+.theme-night[data-game="prop-hunt"] { --accent-text: oklch(0.88 0.14 90); }
+.theme-night[data-game="bumper-arena"] { --accent-text: oklch(0.76 0.17 42); }
+.theme-paper[data-game] { --accent-text: var(--accent-deep); }
 
 @theme {
   --animate-shake: shake 0.4s ease-in-out;
@@ -311,27 +402,25 @@
   }
 }
 
-/* Type scale. Display and section titles: Chakra Petch, light and uppercase. */
+/* Type scale. Display and section titles: Bricolage Grotesque, heavy and tight. */
 @utility text-display {
   font-family: var(--font-display);
-  font-weight: 300;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  line-height: 0.96;
-  font-size: clamp(2.75rem, 1.6rem + 5vw, 6.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.88;
+  font-size: clamp(3rem, 1.4rem + 7vw, 8.5rem);
   text-wrap: balance;
 }
 @utility text-section {
   font-family: var(--font-display);
-  font-weight: 300;
-  text-transform: uppercase;
-  letter-spacing: -0.005em;
-  line-height: 1;
-  font-size: clamp(1.9rem, 1.3rem + 2.2vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  font-size: clamp(2.1rem, 1.4rem + 2.8vw, 3.75rem);
   text-wrap: balance;
 }
 @utility text-lead {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.3rem);
   line-height: 1.6;
   color: var(--n-300);
@@ -344,7 +433,7 @@
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gold-300);
+  color: var(--accent-text);
 }
 @utility label-mono {
   font-family: var(--font-mono);
@@ -354,44 +443,45 @@
   text-transform: uppercase;
 }
 
-/* Buttons: square, mono capitals, a lift on hover. Primary is gold (defined below). */
+/* Buttons: chunky arcade keys. They lift on hover and press down on click. Primary is the
+   accent (defined below). */
 @utility btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  min-height: 3rem;
-  padding-inline: 1.35rem;
-  border-radius: var(--radius-xs);
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
+  min-height: 3.25rem;
+  padding-inline: 1.5rem;
+  border-radius: var(--radius-ui);
+  font-family: var(--font-display);
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   transition:
-    background-color 180ms var(--ease-mirai),
-    color 180ms var(--ease-mirai),
-    transform 240ms var(--ease-mirai),
-    box-shadow 240ms var(--ease-mirai);
+    background-color var(--dur-fast) var(--ease-mirai),
+    color var(--dur-fast) var(--ease-mirai),
+    transform var(--dur-fast) var(--ease-mirai),
+    box-shadow var(--dur-base) var(--ease-mirai);
   &:hover:not(:disabled) {
     transform: translateY(-2px);
   }
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(2px);
+    transition-duration: 60ms;
   }
   &:focus-visible {
-    outline: 3px solid var(--color-sun);
+    outline: 3px solid var(--accent);
     outline-offset: 4px;
   }
 }
 @utility btn-secondary {
-  background: transparent;
+  background: color-mix(in oklch, var(--n-100) 6%, transparent);
   color: var(--n-100);
-  box-shadow: inset 0 0 0 1px var(--n-100);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklch, var(--n-100) 35%, transparent);
   &:hover:not(:disabled) {
-    background: var(--n-100);
-    color: var(--n-950);
+    background: color-mix(in oklch, var(--n-100) 12%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--n-100);
   }
 }
 
@@ -402,9 +492,9 @@
     0 4px 32px var(--legible-halo);
 }
 
-/* Card surface: one fill, one hairline, nearly square. */
+/* Card surface: one fill, one hairline. */
 @utility surface {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-ui);
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--hairline);
 }
@@ -448,15 +538,18 @@
   transform: none;
 }
 
-/* Primary action: solid gold with ink capitals; turns sun (with rice capitals) on hover. */
+/* Primary action: the accent, standing on its own deeper edge like a key, glowing on hover. */
 @utility btn-primary {
-  background: var(--color-gold);
-  color: var(--color-ink);
-  box-shadow: 0 0 0 0 transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 0 var(--accent-deep);
   &:hover:not(:disabled) {
-    background: var(--color-sun);
-    color: var(--color-rice);
-    box-shadow: 0 18px 52px -14px rgb(217 88 44 / 0.45);
+    box-shadow:
+      0 6px 0 var(--accent-deep),
+      0 18px 52px -12px color-mix(in oklch, var(--glow) 65%, transparent);
+  }
+  &:active:not(:disabled) {
+    box-shadow: 0 0 0 var(--accent-deep);
   }
 }
 
@@ -474,8 +567,25 @@ body.theme-paper {
     var(--color-paper);
   background-size: auto, 112px 112px, 112px 112px, auto;
 }
+/* Night pages: a glow in the accent at the top, a faint grid, and grain so the dark isn't flat. */
+.theme-night.night-ground,
 body.theme-night {
-  background: var(--color-night);
+  background:
+    radial-gradient(ellipse 60rem 30rem at 50% -8rem, color-mix(in oklch, var(--glow) 16%, transparent), transparent),
+    linear-gradient(90deg, rgb(248 242 231 / 0.025) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(248 242 231 / 0.02) 1px, transparent 1px),
+    var(--n-950);
+  background-size: auto, 112px 112px, 112px 112px, auto;
+}
+.theme-night.night-ground::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 html,
@@ -485,21 +595,25 @@ body,
 }
 
 ::selection {
-  background: rgb(204 146 47 / 0.35);
+  background: color-mix(in oklch, var(--accent) 35%, transparent);
 }
 
 :focus-visible {
-  outline-color: var(--color-sun);
+  outline-color: var(--accent);
 }
 
 /*
- * Page and panel titles everywhere: Chakra Petch, light, uppercase. One rule, so a heading
- * written as `font-display font-bold` anywhere still reads as part of the system.
+ * Page and panel titles everywhere: Bricolage Grotesque, bold, tight. One rule, so a heading
+ * written as `font-display font-light uppercase` anywhere still reads as part of the system.
  */
 :is(h1, h2).font-display {
-  font-weight: 300;
-  text-transform: uppercase;
-  letter-spacing: -0.005em;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.025em;
+}
+/* Figures and labels in the display face: never thin, the grotesque wants weight. */
+.font-display.font-light {
+  font-weight: 600;
 }
 
 /* Hub covers: slow, small motions, like a print that's barely alive. */

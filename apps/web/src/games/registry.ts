@@ -13,6 +13,8 @@ export interface GameEntry {
   tagline: string;
   /** The game's landing page. The game itself is at `${path}/play`. */
   path: string;
+  /** The scheme its landing page is printed in. Game screens are always paper. */
+  scheme: "night" | "paper";
   /** Lazy so each game's pages (and three.js) load only when they're opened. */
   Landing: LazyExoticComponent<ComponentType>;
   Component: LazyExoticComponent<ComponentType>;
@@ -31,6 +33,7 @@ export const games: GameEntry[] = [
     shortTitle: "Shadow",
     tagline: "Name the object from its shadow. Every miss turns the light.",
     path: "/games/shadow-guess",
+    scheme: "paper",
     Landing: lazy(() => import("../pages/ShadowGuessHome")),
     Component: lazy(() => import("./shadow-guess/ShadowGuessPage")),
     Cover: ShadowGuessCover,
@@ -42,6 +45,7 @@ export const games: GameEntry[] = [
     shortTitle: "Climb",
     tagline: "One tower a day. Jump from meadow to storm, past the Moon, into deep space. Don't look down.",
     path: "/games/sky-climb",
+    scheme: "night",
     Landing: lazy(() => import("./sky-climb/SkyClimbHome")),
     Component: lazy(() => import("./sky-climb/SkyClimbPage")),
     Cover: SkyClimbCover,
@@ -53,6 +57,7 @@ export const games: GameEntry[] = [
     shortTitle: "Pairs",
     tagline: "A 3D memory game. Flip the tiles, find the twin pals, pop the board.",
     path: "/games/pair-pop",
+    scheme: "night",
     Landing: lazy(() => import("./pair-pop/PairPopHome")),
     Component: lazy(() => import("./pair-pop/PairPopPage")),
     Cover: PairPopCover,
@@ -64,6 +69,7 @@ export const games: GameEntry[] = [
     shortTitle: "Props",
     tagline: "Hide as a toaster. Hunt your friends. Don't twitch.",
     path: "/games/prop-hunt",
+    scheme: "night",
     Landing: lazy(() => import("./prop-hunt/PropHuntHome")),
     Component: lazy(() => import("./prop-hunt/PropHuntPage")),
     Cover: PropHuntCover,
@@ -75,6 +81,7 @@ export const games: GameEntry[] = [
     shortTitle: "Bumper",
     tagline: "Bump them off the edge. Last ring rolling wins.",
     path: "/games/bumper-arena",
+    scheme: "night",
     Landing: lazy(() => import("./bumper-arena/BumperArenaHome")),
     Component: lazy(() => import("./bumper-arena/BumperArenaPage")),
     Cover: BumperArenaCover,
