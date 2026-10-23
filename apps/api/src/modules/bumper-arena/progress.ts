@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   BUMPER_RESULTS_SECRET_HEADER,
   BumperResultsBody,
@@ -13,7 +13,7 @@ import {
   type BumperXpGain,
 } from "@shadow/shared";
 import type { Db } from "../../db/client";
-import { bumperProgress, bumperResults } from "../../db/schema";
+import { bumperProgress, bumperResults, bumperRuns } from "../../db/schema";
 
 function sameSecret(given: unknown, secret: string): boolean {
   if (typeof given !== "string") return false;
@@ -32,7 +32,13 @@ export function bumperProgressRoutes(app: FastifyInstance, db: Db, resultsSecret
   app.get(`${prefix}/progress`, async (req, reply): Promise<BumperProgress | undefined> => {
     if (!req.userId) return void reply.code(401).send({ error: "sign_in_required" });
     const [row] = await db.select().from(bumperProgress).where(eq(bumperProgress.userId, req.userId));
-    return progressView(row ?? { xp: 0, matches: 0, wins: 0, roundsWon: 0, kos: 0, coins: 0 });
+    const [best] = await db
+      .select({ waves: bumperRuns.waves, score: bumperRuns.score })
+      .from(bumperRuns)
+      .where(and(eq(bumperRuns.userId, req.userId), eq(bumperRuns.status, "finished")))
+      .orderBy(desc(bumperRuns.waves), desc(bumperRuns.score))
+      .limit(1);
+    return progressView(row ?? { xp: 0, matches: 0, wins: 0, roundsWon: 0, kos: 0, coins: 0 }, best ?? null);
   });
 
   app.post(`${prefix}/results`, async (req, reply) => {

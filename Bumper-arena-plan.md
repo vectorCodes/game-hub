@@ -483,7 +483,7 @@ Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seve
 each one shippable on its own, in this order: rewards first (everything else builds on
 them), then the things that change how a round plays, then the things you collect.
 
-Status: 4.1–4.4 built; the rest ⬜ planned.
+Status: 4.1–4.5 built; the rest ⬜ planned.
 
 ### 4.1 Results → XP and coins ✅ built
 
@@ -556,10 +556,11 @@ The pickups from §2, in party rooms and the Gauntlet.
   gamehub…/games/bumper-arena
   ```
 
-### 4.5 Profile stats ⬜
+### 4.5 Profile stats ✅ built
 
-- A Bumper Arena section on `/profile`: level and XP bar, matches, wins, rounds won, KOs,
-  best Gauntlet (waves and score), and the equipped skin (once 4.6 is in).
+- A Bumper Arena section on `/profile` (chapter 04): level and XP bar, party wins out of
+  matches, KOs, rounds won, coins earned, best Gauntlet (waves and score), and the equipped
+  skin once 4.6 is in.
 - `GET /api/bumper/progress` returns it; the web app also uses it for the level badge in
   the lobby (the room is told your level, like Prop Hunt's loadout message).
 

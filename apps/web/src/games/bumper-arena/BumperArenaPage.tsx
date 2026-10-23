@@ -9,7 +9,8 @@ import { useAvatar } from "../../avatar/store";
 import { emote } from "./emotes";
 import { useKeyboard } from "./input";
 import "./net";
-import { joinBumperRoom, leaveBumperRoom, useBumperRoom } from "./room";
+import { useBumperProgress } from "./progress";
+import { joinBumperRoom, leaveBumperRoom, sendBumper, useBumperRoom } from "./room";
 import { game, useBumper } from "./store";
 import { Hud } from "./ui/Hud";
 import { Menu } from "./ui/Menu";
@@ -28,7 +29,9 @@ function BumperGame() {
   const friends = params.get("friends") === "1";
   const synced = useAuth((s) => s.synced);
   const fullName = useAuth((s) => s.user?.user_metadata?.full_name as string | undefined);
-  const { code, room, error } = useBumperRoom();
+  const { code, room, error, you, xp } = useBumperRoom();
+  const progress = useBumperProgress((s) => s.progress);
+  const userId = useAuth((s) => s.user?.id);
   const inRoom = code !== null;
   const between = !room || room.status === "lobby" || room.status === "results";
   // Driving keys only while there's a ring to drive: not under the menu or a lobby card.
@@ -54,6 +57,13 @@ function BumperGame() {
   useEffect(() => {
     if (error) setParams({ friends: "1" }, { replace: true });
   }, [error, setParams]);
+  // Your level: loaded on sign-in and after each match's XP, and told to the room you're in.
+  useEffect(() => {
+    if (synced) void useBumperProgress.getState().load();
+  }, [synced, userId, xp]);
+  useEffect(() => {
+    if (you) sendBumper({ type: "loadout", level: progress?.level ?? null });
+  }, [you, code, progress]);
   // Out of the room: back to the menu.
   useEffect(() => {
     if (!inRoom && useBumper.getState().mode === "party") useBumper.getState().openMenu();

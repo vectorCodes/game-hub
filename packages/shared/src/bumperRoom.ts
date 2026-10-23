@@ -11,7 +11,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // (predicting their own ring in between). See Bumper-arena-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const BUMPER_PROTOCOL_VERSION = 4;
+export const BUMPER_PROTOCOL_VERSION = 5;
 export const BUMPER_MIN_PLAYERS = 2;
 export const BUMPER_MAX_PLAYERS = 4;
 
@@ -64,6 +64,8 @@ export const BumperClientMessage = z.discriminatedUnion("type", [
    */
   z.object({ type: z.literal("input"), s: z.int().min(0), x: Stick, z: Stick, b: z.boolean(), d: z.int().min(0).max(255) }),
   z.object({ type: z.literal("emote"), emote: z.enum(BUMPER_EMOTES) }),
+  /** Your Bumper level, to show the others (signed-in players only). */
+  z.object({ type: z.literal("loadout"), level: z.int().min(1).max(999).nullable() }),
   z.object({ type: z.literal("rematch") }),
   RoomLeave,
   RoomPing,
@@ -84,6 +86,8 @@ export interface BumperPlayerView {
   dnf: boolean;
   /** Ring colour, 0–3: kept for the whole time in the room. */
   color: number;
+  /** Bumper level, for signed-in players. */
+  level: number | null;
   /** Match totals. */
   score: number;
   roundWins: number;

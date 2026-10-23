@@ -69,9 +69,14 @@ export interface BumperProgress {
   kos: number;
   /** Coins earned in party matches (they're spent from the hub's one balance). */
   coins: number;
+  /** The best Daily Gauntlet run ever (most waves, then score). */
+  bestGauntlet: { waves: number; score: number } | null;
 }
 
-export function bumperProgress(row: { xp: number; matches: number; wins: number; roundsWon: number; kos: number; coins: number }): BumperProgress {
+export function bumperProgress(
+  row: { xp: number; matches: number; wins: number; roundsWon: number; kos: number; coins: number },
+  bestGauntlet: BumperProgress["bestGauntlet"],
+): BumperProgress {
   const level = levelForXp(row.xp);
-  return { ...row, level, levelXp: xpForLevel(level), nextLevelXp: xpForLevel(level + 1) };
+  return { xp: row.xp, matches: row.matches, wins: row.wins, roundsWon: row.roundsWon, kos: row.kos, coins: row.coins, level, levelXp: xpForLevel(level), nextLevelXp: xpForLevel(level + 1), bestGauntlet };
 }

@@ -73,6 +73,8 @@ interface Player extends CorePlayer {
   /** The last match's XP and coins, once the API has saved them (null: it couldn't). */
   xp?: BumperXpGain | null;
   lastEmoteAt?: number;
+  /** Bumper level (signed-in players say theirs; the API's answer after a match replaces it). */
+  level?: number | null;
 }
 
 interface Room extends CoreRoom<Player, BumperStatus> {
@@ -175,6 +177,11 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       case "ready":
         if (room.status !== "lobby") return;
         me.ready = msg.on;
+        break;
+
+      case "loadout":
+        // Only signed-in players have a level.
+        me.level = me.key.startsWith("u:") ? msg.level : null;
         break;
 
       case "settings":
@@ -414,8 +421,11 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     }
     for (const { p, row } of signedIn) {
       p.xp = gains?.find((g) => g.userId === row.userId) ?? null;
+      if (p.xp) p.level = p.xp.level;
       this.broadcastEach((pid) => (pid === p.id ? { type: "xp", gain: p.xp ?? null } : null));
     }
+    // New levels show in the lobby.
+    this.broadcastRoom();
     await this.commit();
   }
 
@@ -471,6 +481,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
         connected: p.connected,
         dnf: p.dnf,
         color: p.color,
+        level: p.level ?? null,
         score: p.score,
         roundWins: p.roundWins,
         kos: p.kos,

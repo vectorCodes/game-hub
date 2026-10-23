@@ -9,6 +9,7 @@ import { AvatarImage } from "../avatar/AvatarImage";
 import { useAvatar } from "../avatar/store";
 import { Avatar } from "../components/Avatar";
 import { ChapterHeader, StatStrip } from "../components/Editorial";
+import { BumperProfileSection } from "../games/bumper-arena/ProfileSection";
 import { PairPopProfileSection } from "../games/pair-pop/ProfileSection";
 import { SHADOW_GUESS_HOME, SHADOW_GUESS_PATH } from "../games/shadow-guess/useDaily";
 import { SkyClimbProfileSection } from "../games/sky-climb/ProfileSection";
@@ -153,6 +154,7 @@ export default function Profile() {
 
       <SkyClimbProfileSection />
       <PairPopProfileSection />
+      <BumperProfileSection />
     </div>
   );
 }

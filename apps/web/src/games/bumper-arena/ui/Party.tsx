@@ -170,6 +170,7 @@ function Slot({ player, host, you }: { player: BumperPlayerView | undefined; hos
         {player.name}
         {you && <span className="text-stone-400"> (you)</span>}
       </span>
+      {player.level !== null && player.level !== undefined && <span className="shrink-0 rounded-xs bg-stone-100/10 px-1.5 py-0.5 font-mono text-[11px] tabular-nums">Lv {player.level}</span>}
       <span className={`shrink-0 label-mono ${host || (player.ready && player.connected) ? "text-jade" : "text-stone-400"}`}>{status}</span>
     </li>
   );
