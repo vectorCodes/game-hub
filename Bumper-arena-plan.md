@@ -420,9 +420,9 @@ with `game: "bumper-arena"` and mode.
      interpolation on the client.
    - Lobby (map / rounds / pickups), rounds, sudden death, scores, podium, rematch.
    - Test with real latency (one player on mobile data far away) before tuning anything else.
-4. **Progression and polish.**
-   - Pickups, emotes, podium titles, results POST → XP, coins, ring skins, Crash Helmet hat.
-   - Profile stats, share text for party matches.
+4. **Progression and polish ⏳ next.** Planned in detail in §12: results → XP and coins,
+   pickups, emotes, podium titles and share text, profile stats, then ring skins and the
+   Crash Helmet.
 5. **Later ⬜.**
    - The other four maps (Birthday Cake, Conveyor Factory, Seesaw, Moon Base).
    - Bots filling empty room seats.
@@ -474,3 +474,126 @@ with `game: "bumper-arena"` and mode.
   to "Slow 4G" in DevTools; check the lobby, rounds, sudden death, disconnect and rejoin
   mid-round, podium and rematch.
 - `pnpm typecheck` before every push.
+
+---
+
+## 12. Phase 4 plan: progression and polish
+
+Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seven steps,
+each one shippable on its own, in this order: rewards first (everything else builds on
+them), then the things that change how a round plays, then the things you collect.
+
+Status: ⬜ planned for every step.
+
+### 4.1 Results → XP and coins ⬜
+
+The room reports a finished match to the API, the way Prop Hunt does, so signed-in players
+level up and earn coins. Nobody can award themselves anything: only the room can report.
+
+- **Room → API:** at the podium, `BumperRoom` POSTs `{ matchId, players: [{ userId, place,
+  score, roundWins, kos, dnf, stats }] }` to `POST /api/bumper/results`, signed with the
+  results secret the Worker and API already share for Prop Hunt (same retries: 0, 10 s,
+  30 s). Guests are left out.
+- **API:** module `bumper-arena` gets `bumper_progress` (user id, xp, matches, wins, rounds
+  won, KOs, coins earned, best surviving wobble, owned and equipped skin) and
+  `bumper_results` (match id + user id, the XP and coins given: a retried report counts
+  once). Migration 0012.
+- **XP:** the same level curve as Prop Hunt (`xpForLevel`): a match gives its points + 50
+  for finishing + 100 / 50 / 25 for the podium. Leaving early gives nothing.
+- **Coins:** 10 a round won + 3 a KO + 5 for finishing (about 20–60 a match). They join the
+  hub balance that buys avatar items: the balance becomes Sky Climb coins + Bumper coins −
+  spent. The Daily Gauntlet gives no coins: its runs are reported by the browser, so they
+  could be farmed.
+- **Back to the players:** the room sends each signed-in player an `xp` message (level,
+  XP gained, coins gained), shown on the podium with a level bar. Guests see "Sign in to
+  earn XP and coins".
+
+### 4.2 Pickups ⬜
+
+The pickups from §2, in party rooms and the Gauntlet.
+
+- **Sim (`bumperSim.ts`):** a pickup list; one spawns every 12 s at a random safe spot (on
+  firm floor, away from rings and the spinner bar), at most 2 at a time, pulsing for 1 s
+  before it can be taken. Seeded RNG, so the Gauntlet stays the same for everyone.
+- **The five:** Heavyweight (1.4× ring, 2.5× mass, slower, 6 s), Turbo (0.6 s dash cooldown,
+  5 s), Shockwave (next dash blasts everyone within 3 m), Bubble (absorbs the next hit, up
+  to 8 s), Banana (a slick patch behind you for 10 s; 1.5 s of no grip on it).
+- **Each ring carries its effect and time left**, so snapshots and prediction include it
+  (a heavier, bigger or quicker-dashing ring must predict the same way as the room).
+- **Room:** pickups and banana patches ride in the snapshot; a "pickup" event for the
+  sound and the HUD. Lobby toggle **Pickups on / off** (on by default). Protocol bump.
+- **Gauntlet:** the **Pickup Party** twist comes back; Normal and Hard bots go for pickups
+  that are close.
+- **Art:** Kenney Platformer Kit / Food Kit items (CC0) in a floating, spinning capsule;
+  a small HUD chip with the effect's time left.
+
+### 4.3 Emotes ⬜
+
+- Wave, Laugh, Taunt, Cry on keys **1–4** (an emote button with a small wheel on tablets),
+  1.5 s cooldown. Out players can emote too.
+- Client sends `{ type: "emote", id }`; the room checks the cooldown and relays it to
+  everyone. In solo modes it plays locally only.
+- The rider plays a Mini Characters clip over the driving pose, with an icon bubble over
+  the name tag for 1.5 s. Check which of the 32 clips read best from the high camera.
+
+### 4.4 Podium titles and share text ⬜
+
+- The room keeps a few stats per player over the match: KOs, total Wobble taken, self-outs
+  (fell with nobody touching them in the last 3 s), highest Wobble reached and survived the
+  round, and rounds won in the last 5 s of sudden death.
+- Titles at the podium (one each at most, the rarest first): **Bully**, **Unbudgeable**,
+  **Gravity's Friend**, **Pinball**, **Last Second**. Shown under the podium avatars and in
+  the standings list.
+- **Share** button on the podium:
+
+  ```
+  Bumper Arena · party of 4 · 5 rounds
+  🥇 23 pts · 3 rounds won · 5 KOs · Bully
+  gamehub…/games/bumper-arena
+  ```
+
+### 4.5 Profile stats ⬜
+
+- A Bumper Arena section on `/profile`: level and XP bar, matches, wins, rounds won, KOs,
+  best Gauntlet (waves and score), and the equipped skin (once 4.6 is in).
+- `GET /api/bumper/progress` returns it; the web app also uses it for the level badge in
+  the lobby (the room is told your level, like Prop Hunt's loadout message).
+
+### 4.6 Ring skins ⬜ (postponed once; confirm before starting)
+
+- **The base car first:** the modelled car that phase 2 left open (today's is built from
+  simple shapes), with a body that takes a colour, so skins are variations of it.
+- **Catalog (`bumperSkins.ts`)**, each earned **or** bought (§10, decision 4):
+
+  | Skin | Earn it | Or buy |
+  |---|---|---|
+  | Classic | Free | - |
+  | Rubber Duck | 10 rounds won | 400 |
+  | Donut | Gauntlet: clear wave 10 | 600 |
+  | Tractor Tyre | 50 KOs | 800 |
+  | Lifebuoy | Survive a round at 120%+ Wobble | 600 |
+  | Saucer | Reach deep space in Sky Climb | 1,000 |
+  | Golden Ring | Win 25 matches | 2,500 |
+
+  (Prices are a starting point, to tune against what a match pays.)
+- **API:** progress lists owned skins; `POST /api/bumper/skins/:id/buy` (coins) and
+  `POST /api/bumper/skin` (equip). Earned skins unlock from `bumper_progress`, the
+  Gauntlet's best run, and Sky Climb's best floor.
+- **Room:** a `loadout` message (skin, level) like Prop Hunt's; the room only checks the
+  skin id exists (it's cosmetic). Practice and the Gauntlet use your equipped skin too.
+- **Picker:** on the menu and in the lobby, locked skins showing how to earn them.
+
+### 4.7 Crash Helmet ⬜
+
+- A new hat in the avatar catalog (`hat:crash-helmet`, drawn in `avatar/build.ts` like the
+  other hats), worn in every game. Earned by winning **10 party matches**: a new rule kind
+  next to the Sky Climb achievements and Shadow Guess stats that unlock items today.
+
+### How to check each step
+
+- 4.1: a local match with a signed-in player: XP and coins on the podium, the balance on
+  the avatar page goes up, and a repeated report doesn't count twice.
+- 4.2–4.4: two browser windows on a local room, as in phase 3.
+- 4.5–4.7: the profile page and the avatar page after a match.
+- `pnpm typecheck` before every push; migration 0012 applied with `pnpm --filter api
+  db:migrate`, and the room server deployed whenever the protocol changes.
