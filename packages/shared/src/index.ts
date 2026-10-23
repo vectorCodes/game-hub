@@ -12,3 +12,6 @@ export * from "./propHuntHouse";
 export * from "./propHuntRoom";
 export * from "./propHuntShuffle";
 export * from "./propHuntLevels";
+export * from "./bumper";
+export * from "./bumperSim";
+export * from "./bumperBots";
