@@ -1,19 +1,19 @@
 # GameHub · Sky Climb + Avatars plan
 
-Goal: GameHub's second game, and the first one where the player *is* someone. Every player
+Goal: GameHub's second game, and the first one where the player _is_ someone. Every player
 designs one character (outfit, hat, colours, hair, goggles…) that climbs in Sky Climb and
 represents them across the hub. Sky Climb itself is a daily 3D tower: easy at the bottom,
-harder the higher you go.
+harder and tougher the higher you go.
 
 Status: ✅ done · ⏳ next · ⬜ planned
 
 ## Assets (all CC0, no attribution required; credited in `assets/LICENSES.md`)
 
-| Kit | What we use |
-|---|---|
+| Kit                        | What we use                                                                                                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Kenney **Mini Characters** | 12 rigged characters, each a `body-mesh` + `head-mesh` on one shared skeleton. 32 animations: idle, walk, sprint, jump, fall, crouch, die, emote-yes/no, sit, interact… Glasses and sunglasses. |
-| Kenney **Platformer Kit** | Tower pieces: grass/snow blocks, platforms, moving blocks, ladders, springs, conveyor belts, spikes, saws, spike blocks, coins, stars, flags, chests. |
-| Our own (small GLBs) | Hats and goggles the kits lack: cap, beanie, crown, party hat, top hat, cowboy hat, propeller cap, ski goggles. Low-poly, same palette style. |
+| Kenney **Platformer Kit**  | Tower pieces: grass/snow blocks, platforms, moving blocks, ladders, springs, conveyor belts, spikes, saws, spike blocks, coins, stars, flags, chests.                                           |
+| Our own (small GLBs)       | Hats and goggles the kits lack: cap, beanie, crown, party hat, top hat, cowboy hat, propeller cap, ski goggles. Low-poly, same palette style.                                                   |
 
 Because every Mini Character shares one skeleton, any head fits any body. That gives us
 "hair/face" and "outfit" as two independent choices for free (12 × 12 combinations), before
@@ -24,6 +24,7 @@ colours and accessories.
 ## Phase 0: Avatar system ✅
 
 Built after Phases 1–2. How it works:
+
 - `apps/web/src/avatar/build.ts` puts any character's head on any character's body (the
   12 Mini Characters share bone names; a borrowed head is rebound with its own rest pose).
 - Recolouring moves UVs between the palette's 32×128 px swatches, keeping the shading.
@@ -43,32 +44,34 @@ Built after Phases 1–2. How it works:
 
 Original plan:
 
-Built before Sky Climb, because the climber *is* the avatar.
+Built before Sky Climb, because the climber _is_ the avatar.
 
 ### What the player can change
 
-| Slot | Options at launch | How |
-|---|---|---|
-| Hair & face | 12 (heads from the kit) | Swap `head-mesh` |
-| Outfit | 12 (bodies from the kit) | Swap `body-mesh` |
-| Skin tone | 8 | Recolour palette cells in the colormap |
-| Hair colour | 10 | Recolour palette cells |
-| Outfit colours | 12 primary × 12 secondary | Recolour palette cells |
-| Hat | none + 8 | GLB attached to the head bone |
-| Eyewear | none + glasses, sunglasses, ski goggles | GLB attached to the head bone |
-| Emote | yes, no, wave (later: dance) | Played in the customizer and on wins |
+| Slot           | Options at launch                       | How                                    |
+| -------------- | --------------------------------------- | -------------------------------------- |
+| Hair & face    | 12 (heads from the kit)                 | Swap `head-mesh`                       |
+| Outfit         | 12 (bodies from the kit)                | Swap `body-mesh`                       |
+| Skin tone      | 8                                       | Recolour palette cells in the colormap |
+| Hair colour    | 10                                      | Recolour palette cells                 |
+| Outfit colours | 12 primary × 12 secondary               | Recolour palette cells                 |
+| Hat            | none + 8                                | GLB attached to the head bone          |
+| Eyewear        | none + glasses, sunglasses, ski goggles | GLB attached to the head bone          |
+| Emote          | yes, no, wave (later: dance)            | Played in the customizer and on wins   |
 
 Later slots: back item (backpack, cape, jetpack), trail effect, victory pose.
 
 ### Customizer page (`/avatar`)
+
 - The character stands on a lit turntable (same look as the hub hero), drag to rotate, and
   plays idle, with an emote whenever something changes.
 - Tabs per slot; a swatch grid for colours; **Randomize** button; **Save**.
 - Mobile first: preview on top, options in a bottom sheet.
 
 ### Unlocks (the cross-game hook)
+
 - Most items free from the start, so everyone can look unique on day one.
-- Some are earned, in *any* game:
+- Some are earned, in _any_ game:
   - Shadow Guess 7-day streak → 👑 Crown
   - Shadow Guess: complete an album category → category hat (e.g. chef hat for Kitchen)
   - Sky Climb: reach floor 50 → ski goggles; reach the summit zone → propeller cap
@@ -76,12 +79,14 @@ Later slots: back item (backpack, cape, jetpack), trail effect, victory pose.
 - Locked items show with a lock and how to earn them, which advertises the other game.
 
 ### Where the avatar appears
+
 - Sky Climb (the climber), the customizer, the header account menu, the profile page, and
   leaderboard rows (a rendered head icon, cached per avatar version).
 - Guests get a random avatar, saved in the browser; it moves into the account on sign-in
   (same claiming idea as guest sessions).
 
 ### Data
+
 - `avatars` table: `user_id` (PK), `config jsonb` (slot → item id, colour ids), `version int`,
   `updated_at`.
 - `unlocks` table: `user_id`, `item_id`, `unlocked_at`, `source` (e.g. `shadow-guess:streak-7`).
@@ -91,6 +96,7 @@ Later slots: back item (backpack, cape, jetpack), trail effect, victory pose.
   exist and be unlocked), `GET /api/avatar/items` (catalog + my unlocks).
 
 ### Tech notes
+
 - Recolouring: the kit uses one palette texture (`colormap`). Each avatar gets its own small
   canvas texture: copy the palette, repaint the cells for skin/hair/outfit. Needs a spike to map which
   cells each character uses for skin, hair, and outfit (risk below).
@@ -105,6 +111,7 @@ Later slots: back item (backpack, cape, jetpack), trail effect, victory pose.
 
 Built first, ahead of Phase 0. Until avatars exist, players pick one of the 12 Mini Characters
 on the start screen (remembered per browser). Differences from the plan below:
+
 - No Rapier: a small custom platformer engine (`sim.ts`) with one-way platforms. No WASM to
   load, and coyote time, jump buffering and moving-platform carry are easy to tune.
 - The camera sits outside the spiral looking in, so left/right runs round the tower
@@ -114,6 +121,7 @@ on the start screen (remembered per browser). Differences from the plan below:
   daily tower was climbed.
 
 ### How it plays
+
 - Third-person 3D platformer. Climb a floating tower of platforms as high as you can.
 - **Controls:** WASD/arrows + Space on desktop; on phones a virtual joystick (left thumb) and
   a jump button (right thumb). Camera follows behind and above, drag to orbit.
@@ -123,25 +131,27 @@ on the start screen (remembered per browser). Differences from the plan below:
   reached, then time as the tie-breaker.
 
 ### Difficulty: easy at the bottom, hard at the top
-The tower is a stack of zones. Each zone changes the look *and* the rules, and every number
+
+The tower is a stack of zones. Each zone changes the look _and_ the rules, and every number
 below ramps smoothly with height, not just at zone borders.
 
-| Floors | Zone | Look | What's new |
-|---|---|---|---|
-| 1–10 | 🌱 Meadow | Grass blocks, flowers, morning sun | Wide platforms, short gaps, stairs. No hazards. Coins show the path. |
-| 11–25 | 🌳 Treetops | Wood, hedges, ladders | Smaller platforms, longer jumps, first slow moving platforms, springs. |
-| 26–45 | 🪨 Cliffs | Stone, fences, afternoon light | Narrow beams, faster movers, spike traps on a timer, conveyor belts. |
-| 46–70 | ❄️ Snow Peak | Snow blocks, pines, sunset | Slippery ice, crumbling platforms, wind gusts that push you. |
-| 71–99 | ⛈️ Storm | Dark clouds, rain, night | Spinning saws, spike blocks, vanishing platforms, short time windows. |
-| 100 | 🏁 Summit | Flag, chest, stars | Final jump; summit celebration. |
-| 101–150 | 🚀 Beyond the Summit (Phase 4) | Space, then the Moon | Low gravity, orbiting asteroids, meteors. |
-| 151–250 | 🕳️ Deep Space (Phase 5) | Moon, rings, a pulsar, a black hole | Crater pads, comets, pulse platforms, laser beams, the pull, wormholes. |
+| Floors  | Zone                           | Look                                | What's new                                                              |
+| ------- | ------------------------------ | ----------------------------------- | ----------------------------------------------------------------------- |
+| 1–10    | 🌱 Meadow                      | Grass blocks, flowers, morning sun  | Wide platforms, short gaps, stairs. No hazards. Coins show the path.    |
+| 11–25   | 🌳 Treetops                    | Wood, hedges, ladders               | Smaller platforms, longer jumps, first slow moving platforms, springs.  |
+| 26–45   | 🪨 Cliffs                      | Stone, fences, afternoon light      | Narrow beams, faster movers, spike traps on a timer, conveyor belts.    |
+| 46–70   | ❄️ Snow Peak                   | Snow blocks, pines, sunset          | Slippery ice, crumbling platforms, wind gusts that push you.            |
+| 71–99   | ⛈️ Storm                       | Dark clouds, rain, night            | Spinning saws, spike blocks, vanishing platforms, short time windows.   |
+| 100     | 🏁 Summit                      | Flag, chest, stars                  | Final jump; summit celebration.                                         |
+| 101–150 | 🚀 Beyond the Summit (Phase 4) | Space, then the Moon                | Low gravity, orbiting asteroids, meteors.                               |
+| 151–250 | 🕳️ Deep Space (Phase 5)        | Moon, rings, a pulsar, a black hole | Crater pads, comets, pulse platforms, laser beams, the pull, wormholes. |
 
 Ramping parameters (each a function of floor): gap distance, platform size, mover speed,
 hazard density, how many paths branch, and checkpoint spacing (every 5 floors early, every
 10 later). One knob table in shared code makes balancing a single-file job.
 
 ### Daily tower
+
 - Every day gets one generated tower from a **seed = the date**, so everyone climbs the same
   tower and leaderboards are fair. Same idea as the Shadow Guess daily puzzle.
 - **Practice mode:** random seed, no leaderboard, unlimited tries.
@@ -152,11 +162,12 @@ hazard density, how many paths branch, and checkpoint spacing (every 5 floors ea
   jumps against the controller's max jump).
 
 ### Graphics & animation (the "feel" checklist)
+
 - **Character:** crossfaded animations (idle ↔ walk ↔ sprint ↔ jump ↔ fall), a short squash on
   landing, dust puffs on land and jump, a small lean into turns, emote-yes at each checkpoint,
   sit on the summit.
 - **World:** the sky changes with height (dawn → day → sunset → night with stars), clouds you
-  climb *through* and later look down on, soft shadows, light fog for depth, bloom on coins
+  climb _through_ and later look down on, soft shadows, light fog for depth, bloom on coins
   and stars. Each zone has its own particles: leaves, snow, rain.
 - **Feedback:** coin sparkle + sound, a checkpoint flag that unfurls, a floor counter that
   ticks up, light camera shake on hard landings, a "new best!" banner.
@@ -164,6 +175,7 @@ hazard density, how many paths branch, and checkpoint spacing (every 5 floors ea
   shadow maps, fewer particles); only the floors near the player are kept in the scene.
 
 ### Tech
+
 - `@react-three/rapier` for physics; a kinematic character controller (coyote time + jump
   buffering so jumps feel fair).
 - Game state in a zustand store, like Shadow Guess.
@@ -171,6 +183,7 @@ hazard density, how many paths branch, and checkpoint spacing (every 5 floors ea
   `apps/web/src/games/registry.ts`: the hub tile appears automatically.
 
 ### Data & API
+
 - `climb_runs`: `id`, `user_id`, `mode` (daily / practice), `seed`, `puzzle_date`,
   `best_floor`, `time_ms`, `falls`, `coins`, `status`, `started_at`, `ended_at`.
 - `user_stats` (already keyed by game type) holds played / streak for `sky-climb`.
@@ -185,6 +198,7 @@ hazard density, how many paths branch, and checkpoint spacing (every 5 floors ea
 ## Phase 2: Progression & polish ✅
 
 Built as below, with these choices:
+
 - **Locker** (menu and results): 12 climbers (4 free, the rest 30–150 coins) and trails
   (Sparkle, Ember, Rainbow, plus Summit gold earned by the Summit achievement). Items and
   prices live in `packages/shared/src/skyClimb.ts`; tables `climb_unlocks`, `climb_loadouts`.
@@ -199,6 +213,7 @@ Built as below, with these choices:
   day's best floor, or floors summed over each day's best climb for the week and all time.
 
 Original plan:
+
 - Coins collected while climbing buy cosmetic items (no pay-to-win: cosmetics only).
 - Achievements: "No falls to floor 25", "Summit in under 5 minutes", "7-day climber".
 - Sound: footsteps per surface, wind louder with height, a zone music layer.
@@ -208,6 +223,7 @@ Original plan:
 ## Phase 3: Playing together ✅
 
 Built as below, with these choices:
+
 - **Ghosts:** recorded 10×/s on the game's own play clock (`ghosts.ts`), packed by
   `encodeGhost` in shared code (centimetre deltas as varints + facing + pose, ~6 bytes a
   frame) and sent with the finish; table `climb_ghosts`. There is no friends list yet, so
@@ -224,8 +240,9 @@ Built as below, with these choices:
   tower only, while climbing; nothing is stored.
 
 Original plan:
+
 - **Ghosts:** your best run and your friends' runs replay as translucent climbers wearing
-  *their* avatars. Positions recorded about 10 times a second, compressed.
+  _their_ avatars. Positions recorded about 10 times a second, compressed.
 - **Challenge link:** "Beat my climb" opens the same seed with the sender's ghost.
 - **Live climbs (stretch):** see other players climbing today's tower in real time
   (Supabase Realtime), each wearing their own avatar.
@@ -235,6 +252,7 @@ Original plan:
 Lots of players reached floor 100, so the tower goes on. Daily towers from `TOWER_V3_FROM`
 (and all new practice towers) are version 3: floors 0–100 are built exactly as before (old
 ghosts still fit), then the climb carries on through space to the Moon at floor 150.
+
 - **Zones:** the Summit (100–104, the air thins), 🛰️ Low Orbit (105–127), 🌌 Nebula (128–149),
   🌕 The Moon (150). Each has its own gravity (0.85 → 0.8 → 0.72), so jumps are floatier
   but the gaps (`spaceKnobs`) are longer.
@@ -255,6 +273,7 @@ ghosts still fit), then the climb carries on through space to the Moon at floor 
 Players reached the Moon too, so the tower goes on again. Daily towers from `TOWER_V4_FROM`,
 new practice towers and room races (`room4-`) are version 4: floors 0–150 are built exactly
 as in version 3, then the climb carries on to floor 250.
+
 - **Zones:** 🌕 Moon Base (150–164), 🪐 Ring Belt (165–189), 💫 Pulsar (190–214), 🕳️ Black Hole
   (215–249), ✨ Escape Velocity (250). `deepKnobs` barely lengthens the gaps; the zones'
   mechanics make it harder.
@@ -276,6 +295,7 @@ as in version 3, then the climb carries on to floor 250.
 ---
 
 ## How players connect across GameHub
+
 1. **One account, one avatar.** Sign in once; your character and stats follow you everywhere.
 2. **Unlocks cross games.** Earn the crown in Shadow Guess, wear it while climbing, and the
    reverse. Locked items say where to earn them.
@@ -285,14 +305,16 @@ as in version 3, then the climb carries on to floor 250.
    they know.
 
 ## Suggested order
+
 1. Spike: recolouring + head/body swap on one character, attached hat → proves the avatar idea.
 2. Avatar system + customizer + saving (Phase 0).
-3. Character controller and one hand-made test level that *feels* good before any generation.
+3. Character controller and one hand-made test level that _feels_ good before any generation.
 4. Chunk library + seeded daily tower + zones 1–3 (Meadow, Treetops, Cliffs).
 5. Runs API, leaderboard, hub tile and landing page → **ship Sky Climb MVP**.
 6. Zones 4–5 (Snow, Storm) + summit, then Phase 2 and 3. ✅
 
 ## Risks and open questions
+
 - **Palette recolouring:** depends on how the Mini Characters colormap is laid out. If the
   cells are shared in awkward ways, fall back to fixed colour variants per character.
 - **Mobile controls:** 3D platforming on a touchscreen is hard; plan playtests early.
