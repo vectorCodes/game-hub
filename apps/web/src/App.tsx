@@ -18,8 +18,6 @@ const NIGHT_PAGES = new Set<string>();
 
 // Compiled out of production builds.
 const AnglePicker = import.meta.env.DEV ? lazy(() => import("./pages/dev/AnglePicker")) : null;
-// Bumper Arena's feel prototype (phase 1 of Bumper-arena-plan.md), until it joins the hub.
-const BumperPrototype = import.meta.env.DEV ? lazy(() => import("./games/bumper-arena/BumperPrototype")) : null;
 
 function NavItem({ to, children }: { to: string; children: ReactNode }) {
   return (
@@ -122,7 +120,7 @@ export default function App() {
   const { pathname } = useLocation();
   // Games get the full viewport (no header or footer); landing pages (the hub's and each game's) lay out their
   // own sections; other pages sit in a centered column.
-  const game = games.some((g) => pathname === playPath(g)) || (BumperPrototype !== null && pathname === "/dev/bumper");
+  const game = games.some((g) => pathname === playPath(g));
   const landing = pathname === "/" || games.some((g) => pathname === g.path);
   // Paper everywhere, game screens included; night only for pages that are one night scene.
   const scheme = NIGHT_PAGES.has(pathname) ? "night" : "paper";
@@ -155,7 +153,6 @@ export default function App() {
               <Route key={`${g.id}-play`} path={playPath(g)} element={<g.Component />} />
             ))}
             {AnglePicker && <Route path="/dev/angles" element={<AnglePicker />} />}
-            {BumperPrototype && <Route path="/dev/bumper" element={<BumperPrototype />} />}
           </Routes>
         </Suspense>
       </main>

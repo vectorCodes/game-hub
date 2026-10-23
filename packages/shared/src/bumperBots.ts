@@ -3,6 +3,7 @@
 // the middle side of them, and dash when lined up. Easy bots look less often, aim worse and
 // rarely brace.
 import { makeRng } from "./skyClimb";
+import { SPINNER } from "./bumper";
 import type { BumperInput, BumperSim, Ring } from "./bumperSim";
 
 export type BotLevel = "easy" | "normal" | "hard";
@@ -65,11 +66,22 @@ export class BotBrain {
       this.intent = this.decide(sim, me);
       this.reflex = this.rng() < this.skill.reflex;
     }
-    // A reflex, between looks: about to slide off, so steer back (if it notices).
-    const ahead = Math.hypot(me.x + me.vx * 0.5, me.z + me.vz * 0.5);
-    if (this.reflex && ahead > sim.radius - 0.3) {
-      const d = Math.hypot(me.x, me.z) || 1;
-      return { x: -me.x / d, z: -me.z / d, dash: false, brace: false };
+    // Reflexes, between looks (if it notices): about to slide off or into a hole, so steer
+    // for solid floor; the Spinner's bar coming, so get out of its way.
+    // Standing on a cracking tile is plain to see: everyone steps off.
+    if (!sim.onFloor(me.x, me.z, true)) {
+      const [x, z] = safeHeading(sim, me);
+      return { x, z, dash: false, brace: false };
+    }
+    if (this.reflex) {
+      const ax = me.x + me.vx * 0.5;
+      const az = me.z + me.vz * 0.5;
+      if (!sim.onFloor(ax, az, true) || Math.hypot(ax, az) > sim.radius - 0.3) {
+        const [x, z] = safeHeading(sim, me);
+        return { x, z, dash: false, brace: false };
+      }
+      const dodge = dodgeBar(sim, me);
+      if (dodge) return { x: dodge[0], z: dodge[1], dash: false, brace: false };
     }
     const input = { ...this.intent };
     // A dash is a press, not a hold.
@@ -132,7 +144,9 @@ export class BotBrain {
       const pz = target.z + target.vz * 0.15 - me.z;
       const pd = Math.hypot(px, pz) || 1;
       const overrun = pd + s.overrun;
-      const safe = Math.hypot(me.x + (px / pd) * overrun, me.z + (pz / pd) * overrun) < sim.radius;
+      const ex = me.x + (px / pd) * overrun;
+      const ez = me.z + (pz / pd) * overrun;
+      const safe = Math.hypot(ex, ez) < sim.radius && sim.onFloor(ex, ez, true);
       if (safe) return this.aim(px / pd, pz / pd, true, false, 0.5);
     }
     if (lined > 0.3) return this.aim(dx / d, dz / d, false, false);
@@ -150,4 +164,46 @@ export class BotBrain {
     const s = Math.sin(err);
     return { x: x * c - z * s, z: x * s + z * c, dash, brace };
   }
+}
+
+/** The way to solid floor: of twelve headings, the one with floor under it 1.5 m and 3 m out, nearest the middle. */
+function safeHeading(sim: BumperSim, me: Ring): [number, number] {
+  let best: [number, number] = [0, 0];
+  let bestScore = -Infinity;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const x = Math.sin(a);
+    const z = Math.cos(a);
+    if (!sim.onFloor(me.x + x * 1.5, me.z + z * 1.5, true)) continue;
+    const far = sim.onFloor(me.x + x * 3, me.z + z * 3, true);
+    const score = (far ? 10 : 0) - Math.hypot(me.x + x * 3, me.z + z * 3);
+    if (score > bestScore) {
+      bestScore = score;
+      best = [x, z];
+    }
+  }
+  if (bestScore === -Infinity) {
+    const d = Math.hypot(me.x, me.z) || 1;
+    return [-me.x / d, -me.z / d];
+  }
+  return best;
+}
+
+/** Spinner: with the bar sweeping towards it, the way out of its path (along with it, and inwards, where it's slower). */
+function dodgeBar(sim: BumperSim, me: Ring): [number, number] | null {
+  if (sim.map.kind !== "spinner") return null;
+  const { angle, speed } = sim.spinner;
+  const along = me.x * Math.sin(angle) + me.z * Math.cos(angle);
+  const tx = Math.cos(angle);
+  const tz = -Math.sin(angle);
+  const across = me.x * tx + me.z * tz;
+  if (Math.abs(along) < SPINNER.hubRadius || Math.abs(across) > 3) return null;
+  const side = Math.sign(across) || 1;
+  // Only if the bar is moving into this side.
+  if (speed * along * side <= 0) return null;
+  const inward = Math.abs(along) > 4 ? 0.5 : 0;
+  const x = tx * side - Math.sin(angle) * Math.sign(along) * inward;
+  const z = tz * side - Math.cos(angle) * Math.sign(along) * inward;
+  const len = Math.hypot(x, z) || 1;
+  return [x / len, z / len];
 }

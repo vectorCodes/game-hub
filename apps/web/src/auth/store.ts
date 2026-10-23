@@ -7,6 +7,7 @@ import { identify, resetIdentity, track } from "../lib/analytics";
 import { savedSessionIds } from "../games/shadow-guess/store";
 import { forgetClimbRuns, savedClimbRunIds } from "../games/sky-climb/guest";
 import { forgetGames, savedGameIds } from "../games/pair-pop/guest";
+import { forgetRuns, savedRunIds } from "../games/bumper-arena/guest";
 
 interface AuthState {
   /** False when Supabase env vars are missing. */
@@ -47,6 +48,10 @@ export const useAuth = create<AuthState>((set, get) => ({
           const gameIds = savedGameIds();
           if (gameIds.length) {
             await api("/api/pair-pop/claim", { body: { gameIds } }).then(forgetGames, () => {});
+          }
+          const bumperRunIds = savedRunIds();
+          if (bumperRunIds.length) {
+            await api("/api/bumper-arena/claim", { body: { runIds: bumperRunIds } }).then(forgetRuns, () => {});
           }
           await get().refreshMe();
         } else {

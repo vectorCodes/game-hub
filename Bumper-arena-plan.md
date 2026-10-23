@@ -275,9 +275,9 @@ Built from Kenney Platformer Kit / Nature Kit / Food Kit pieces and simple meshe
 | # | Map | Shape | Twist | Sudden death |
 |---|---|---|---|---|
 | 1 | **Picnic Plate** | Round, 16 m radius (8 rings) | None: the clean, learnable map. Tutorial and Practice default. | The rim crumbles inward in rings |
-| 2 | **Ice Floe** | Irregular, cracked ice | Low friction everywhere: you glide, momentum is king. Some ice chunks wobble. | Outer floes crack and sink one by one |
-| 3 | **Spinner** | Round with a hub | A long bar sweeps around the middle (one turn every 6 s, getting faster); it pushes hard. Duck under it? No: dodge it. | Bar speeds up, a second bar appears |
-| 4 | **Hex Hive** | Honeycomb of hex tiles | A tile you drive over glows, then drops 2 s later. The arena eats itself. | Tiles drop on their own from the edge in |
+| 2 | **Ice Floe** | Round floe of cracked ice | Grip ×0.42 everywhere: you glide, momentum is king. | The rim breaks off a ring at a time |
+| 3 | **Spinner** | Round, with a post in the middle | A bar through the post sweeps round (one turn every 9 s, up to every 4 s by 90 s); it carries rings along and adds Wobble. | The rim breaks off; the bar keeps speeding up |
+| 4 | **Hex Hive** | Honeycomb of hex tiles | Tiles wear under the rings on them: 2.5 ring-seconds and a tile cracks, 2 s later it drops. Fights eat the floor; keep moving. A quick ring skims across a hole (0.3 s). | Outer tiles crack from the edge in (from 50 s) |
 
 ### Later maps ⬜
 
@@ -297,13 +297,16 @@ uses only that data; the web client also loads the map's art.
 
 - **Seeded** from the date (server-picked like the other dailies): one of the unlocked maps +
   one **modifier** + the bot waves.
-- **Modifiers:** Slippery (friction ×0.5), Big Heads (rings 1.3×), Heavy Hitters (all
-  knockback ×1.3), Low Gravity, Pickup Party (a pickup every 5 s), No Brakes (no Brace).
+- **Modifiers:** Classic (Gauntlet #1 always), Slippery (grip about ×0.5), Big Rings (rings
+  1.3×), Heavy Hitters (all knockback ×1.3), Low Gravity (longer slides, slow falls), No
+  Brakes (no Brace). Pickup Party comes back with pickups (phase 4).
 - **Waves:** wave 1 = 1 easy bot, wave 2 = 2, … bots get smarter and more numerous; at most
   6 bots on the arena. A wave is cleared when every bot is out. The arena resets between
   waves (and your Wobble drops by half).
-- **Score:** waves cleared, then time on the last wave. One scored run a day per account
-  (guests: per device); practice re-runs after are free.
+- **Score:** 100 × k for clearing wave k (so 1+2+…+n hundred for n waves), plus 25 a
+  knockout; ties go to the quicker run. One scored run a day per account (guests: per
+  device); re-runs after are free. The server checks a run against its own clock (at least
+  5 s a wave) and refuses more knockouts than there were bots.
 - **Share text:**
 
   ```
@@ -470,18 +473,23 @@ with `game: "bumper-arena"` and mode.
 
 ## 8. Rollout phases
 
-1. **Feel prototype ✅ built, being tuned.** The whole risk of this game is whether bumping
-   feels good, so this comes first, offline. Play it at `/dev/bumper` (dev builds only); the
-   Tuning panel (T) edits `BUMPER_TUNING` live and copies the values out.
+1. **Feel prototype ✅** (05ee7ae). The whole risk of this game is whether bumping feels
+   good, so this came first, offline. The Tuning panel (T, dev builds only) still edits
+   `BUMPER_TUNING` live and copies the values out.
    - `bumperSim.ts` + Picnic Plate in greybox, avatar in a placeholder ring, keyboard and
      touch, Easy bots.
    - Tune speed, momentum, dash, brace, knockback and Wobble until a 1v3 against bots is fun
      for 10 minutes. Try it on a tablet.
-2. **Solo game shipped.**
-   - The four launch maps with art, the ring GLB, effects and sounds.
-   - Practice and the **Daily Gauntlet** (seeding, modifiers, waves, share text, API run +
-     leaderboard), landing page, hub card.
-   - This is already a complete daily game on the hub.
+2. **Solo game ✅ built.**
+   - `/games/bumper-arena/play`: a menu over a bots-only round, Practice (any arena, 1–7
+     bots, easy/normal/hard) and the **Daily Gauntlet** (`bumperGauntlet.ts`: date → arena +
+     twist, waves, score; share text; guest runs claimed on sign-in).
+   - API `apps/api/src/modules/bumper-arena` (table `bumper_runs`, migration 0011): start,
+     finish, today, leaderboard (`/leaderboard?game=bumper-arena`), claim.
+   - The four launch maps (Picnic Plate, Ice Floe, Spinner, Hex Hive), with bots that dodge
+     the bar and step off cracking tiles. Landing page, hub tile (05), nav entry.
+   - Still to do here ⬜: a modelled ring GLB and skins (today's ring is built from simple
+     shapes), map-specific sounds, a profile section.
 3. **Party rooms.**
    - `bumperRoom.ts` protocol, `BumperRoom` DO with the 30 Hz loop, prediction and
      interpolation on the client.

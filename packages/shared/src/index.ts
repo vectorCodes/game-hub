@@ -15,3 +15,4 @@ export * from "./propHuntLevels";
 export * from "./bumper";
 export * from "./bumperSim";
 export * from "./bumperBots";
+export * from "./bumperGauntlet";

@@ -11,7 +11,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { AvatarConfig, ClimbMode, ClimbStatus, GameMode, LightAngle, PairPopMode, PairPopStatus, SessionStatus } from "@shadow/shared";
+import type { AvatarConfig, BumperModifier, BumperRunStatus, ClimbMode, ClimbStatus, GameMode, LightAngle, PairPopMode, PairPopStatus, SessionStatus } from "@shadow/shared";
 
 // Every table has RLS enabled and no policies: the public Supabase REST API can't read
 // anything (answers included). The API connects as a privileged role and bypasses RLS.
@@ -204,6 +204,32 @@ export const pairPopGames = pgTable(
     endedAt: timestamp({ withTimezone: true }),
   },
   (t) => [index().on(t.puzzleDate, t.mode), index().on(t.userId)],
+).enableRLS();
+
+/**
+ * Bumper Arena Daily Gauntlet runs. The date picks the arena and twist; the run reports how
+ * many waves it cleared, checked against the server's clock (a wave can't take under a few
+ * seconds). Each player's first finished run of a day is the one that counts.
+ */
+export const bumperRuns = pgTable(
+  "bumper_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid(),
+    runDate: date().notNull(),
+    map: text().notNull(),
+    modifier: text().$type<BumperModifier>().notNull(),
+    waves: integer().notNull().default(0),
+    kos: integer().notNull().default(0),
+    peakWobble: integer().notNull().default(0),
+    score: integer().notNull().default(0),
+    /** First countdown to going out (ms). */
+    timeMs: integer().notNull().default(0),
+    status: text().$type<BumperRunStatus>().notNull().default("playing"),
+    startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [index().on(t.runDate), index().on(t.userId)],
 ).enableRLS();
 
 /** Each signed-in player's Prop Hunt XP (levels follow from it) and the taunts they've picked. */

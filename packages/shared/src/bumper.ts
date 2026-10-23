@@ -78,23 +78,138 @@ export const BUMPER_MAX_RINGS = 10;
 
 // ---------- Maps ----------
 
+/**
+ * plate: a round arena whose rim breaks off in sudden death. spinner: the same, with a bar
+ * sweeping round a post in the middle. hex: a floor of hexagonal tiles that drop a moment
+ * after a ring drives over them.
+ */
+export type BumperMapKind = "plate" | "spinner" | "hex";
+
 export interface BumperMap {
   id: string;
   name: string;
+  /** One line for menus. */
+  blurb: string;
+  kind: BumperMapKind;
   /** Arena radius (m) for 8 rings; fewer rings get a smaller arena (see arenaRadius). */
   radius: number;
+  /** Grip, as a share of normal: under 1 is slippery (acceleration, drag and braking all scale). */
+  grip: number;
   /** Sudden death: from `at` seconds into the round, the edge drops `step` metres every `every` seconds, down to `minRadius`. */
   suddenDeath: { at: number; every: number; step: number; minRadius: number; warnSeconds: number };
 }
+
+const SUDDEN_DEATH = { at: 60, every: 4, step: 1.25, minRadius: 3, warnSeconds: 1.5 };
 
 export const BUMPER_MAPS: Record<string, BumperMap> = {
   "picnic-plate": {
     id: "picnic-plate",
     name: "Picnic Plate",
+    blurb: "A giant plate in the sky. No tricks, just you and the edge.",
+    kind: "plate",
     radius: 16,
-    suddenDeath: { at: 60, every: 4, step: 1.25, minRadius: 3, warnSeconds: 1.5 },
+    grip: 1,
+    suddenDeath: SUDDEN_DEATH,
+  },
+  "ice-floe": {
+    id: "ice-floe",
+    name: "Ice Floe",
+    blurb: "Hardly any grip: you glide, and every bump carries.",
+    kind: "plate",
+    radius: 15,
+    grip: 0.42,
+    suddenDeath: SUDDEN_DEATH,
+  },
+  spinner: {
+    id: "spinner",
+    name: "Spinner",
+    blurb: "A long bar sweeps round the middle, faster and faster.",
+    kind: "spinner",
+    radius: 14,
+    grip: 1,
+    suddenDeath: SUDDEN_DEATH,
+  },
+  "hex-hive": {
+    id: "hex-hive",
+    name: "Hex Hive",
+    blurb: "Tiles crack under the rings on them, then drop. Keep moving.",
+    kind: "hex",
+    radius: 13,
+    grip: 1,
+    suddenDeath: { ...SUDDEN_DEATH, at: 50 },
   },
 };
+
+/** The ring tuning on a map: slippery maps scale down everything that grips. */
+export function withGrip(base: BumperTuning, grip: number): BumperTuning {
+  if (grip === 1) return base;
+  return { ...base, accel: base.accel * grip, drag: base.drag * grip, brakeDrag: base.brakeDrag * grip, overspeedDecel: base.overspeedDecel * grip };
+}
+
+// ---------- Spinner ----------
+
+export const SPINNER = {
+  /** The post in the middle (m). */
+  hubRadius: 1.3,
+  /** Half the bar's thickness (m). */
+  halfWidth: 0.3,
+  /** Turns a second at the start, and by `rampSeconds`. */
+  startTurns: 1 / 9,
+  endTurns: 1 / 4,
+  rampSeconds: 90,
+  /** How hard the bar shoves: a share of its own speed where it hits. */
+  push: 1.25,
+  wobble: 8,
+};
+
+/** The bar's angular speed (rad/s) at round time t. */
+export const spinnerSpeed = (t: number) => {
+  const k = Math.min(1, Math.max(0, t) / SPINNER.rampSeconds);
+  return Math.PI * 2 * (SPINNER.startTurns + (SPINNER.endTurns - SPINNER.startTurns) * k);
+};
+
+// ---------- Hex Hive ----------
+
+export const HEX = {
+  /** Centre to corner (m). */
+  size: 1.3,
+  /** Ring-seconds on a tile before it cracks. */
+  wearSeconds: 2.5,
+  /** A ring skims over a hole this long (s) before it drops in, so a quick one can cross. */
+  skimSeconds: 0.3,
+  /** From cracking to dropping (s). */
+  crackSeconds: 2,
+};
+
+/** Tiles of a hex floor reaching `radius`: axial coordinates (pointy-top) and centres. */
+export function hexTiles(radius: number): { q: number; r: number; x: number; z: number }[] {
+  const out: { q: number; r: number; x: number; z: number }[] = [];
+  const n = Math.ceil(radius / (HEX.size * 1.5)) + 1;
+  for (let q = -n; q <= n; q++) {
+    for (let r = -n; r <= n; r++) {
+      const x = HEX.size * Math.sqrt(3) * (q + r / 2);
+      const z = HEX.size * 1.5 * r;
+      if (Math.hypot(x, z) <= radius - HEX.size * 0.5) out.push({ q, r, x, z });
+    }
+  }
+  return out;
+}
+
+/** The axial coordinates of the tile under (x, z). */
+export function hexAt(x: number, z: number): { q: number; r: number } {
+  const fq = ((Math.sqrt(3) / 3) * x - z / 3) / HEX.size;
+  const fr = ((2 / 3) * z) / HEX.size;
+  const fs = -fq - fr;
+  let q = Math.round(fq);
+  let r = Math.round(fr);
+  const s = Math.round(fs);
+  const dq = Math.abs(q - fq);
+  const dr = Math.abs(r - fr);
+  const ds = Math.abs(s - fs);
+  if (dq > dr && dq > ds) q = -r - s;
+  else if (dr > ds) r = -q - s;
+  return { q, r };
+}
 
 /** The arena shrinks with fewer rings, so 2 players don't spend a round looking for each other. */
 export function arenaRadius(map: BumperMap, rings: number): number {

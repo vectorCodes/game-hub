@@ -13,6 +13,8 @@ import { NotFoundError, ShadowGuessService } from "./modules/shadow-guess/servic
 import { avatarRoutes } from "./modules/avatar/routes";
 import { skyClimbRoutes } from "./modules/sky-climb/routes";
 import { SkyClimbService, TooFastError } from "./modules/sky-climb/service";
+import { bumperRoutes } from "./modules/bumper-arena/routes";
+import { BumperService } from "./modules/bumper-arena/service";
 import { pairPopRoutes } from "./modules/pair-pop/routes";
 import { propHuntRoutes } from "./modules/prop-hunt/routes";
 import { PairPopService } from "./modules/pair-pop/service";
@@ -62,9 +64,11 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
   userRoutes(app, db, shadowGuess);
   const skyClimb = new SkyClimbService(db);
   const pairPop = new PairPopService(db);
-  leaderboardRoutes(app, db, skyClimb, pairPop);
+  const bumper = new BumperService(db);
+  leaderboardRoutes(app, db, skyClimb, pairPop, bumper);
   skyClimbRoutes(app, skyClimb);
   pairPopRoutes(app, pairPop);
+  bumperRoutes(app, bumper);
   avatarRoutes(app, db, skyClimb);
   propHuntRoutes(app, db, config.huntResultsSecret);
   if (!config.isProd) devRoutes(app, db, config.modelsBaseUrl);

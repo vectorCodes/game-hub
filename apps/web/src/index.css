@@ -535,6 +535,15 @@ body,
 .cover-aim { animation: cover-aim 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .cover-aim { animation: none; } }
 
+/* Bumper Arena: a ring knocked off the plate, tumbling up and away, again and again. */
+@keyframes cover-fling {
+  0%, 15% { transform: translate(-50px, 48px) rotate(0deg); opacity: 1; }
+  60% { transform: translate(0, 0) rotate(200deg); opacity: 1; }
+  80%, 100% { transform: translate(24px, 30px) rotate(320deg); opacity: 0; }
+}
+.cover-fling { animation: cover-fling 3.6s cubic-bezier(0.3, 0.6, 0.4, 1) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+@media (prefers-reduced-motion: reduce) { .cover-fling { animation: none; } }
+
 /* Prop Hunt's landing: eyes that open in the dollhouse and blink, the seeker's flashlight
    sweeping, a twitchy hider on the shelf, and a miss wobbling. */
 @keyframes ph-peek {

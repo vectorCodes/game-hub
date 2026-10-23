@@ -11,12 +11,13 @@ import { Avatar } from "../components/Avatar";
 import { games, playPath } from "../games/registry";
 import { formatDuration } from "../lib/format";
 
-type Game = "shadow-guess" | "sky-climb" | "pair-pop";
+type Game = "shadow-guess" | "sky-climb" | "pair-pop" | "bumper-arena";
 
 const GAMES: { value: Game; number: string; label: string; ranks: string }[] = [
   { value: "shadow-guess", number: "01", label: "Shadow Guess", ranks: "Fewest angles, fastest solve" },
   { value: "sky-climb", number: "02", label: "Sky Climb", ranks: "Highest floor on the tower" },
   { value: "pair-pop", number: "03", label: "Pair Pop", ranks: "Best score on the board" },
+  { value: "bumper-arena", number: "04", label: "Bumper Arena", ranks: "Most waves in the Gauntlet" },
 ];
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
@@ -41,10 +42,15 @@ const BLURBS: Record<Game, Record<LeaderboardPeriod, string>> = {
     weekly: "Total score over the last seven daily boards.",
     all: "Total score over every daily board.",
   },
+  "bumper-arena": {
+    daily: "Points in today's Gauntlet, first run only: waves cleared and knockouts. Ties go to the quicker run.",
+    weekly: "Total points over the last seven Gauntlets.",
+    all: "Total points over every Gauntlet.",
+  },
 };
 
 /** What the score column counts, per game. */
-const SCORE_LABEL: Record<Game, string> = { "shadow-guess": "Points", "sky-climb": "Floors", "pair-pop": "Points" };
+const SCORE_LABEL: Record<Game, string> = { "shadow-guess": "Points", "sky-climb": "Floors", "pair-pop": "Points", "bumper-arena": "Points" };
 
 /** The top three's ticket colours: gold, ink, sun. Fixed colours, as on a printed sheet. */
 const PLACES = [
@@ -66,6 +72,10 @@ interface Shown {
 const boardCache = new Map<string, LeaderboardView>();
 
 function detail(entry: LeaderboardEntry, period: LeaderboardPeriod, game: Game) {
+  if (game === "bumper-arena") {
+    if (period === "daily") return `${entry.wins ? "5+ waves · " : ""}${formatDuration(entry.seconds)}`;
+    return `${entry.played} run${entry.played === 1 ? "" : "s"} · ${entry.wins} of 5+ waves`;
+  }
   if (game === "pair-pop") {
     if (period === "daily") return `${entry.wins ? "★★★ · " : ""}${formatDuration(entry.seconds)}`;
     return `${entry.played} board${entry.played === 1 ? "" : "s"} · ${entry.wins} three-star`;
@@ -258,7 +268,7 @@ export default function Leaderboard() {
       </header>
 
       {/* ---------- Game index ---------- */}
-      <nav aria-label="Game" role="tablist" className="grid grid-cols-3 border-y hairline">
+      <nav aria-label="Game" role="tablist" className="grid grid-cols-4 border-y hairline">
         {GAMES.map((g, i) => {
           const active = g.value === game;
           return (

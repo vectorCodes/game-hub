@@ -9,7 +9,7 @@ import { animateAccessories } from "../../../avatar/build";
 import { useAvatar } from "../../../avatar/store";
 import { useAvatarModel } from "../../../avatar/useAvatarModel";
 import { angleDelta } from "../../sky-climb/ghosts";
-import { game, ME, onBumperEvent, tuning, type Entrant } from "../store";
+import { game, ME, onBumperEvent, useBumper, type Entrant } from "../store";
 
 /** Mini Characters are 0.67 units tall: big riders, so they read from the high camera. */
 const CHARACTER_SCALE = 1.7;
@@ -74,7 +74,7 @@ export function Rider({ entrant }: { entrant: Entrant }) {
     const f = fx.current;
     const t = clock.elapsedTime;
     f.squash = Math.max(0, f.squash - dt * 4);
-    const speed = Math.hypot(r.vx, r.vz) / tuning.maxSpeed;
+    const speed = Math.hypot(r.vx, r.vz) / sim.tuning.maxSpeed;
     const wob = r.wobble / 100;
     if (r.state === "in") {
       // Lean into the speed, wobble with the Wobble; braced rings sit low and steady.
@@ -100,7 +100,8 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       stars.current.rotation.y += dt * 5;
     }
     if (marker.current) marker.current.visible = r.state === "in";
-    if (tag.current) tag.current.style.visibility = r.state === "out" ? "hidden" : "";
+    // No tags on the menu's backdrop, nor once a ring is out.
+    if (tag.current) tag.current.style.visibility = r.state === "out" || useBumper.getState().mode === "menu" ? "hidden" : "";
 
     const name = clipFor(entrant.id);
     if (name !== current.current.name) {

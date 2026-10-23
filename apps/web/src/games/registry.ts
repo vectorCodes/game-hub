@@ -3,6 +3,7 @@ import { ShadowGuessCover, ShadowGuessStatus } from "./shadow-guess/HubCard";
 import { SkyClimbCover, SkyClimbStatus } from "./sky-climb/HubCard";
 import { PairPopCover, PairPopStatus } from "./pair-pop/HubCard";
 import { PropHuntCover, PropHuntStatus } from "./prop-hunt/HubCard";
+import { BumperArenaCover, BumperArenaStatus } from "./bumper-arena/HubCard";
 
 export interface GameEntry {
   id: string;
@@ -67,5 +68,16 @@ export const games: GameEntry[] = [
     Component: lazy(() => import("./prop-hunt/PropHuntPage")),
     Cover: PropHuntCover,
     Status: PropHuntStatus,
+  },
+  {
+    id: "bumper-arena",
+    title: "Bumper Arena",
+    shortTitle: "Bumper",
+    tagline: "Bump them off the edge. Last ring rolling wins.",
+    path: "/games/bumper-arena",
+    Landing: lazy(() => import("./bumper-arena/BumperArenaHome")),
+    Component: lazy(() => import("./bumper-arena/BumperArenaPage")),
+    Cover: BumperArenaCover,
+    Status: BumperArenaStatus,
   },
 ];

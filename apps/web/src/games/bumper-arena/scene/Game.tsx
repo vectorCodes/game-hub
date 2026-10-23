@@ -99,7 +99,8 @@ function CameraRig() {
     const sim = game.sim;
     if (!sim) return;
     const cam = camera as PerspectiveCamera;
-    const rings = sim.alive().length ? sim.alive() : sim.rings;
+    // Nobody left on the arena: frame the whole plate, not the rings falling away below it.
+    const rings = sim.alive().length ? sim.alive() : [{ x: -sim.radius, z: -sim.radius }, { x: sim.radius, z: sim.radius }];
     let minX = Infinity;
     let maxX = -Infinity;
     let minZ = Infinity;

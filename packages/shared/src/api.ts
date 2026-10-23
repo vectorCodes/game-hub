@@ -119,7 +119,7 @@ export const LeaderboardPeriod = z.enum(["daily", "weekly", "all"]);
 export type LeaderboardPeriod = z.infer<typeof LeaderboardPeriod>;
 
 export const LeaderboardQuery = z.object({
-  game: z.enum(["shadow-guess", "sky-climb", "pair-pop"]).default("shadow-guess"),
+  game: z.enum(["shadow-guess", "sky-climb", "pair-pop", "bumper-arena"]).default("shadow-guess"),
   period: LeaderboardPeriod.default("daily"),
 });
 
