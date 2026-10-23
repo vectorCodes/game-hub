@@ -3,9 +3,10 @@
 // card). Computers and tablets only. See Bumper-arena-plan.md.
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { normalizeRoomCode, shortName } from "@shadow/shared";
+import { BUMPER_EMOTES, normalizeRoomCode, shortName } from "@shadow/shared";
 import { useAuth } from "../../auth/store";
 import { useAvatar } from "../../avatar/store";
+import { emote } from "./emotes";
 import { useKeyboard } from "./input";
 import "./net";
 import { joinBumperRoom, leaveBumperRoom, useBumperRoom } from "./room";
@@ -58,13 +59,15 @@ function BumperGame() {
     if (!inRoom && useBumper.getState().mode === "party") useBumper.getState().openMenu();
   }, [inRoom]);
 
-  // Enter: the next Practice round once this one is over. T (dev builds): the tuning panel.
+  // Enter: the next Practice round once this one is over. 1–4: emotes. T (dev builds): the tuning panel.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
       const { mode, phase, next, toggleTuning } = useBumper.getState();
       if (e.code === "Enter" && mode === "practice" && phase === "over") next();
       if (e.code === "KeyT" && import.meta.env.DEV) toggleTuning();
+      const n = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(e.code);
+      if (n >= 0 && !e.repeat) emote(BUMPER_EMOTES[n]);
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);

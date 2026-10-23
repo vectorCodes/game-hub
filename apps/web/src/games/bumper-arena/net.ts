@@ -20,6 +20,7 @@ import {
   type BumperSnap,
   type Ring,
 } from "@shadow/shared";
+import { showEmote } from "./emotes";
 import { input } from "./input";
 import { bumperRoomState, onBumperMessage, onBumperRoomChange, sendBumper } from "./room";
 import { emitBumperEvent, game, ME, RING_COLORS, syncHud, useBumper, type Entrant } from "./store";
@@ -125,6 +126,8 @@ function localEvent(e: BumperEvent): BumperEvent | null {
 
 onBumperMessage((msg) => {
   const sim = game.sim;
+  // Others' emotes (ours showed when we pressed the key).
+  if (msg.type === "emote" && party.round && local(msg.id) !== ME) return showEmote(local(msg.id), msg.emote);
   if (msg.type !== "snap" || !party.round || !sim || useBumper.getState().backdrop) return;
   const at = performance.now();
   party.snaps.push({ at, snap: msg });

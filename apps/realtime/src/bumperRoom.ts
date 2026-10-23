@@ -9,6 +9,7 @@
 // mid-round, after a deploy say, plays that round again from the countdown.
 import {
   BUMPER_DEFAULT_ROUNDS,
+  BUMPER_EMOTE_COOLDOWN_MS,
   BUMPER_KO_POINTS,
   BUMPER_MAPS,
   BUMPER_MAX_PLAYERS,
@@ -64,6 +65,7 @@ interface Player extends CorePlayer {
   since: number;
   /** The last match's XP and coins, once the API has saved them (null: it couldn't). */
   xp?: BumperXpGain | null;
+  lastEmoteAt?: number;
 }
 
 interface Room extends CoreRoom<Player, BumperStatus> {
@@ -146,6 +148,13 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       }
       me.ack = msg.s;
       me.since = 0;
+      return;
+    }
+    // Relayed, nothing stored.
+    if (msg.type === "emote") {
+      if (!this.playing() || now - (me.lastEmoteAt ?? 0) < BUMPER_EMOTE_COOLDOWN_MS) return;
+      me.lastEmoteAt = now;
+      this.broadcast({ type: "emote", id: me.id, emote: msg.emote });
       return;
     }
 

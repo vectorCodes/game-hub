@@ -4,10 +4,11 @@
 // own cards (the lobby, round results) are in Party.tsx.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { BUMPER_MAPS, BUMPER_MODIFIERS, PICKUP_NAMES, bumperWave, type BotLevel } from "@shadow/shared";
+import { BUMPER_EMOTES, BUMPER_MAPS, BUMPER_MODIFIERS, PICKUP_NAMES, bumperWave, type BotLevel } from "@shadow/shared";
 import { useAuth } from "../../../auth/store";
 import { formatDuration } from "../../../lib/format";
 import { useSound } from "../../../lib/sound";
+import { EMOTES, emote } from "../emotes";
 import { holdBrace, pressDash, setStick } from "../input";
 import { ME, useBumper } from "../store";
 import { Scores, useLeaveRoom } from "./Party";
@@ -148,9 +149,35 @@ function Status({ touch }: { touch: boolean }) {
           <span className="font-mono text-[10px] font-semibold uppercase">Brace</span>
         </Ready>
         <span className="leading-6">
-          <Kbd>WASD</Kbd> drive · <Kbd>Space</Kbd> dash · <Kbd>Shift</Kbd> brace
+          <Kbd>WASD</Kbd> drive · <Kbd>Space</Kbd> dash · <Kbd>Shift</Kbd> brace · <Kbd>1–4</Kbd> emotes
         </span>
       </div>
+    </div>
+  );
+}
+
+/** Tablets: a button that opens the four emotes. */
+function EmoteButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="absolute flex items-center gap-2" style={{ bottom: "calc(8.75rem + env(safe-area-inset-bottom))", right: "calc(6.5rem + env(safe-area-inset-right))" }}>
+      {open &&
+        BUMPER_EMOTES.map((e) => (
+          <button
+            key={e}
+            aria-label={EMOTES[e].name}
+            className="glass grid h-12 w-12 animate-pop place-items-center text-2xl active:scale-95"
+            onPointerDown={() => {
+              emote(e);
+              setOpen(false);
+            }}
+          >
+            {EMOTES[e].icon}
+          </button>
+        ))}
+      <button aria-label="Emotes" className="glass grid h-12 w-12 place-items-center text-2xl active:scale-95" onPointerDown={() => setOpen((o) => !o)}>
+        😀
+      </button>
     </div>
   );
 }
@@ -506,6 +533,7 @@ export function Hud({ touch }: { touch: boolean }) {
       <WaveCleared />
       {!over && phase !== "over" && <Status touch={touch} />}
       {touch && !over && <TouchControls />}
+      {touch && !over && <EmoteButton />}
       {showOver && (mode === "practice" ? <PracticeOver /> : mode === "gauntlet" ? <GauntletOver /> : null)}
     </>
   );

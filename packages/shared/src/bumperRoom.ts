@@ -11,7 +11,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // (predicting their own ring in between). See Bumper-arena-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const BUMPER_PROTOCOL_VERSION = 3;
+export const BUMPER_PROTOCOL_VERSION = 4;
 export const BUMPER_MIN_PLAYERS = 2;
 export const BUMPER_MAX_PLAYERS = 4;
 
@@ -33,6 +33,11 @@ export const BUMPER_ROUND_MAX_SECONDS = 150;
 /** Points for 1st, 2nd and 3rd in a round (last place gets none), and for a knockout. */
 export const BUMPER_PLACE_POINTS = [5, 3, 2];
 export const BUMPER_KO_POINTS = 2;
+
+/** Emotes, on keys 1–4; anyone can send one while a round is on screen, out players too. */
+export const BUMPER_EMOTES = ["wave", "laugh", "taunt", "cry"] as const;
+export type BumperEmote = (typeof BUMPER_EMOTES)[number];
+export const BUMPER_EMOTE_COOLDOWN_MS = 1500;
 
 /** A different arena each round, or the same one every round. */
 export const BUMPER_ROTATION = "rotation";
@@ -58,6 +63,7 @@ export const BumperClientMessage = z.discriminatedUnion("type", [
    * own step count when this input took effect, echoed back in snapshots for prediction.
    */
   z.object({ type: z.literal("input"), s: z.int().min(0), x: Stick, z: Stick, b: z.boolean(), d: z.int().min(0).max(255) }),
+  z.object({ type: z.literal("emote"), emote: z.enum(BUMPER_EMOTES) }),
   z.object({ type: z.literal("rematch") }),
   RoomLeave,
   RoomPing,
@@ -159,6 +165,8 @@ export type BumperServerMessage =
   | CoreServerMessage<BumperView>
   | BumperSnap
   | { type: "results"; standings: BumperStanding[] }
+  /** Someone emoted (relayed to everyone). */
+  | { type: "emote"; id: string; emote: BumperEmote }
   /** Only to a signed-in player, once the API has saved the match: their XP and coins (null if it couldn't be saved). */
   | { type: "xp"; gain: BumperXpGain | null };
 

@@ -89,7 +89,7 @@ export function Menu({ touch, onFriends }: { touch: boolean; onFriends: () => vo
 
         {!touch && (
           <p className="mt-6 text-center text-sm text-stone-300">
-            <Kbd>WASD</Kbd> drive · <Kbd>Space</Kbd> dash · <Kbd>Shift</Kbd> brace (heavy, slow) · the more you're hit, the further you fly
+            <Kbd>WASD</Kbd> drive · <Kbd>Space</Kbd> dash · <Kbd>Shift</Kbd> brace (heavy, slow) · <Kbd>1–4</Kbd> emotes · the more you're hit, the further you fly
           </p>
         )}
       </div>

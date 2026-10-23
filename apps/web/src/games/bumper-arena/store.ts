@@ -480,12 +480,14 @@ export function syncHud(sim: BumperSim) {
   if (g && me?.state === "in" && me.wobble > g.peakWobble + 0.5) useBumper.setState({ gauntlet: { ...g, peakWobble: me.wobble } });
 }
 
+/** A line in the kill feed (the last four stay). */
+export function pushFeed(text: string) {
+  useBumper.setState((s) => ({ feed: [...s.feed.slice(-3), { id: ++feedId, text }] }));
+}
+
 /** What the HUD makes of the sim's events: the kill feed, the round's end, the Gauntlet. */
 function hudEvent(e: BumperEvent) {
-  const push = (text: string) =>
-    useBumper.setState((s) => ({
-      feed: [...s.feed.slice(-3), { id: ++feedId, text }],
-    }));
+  const push = pushFeed;
   if (e.type === "out" && !useBumper.getState().backdrop)
     push(e.by ? `${nameOf(e.by)} bumped ${nameOf(e.id)} out` : `${nameOf(e.id)} fell off`);
   roundEvent(e);

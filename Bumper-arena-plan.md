@@ -483,7 +483,7 @@ Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seve
 each one shippable on its own, in this order: rewards first (everything else builds on
 them), then the things that change how a round plays, then the things you collect.
 
-Status: 4.1 and 4.2 built; the rest ⬜ planned.
+Status: 4.1–4.3 built; the rest ⬜ planned.
 
 ### 4.1 Results → XP and coins ✅ built
 
@@ -529,14 +529,16 @@ The pickups from §2, in party rooms and the Gauntlet.
   bubble, a floor halo while it pulses; a HUD chip with the effect's time left. Practice
   has a pickups toggle too.
 
-### 4.3 Emotes ⬜
+### 4.3 Emotes ✅ built
 
 - Wave, Laugh, Taunt, Cry on keys **1–4** (an emote button with a small wheel on tablets),
   1.5 s cooldown. Out players can emote too.
 - Client sends `{ type: "emote", id }`; the room checks the cooldown and relays it to
   everyone. In solo modes it plays locally only.
-- The rider plays a Mini Characters clip over the driving pose, with an icon bubble over
-  the name tag for 1.5 s. Check which of the 32 clips read best from the high camera.
+- The rider plays a Mini Characters clip (`interact-right`, `emote-yes`,
+  `attack-melee-right`, `emote-no`) with its icon (👋 😂 😤 😭) over the name tag for 1.5 s,
+  and a sound. An out player's emote goes in the kill feed, since their car is gone. Bots
+  laugh now and then after a knockout.
 
 ### 4.4 Podium titles and share text ⬜
 

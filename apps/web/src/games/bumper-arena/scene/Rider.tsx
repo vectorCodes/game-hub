@@ -12,6 +12,7 @@ import { animateAccessories } from "../../../avatar/build";
 import { useAvatar } from "../../../avatar/store";
 import { useAvatarModel } from "../../../avatar/useAvatarModel";
 import { BumperCar } from "./BumperCar";
+import { EMOTES, emoteOf } from "../emotes";
 import { angleDelta } from "../../sky-climb/ghosts";
 import { game, ME, onBumperEvent, useBumper, type Entrant } from "../store";
 
@@ -23,6 +24,8 @@ function clipFor(id: string): string {
   const sim = game.sim;
   const r = sim?.ring(id);
   if (!sim || !r) return "drive";
+  const emote = emoteOf(id);
+  if (emote) return EMOTES[emote].clip;
   if (r.state !== "in") return "fall";
   if (sim.phase === "over" && sim.winner === id) return "emote-yes";
   return "drive";
@@ -43,6 +46,7 @@ export function Rider({ entrant }: { entrant: Entrant }) {
   const shock = useRef<Mesh>(null);
   const label = useRef<HTMLSpanElement>(null);
   const tag = useRef<HTMLDivElement>(null);
+  const emoteTag = useRef<HTMLSpanElement>(null);
   const { actions } = useAnimations(animations, body);
   const current = useRef<{ name: string; action: AnimationAction | null }>({ name: "", action: null });
   const fx = useRef({ squash: 0, spin: 0, wobble: -1, size: 1 });
@@ -135,6 +139,13 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       }
     }
 
+    // An emote's icon over the name while it plays.
+    const emote = emoteOf(entrant.id);
+    if (emoteTag.current) {
+      emoteTag.current.textContent = emote ? EMOTES[emote].icon : "";
+      emoteTag.current.style.display = emote ? "" : "none";
+    }
+
     // The label only changes when the whole-number Wobble does.
     const w = Math.round(r.wobble);
     if (label.current && w !== f.wobble) {
@@ -177,6 +188,7 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       </group>
       <Html position={[0, 1.95, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div ref={tag} className="flex flex-col items-center gap-0.5 leading-none whitespace-nowrap select-none">
+          <span ref={emoteTag} className="mb-0.5 animate-pop rounded-full bg-rice/90 px-1.5 py-1 text-xl shadow-sm" style={{ display: "none" }} />
           <span
             className={`rounded-xs px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.08em] uppercase ${mine ? "bg-ink text-rice" : "bg-rice/85 text-ink"}`}
             style={mine ? undefined : { boxShadow: `inset 0 -2px 0 ${entrant.color}` }}
