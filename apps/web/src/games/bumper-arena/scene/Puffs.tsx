@@ -1,9 +1,11 @@
 // Little bursts from a small pool of reused meshes: a puff where rings hit (bigger and
-// starrier for dash hits), dust behind a dash, and a splash of colour at a knockout.
+// starrier for dash hits), dust behind a dash, a splash of colour at a knockout, a pop where a
+// pickup is taken, and a blue burst from a Shockwave.
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Mesh, MeshBasicMaterial } from "three";
 import { onBumperEvent, useBumper } from "../store";
+import { PICKUP_COLORS } from "./Pickups";
 
 const POOL = 80;
 
@@ -56,6 +58,8 @@ export function Puffs() {
         const r = sim.ring(e.id);
         if (r) spawn(6, { x: r.x, y: 0.1, z: r.z }, "#f6efe2", { speed: 1.2, up: 0.4, gravity: 0, size: 0.14, life: 0.4 });
       }
+      if (e.type === "pickup") spawn(10, { x: e.x, y: 0.75, z: e.z }, [PICKUP_COLORS[e.kind], "#ffffff"], { speed: 2.5, up: 2, gravity: 4, size: 0.1, life: 0.5 });
+      if (e.type === "shock") spawn(24, { x: e.x, y: 0.3, z: e.z }, ["#4f8fe0", "#ffffff"], { speed: 7, up: 0.6, gravity: 0, size: 0.13, life: 0.45 });
       if (e.type === "out" && e.by) {
         const by = useBumper.getState().entrants.find((x) => x.id === e.by);
         const r = sim.ring(e.id);

@@ -1,7 +1,7 @@
 // Bumper Arena bots. A bot only looks at the world every so often (its reaction time), then
-// keeps doing what it decided: get back from the edge, pick someone near the edge, get on
-// the middle side of them, and dash when lined up. Easy bots look less often, aim worse and
-// rarely brace.
+// keeps doing what it decided: get back from the edge, grab a pickup that's close, pick someone
+// near the edge, get on the middle side of them, and dash when lined up. Easy bots look less
+// often, aim worse and rarely brace.
 import { makeRng } from "./skyClimb";
 import { SPINNER } from "./bumper";
 import type { BumperInput, BumperSim, Ring } from "./bumperSim";
@@ -27,12 +27,14 @@ interface BotSkill {
   reflex: number;
   /** How likely a look ends in aimless drifting instead. */
   wander: number;
+  /** How likely it goes for a pickup that's close and nearer to it than to anyone else. */
+  pickup: number;
 }
 
 export const BOT_SKILLS: Record<BotLevel, BotSkill> = {
-  easy: { reaction: 0.6, aimNoise: 0.5, dashRange: 3, dashChance: 0.45, overrun: 0.5, brace: 0.15, edgeCare: 0.9, reflex: 0.7, wander: 0.3 },
-  normal: { reaction: 0.3, aimNoise: 0.25, dashRange: 3.5, dashChance: 0.75, overrun: 1.5, brace: 0.5, edgeCare: 1.4, reflex: 0.9, wander: 0.08 },
-  hard: { reaction: 0.15, aimNoise: 0.1, dashRange: 4, dashChance: 0.95, overrun: 2.5, brace: 0.9, edgeCare: 1.9, reflex: 1, wander: 0 },
+  easy: { reaction: 0.6, aimNoise: 0.5, dashRange: 3, dashChance: 0.45, overrun: 0.5, brace: 0.15, edgeCare: 0.9, reflex: 0.7, wander: 0.3, pickup: 0.25 },
+  normal: { reaction: 0.3, aimNoise: 0.25, dashRange: 3.5, dashChance: 0.75, overrun: 1.5, brace: 0.5, edgeCare: 1.4, reflex: 0.9, wander: 0.08, pickup: 0.6 },
+  hard: { reaction: 0.15, aimNoise: 0.1, dashRange: 4, dashChance: 0.95, overrun: 2.5, brace: 0.9, edgeCare: 1.9, reflex: 1, wander: 0, pickup: 0.9 },
 };
 
 export const BOT_NAMES = ["Bumpy", "Wobbles", "Sir Shove", "Donut Dan", "Boinks", "Rubber Ru", "Tubby", "Spinny", "Nudge", "Big Bop"];
@@ -111,6 +113,17 @@ export class BotBrain {
     if (margin < s.edgeCare && fromMiddle > 0.01) return this.aim(-me.x / fromMiddle, -me.z / fromMiddle, false, brace);
     if (brace) return { x: 0, z: 0, dash: false, brace: true };
     if (!others.length) return { x: 0, z: 0, dash: false, brace: false };
+    // A pickup close by that nobody else is nearer to.
+    const pickup = sim.pickups.find((p) => {
+      const d = Math.hypot(p.x - me.x, p.z - me.z);
+      return d < 6 && others.every((o) => Math.hypot(p.x - o.x, p.z - o.z) > d);
+    });
+    if (pickup && rng() < s.pickup) {
+      const px = pickup.x - me.x;
+      const pz = pickup.z - me.z;
+      const pd = Math.hypot(px, pz) || 1;
+      return this.aim(px / pd, pz / pd, false, false, 0.4);
+    }
     if (rng() < s.wander) {
       const a = rng() * Math.PI * 2;
       return { x: Math.sin(a) * 0.5, z: Math.cos(a) * 0.5, dash: false, brace: false };

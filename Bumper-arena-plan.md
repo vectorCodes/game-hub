@@ -483,7 +483,7 @@ Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seve
 each one shippable on its own, in this order: rewards first (everything else builds on
 them), then the things that change how a round plays, then the things you collect.
 
-Status: 4.1 built; the rest ⬜ planned.
+Status: 4.1 and 4.2 built; the rest ⬜ planned.
 
 ### 4.1 Results → XP and coins ✅ built
 
@@ -508,7 +508,7 @@ level up and earn coins. Nobody can award themselves anything: only the room can
   XP gained, coins gained), shown on the podium with a level bar. Guests see "Sign in to
   earn XP and coins".
 
-### 4.2 Pickups ⬜
+### 4.2 Pickups ✅ built
 
 The pickups from §2, in party rooms and the Gauntlet.
 
@@ -522,10 +522,12 @@ The pickups from §2, in party rooms and the Gauntlet.
   (a heavier, bigger or quicker-dashing ring must predict the same way as the room).
 - **Room:** pickups and banana patches ride in the snapshot; a "pickup" event for the
   sound and the HUD. Lobby toggle **Pickups on / off** (on by default). Protocol bump.
-- **Gauntlet:** the **Pickup Party** twist comes back; Normal and Hard bots go for pickups
-  that are close.
-- **Art:** Kenney Platformer Kit / Food Kit items (CC0) in a floating, spinning capsule;
-  a small HUD chip with the effect's time left.
+- **Gauntlet:** the **Pickup Party** twist comes back (in the draw from 2026-10-26, so
+  earlier days keep their twist; pickups only appear on Pickup Party days). Bots go for
+  pickups that are close (hard bots most often).
+- **Art:** simple modelled icons (anvil, bolt, ring, bubble, banana) in a floating glass
+  bubble, a floor halo while it pulses; a HUD chip with the effect's time left. Practice
+  has a pickups toggle too.
 
 ### 4.3 Emotes ⬜
 

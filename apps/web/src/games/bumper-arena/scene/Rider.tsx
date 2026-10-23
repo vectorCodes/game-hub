@@ -1,9 +1,12 @@
 // One rider: a GameHub avatar sitting in a bumper car, drawn from the sim every frame. It
 // leans into its speed, squashes on hits, wobbles as its Wobble climbs (stars over its head
-// past 100%), tumbles when it goes over the edge, and cheers when it wins.
+// past 100%), tumbles when it goes over the edge, and cheers when it wins. A pickup shows on
+// it: bigger when Heavyweight, a bubble round it, a ring of sparks holding a Shockwave,
+// glowing on Turbo, spinning on a banana patch.
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html, useAnimations } from "@react-three/drei";
+import { PICKUPS } from "@shadow/shared";
 import { LoopRepeat, MathUtils, type AnimationAction, type Group, type Mesh, type MeshStandardMaterial } from "three";
 import { animateAccessories } from "../../../avatar/build";
 import { useAvatar } from "../../../avatar/store";
@@ -36,11 +39,13 @@ export function Rider({ entrant }: { entrant: Entrant }) {
   const lights = useRef<MeshStandardMaterial>(null);
   const stars = useRef<Group>(null);
   const marker = useRef<Mesh>(null);
+  const bubble = useRef<Mesh>(null);
+  const shock = useRef<Mesh>(null);
   const label = useRef<HTMLSpanElement>(null);
   const tag = useRef<HTMLDivElement>(null);
   const { actions } = useAnimations(animations, body);
   const current = useRef<{ name: string; action: AnimationAction | null }>({ name: "", action: null });
-  const fx = useRef({ squash: 0, spin: 0, wobble: -1 });
+  const fx = useRef({ squash: 0, spin: 0, wobble: -1, size: 1 });
   const mine = entrant.id === ME;
 
   useEffect(() => {
@@ -71,7 +76,9 @@ export function Rider({ entrant }: { entrant: Entrant }) {
     animateAccessories(model, dt);
     g.visible = r.y > -30;
     g.position.set(r.x, r.y, r.z);
-    yaw.current.rotation.y += angleDelta(yaw.current.rotation.y, r.facing) * (1 - Math.exp(-dt * 12));
+    // On a banana patch: spinning out. Otherwise, turning to face where it's going.
+    if (r.slip > 0 && r.state === "in") yaw.current.rotation.y += dt * 14;
+    else yaw.current.rotation.y += angleDelta(yaw.current.rotation.y, r.facing) * (1 - Math.exp(-dt * 12));
 
     const f = fx.current;
     const t = clock.elapsedTime;
@@ -90,7 +97,18 @@ export function Rider({ entrant }: { entrant: Entrant }) {
     if (sim.phase === "countdown") tilt.current.rotation.set(0, 0, 0);
     const squash = f.squash * Math.abs(Math.sin(f.squash * 9));
     const brace = r.bracing ? 1 : 0;
-    tilt.current.scale.set(1 + squash * 0.18 + brace * 0.06, 1 - squash * 0.22 - brace * 0.12, 1 + squash * 0.18 + brace * 0.06);
+    // Heavyweight: grows (and shrinks back) over a moment.
+    f.size = MathUtils.lerp(f.size, r.effect === "heavy" ? PICKUPS.heavy.scale : 1, 1 - Math.exp(-dt * 8));
+    tilt.current.scale.set((1 + squash * 0.18 + brace * 0.06) * f.size, (1 - squash * 0.22 - brace * 0.12) * f.size, (1 + squash * 0.18 + brace * 0.06) * f.size);
+    if (bubble.current) {
+      bubble.current.visible = r.effect === "bubble" && r.state === "in";
+      bubble.current.scale.setScalar(f.size * (1 + Math.sin(t * 5) * 0.03));
+    }
+    if (shock.current) {
+      shock.current.visible = r.effect === "shock" && r.state === "in";
+      shock.current.rotation.z = t * 6;
+      shock.current.scale.setScalar(f.size * (1 + Math.sin(t * 9) * 0.06));
+    }
 
     // Dashing: the paint flashes and the headlights flare. Braced: the paint goes dark.
     const mat = paint.current;
@@ -98,7 +116,7 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       mat.emissive.set(r.dashLeft > 0 ? "#ffffff" : r.bracing ? "#2a2a2a" : "#000000");
       mat.emissiveIntensity = r.dashLeft > 0 ? 0.35 : r.bracing ? 0.6 : 0;
     }
-    if (lights.current) lights.current.emissiveIntensity = r.dashLeft > 0 ? 2.5 : 0.3;
+    if (lights.current) lights.current.emissiveIntensity = r.dashLeft > 0 ? 2.5 : r.effect === "turbo" ? 1.2 + Math.sin(t * 12) * 0.8 : 0.3;
     if (stars.current) {
       stars.current.visible = r.state === "in" && r.wobble >= 100;
       stars.current.rotation.y += dt * 5;
@@ -132,6 +150,14 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       <mesh ref={marker} rotation-x={-Math.PI / 2} position-y={0.012}>
         <ringGeometry args={[0.72, 0.84, 40]} />
         <meshBasicMaterial color={mine ? "#ffffff" : entrant.color} transparent opacity={mine ? 0.95 : 0.45} />
+      </mesh>
+      <mesh ref={bubble} position-y={0.55} visible={false}>
+        <sphereGeometry args={[0.95, 24, 16]} />
+        <meshStandardMaterial color="#9fe0ff" transparent opacity={0.22} roughness={0.05} depthWrite={false} />
+      </mesh>
+      <mesh ref={shock} rotation-x={-Math.PI / 2} position-y={0.2} visible={false}>
+        <torusGeometry args={[0.95, 0.05, 6, 32]} />
+        <meshBasicMaterial color="#4f8fe0" transparent opacity={0.8} />
       </mesh>
       <group ref={tilt}>
         <group ref={yaw}>

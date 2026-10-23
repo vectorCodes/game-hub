@@ -26,10 +26,14 @@ export const BUMPER_MODIFIERS = {
   "heavy-hitters": { name: "Heavy Hitters", blurb: "Every hit knocks 30% further." },
   "low-gravity": { name: "Low Gravity", blurb: "Knocks slide further, and falls are slow." },
   "no-brakes": { name: "No Brakes", blurb: "Nobody can brace today." },
+  "pickup-party": { name: "Pickup Party", blurb: "Pickups keep coming: grab them before the bots do." },
 } as const;
 
 export type BumperModifier = keyof typeof BUMPER_MODIFIERS;
 export const BUMPER_MODIFIER_IDS = Object.keys(BUMPER_MODIFIERS) as BumperModifier[];
+/** Pickup Party joins the draw from this date, so earlier days keep the twist they had. */
+export const PICKUP_PARTY_FROM = "2026-10-26";
+const modifiersOn = (date: string) => (date >= PICKUP_PARTY_FROM ? BUMPER_MODIFIER_IDS : BUMPER_MODIFIER_IDS.filter((m) => m !== "pickup-party"));
 
 /** `base` with a twist applied (a new object). */
 export function withModifier(base: BumperTuning, modifier: BumperModifier): BumperTuning {
@@ -75,7 +79,8 @@ export function bumperDay(date: string): BumperDay {
   const rng = makeRng(bumperDailySeed(date));
   const map = BUMPER_GAUNTLET_MAPS[Math.floor(rng() * BUMPER_GAUNTLET_MAPS.length)];
   const number = bumperDailyNumber(date);
-  const modifier = number <= 1 ? "classic" : BUMPER_MODIFIER_IDS[Math.floor(rng() * BUMPER_MODIFIER_IDS.length)];
+  const ids = modifiersOn(date);
+  const modifier = number <= 1 ? "classic" : ids[Math.floor(rng() * ids.length)];
   return { date, number, map, modifier };
 }
 

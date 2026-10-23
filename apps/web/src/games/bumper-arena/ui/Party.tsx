@@ -174,15 +174,16 @@ function Slot({ player, host, you }: { player: BumperPlayerView | undefined; hos
   );
 }
 
-/** The host picks the arena and how many rounds; everyone else sees what was picked. */
+/** The host picks the arena, how many rounds and whether there are pickups; everyone else sees what was picked. */
 function Settings({ host }: { host: boolean }) {
   const { room } = useBumperRoom();
   if (!room) return null;
-  const { settings } = room;
+  // Rooms made before pickups existed have them on.
+  const settings = { ...room.settings, pickups: room.settings.pickups !== false };
   if (!host) {
     return (
       <p className="mt-4 text-sm text-stone-300">
-        {mapName(settings.map)} · {settings.rounds} rounds
+        {mapName(settings.map)} · {settings.rounds} rounds · pickups {settings.pickups ? "on" : "off"}
       </p>
     );
   }
@@ -209,6 +210,15 @@ function Settings({ host }: { host: boolean }) {
           ))}
         </span>
       </div>
+      <label className="col-span-2 flex items-center gap-2">
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-[var(--color-gold)]"
+          checked={settings.pickups}
+          onChange={(e) => setBumperSettings({ ...settings, pickups: e.target.checked })}
+        />
+        <span>Pickups: Heavyweight, Turbo, Shockwave, Bubble, Banana</span>
+      </label>
     </div>
   );
 }

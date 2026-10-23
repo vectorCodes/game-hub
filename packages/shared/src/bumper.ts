@@ -240,3 +240,32 @@ export function arenaRadius(map: BumperMap, rings: number): number {
   const share = Math.min(1, Math.max(0, (rings - 2) / 2));
   return map.radius * (0.85 + 0.15 * share);
 }
+
+// ---------- Pickups ----------
+
+/**
+ * heavy: a bigger, heavier, slower ring · turbo: dashes come back fast · shock: the next dash
+ * blasts everyone close away · bubble: the next hit is shrugged off · banana: a slick patch
+ * dropped behind you.
+ */
+export type PickupKind = "heavy" | "turbo" | "shock" | "bubble" | "banana";
+export const PICKUP_KINDS: PickupKind[] = ["heavy", "turbo", "shock", "bubble", "banana"];
+export const PICKUP_NAMES: Record<PickupKind, string> = { heavy: "Heavyweight", turbo: "Turbo", shock: "Shockwave", bubble: "Bubble", banana: "Banana" };
+
+export const PICKUPS = {
+  /** The first one appears this far into a round (s), then one every `every` s, at most `max` at a time. */
+  first: 6,
+  every: 12,
+  max: 2,
+  /** It pulses this long (s) before it can be taken, so nobody gets one by pure luck. */
+  warn: 1,
+  /** Taken by a ring whose edge comes this close (m). */
+  reach: 0.45,
+  heavy: { seconds: 6, scale: 1.4, mass: 2.5, speed: 0.85 },
+  turbo: { seconds: 5, cooldown: 0.6 },
+  /** Kept until the next dash (or this long). */
+  shock: { seconds: 15, radius: 3, push: 7, wobble: 15 },
+  bubble: { seconds: 8 },
+  /** The patch: how long it lies, its size, how long a ring on it slides, the grip it has meanwhile, and how far behind the ring it's dropped. Its owner is safe from it for a moment. */
+  banana: { patchSeconds: 10, radius: 1, slip: 1.5, grip: 0.08, behind: 1.4, ownerSafe: 1.5 },
+};

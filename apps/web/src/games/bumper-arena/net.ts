@@ -10,6 +10,8 @@ import {
   BUMPER_MAPS,
   BUMPER_STEP,
   DEFAULT_AVATAR,
+  ringRadius,
+  unpackPickups,
   unpackRing,
   unpackTiles,
   type BumperEvent,
@@ -107,6 +109,10 @@ function localEvent(e: BumperEvent): BumperEvent | null {
     case "hit":
       return { ...e, a: local(e.a), b: local(e.b) };
     case "fall":
+    case "pickup":
+    case "shock":
+    case "pop":
+    case "slip":
       return { ...e, id: local(e.id) };
     case "out":
       return { ...e, id: local(e.id), by: localOrNull(e.by) };
@@ -224,9 +230,9 @@ function ownStep(sim: BumperSim) {
 
 /** Keeps our ring from driving into the others while the room works out the bump. */
 function pushOut(sim: BumperSim, me: Ring) {
-  const reach = sim.tuning.radius * 2;
   for (const r of sim.rings) {
     if (r === me || r.state !== "in") continue;
+    const reach = ringRadius(me, sim.tuning) + ringRadius(r, sim.tuning);
     const dx = me.x - r.x;
     const dz = me.z - r.z;
     const d = Math.hypot(dx, dz);
@@ -236,7 +242,7 @@ function pushOut(sim: BumperSim, me: Ring) {
   }
 }
 
-/** Everyone else, the clock, the bar and the tiles, `DELAY_MS` ago, blended between the snapshots around then. */
+/** Everyone else, the clock, the bar, the tiles and the pickups, `DELAY_MS` ago, blended between the snapshots around then. */
 function drawOthers(sim: BumperSim, now: number) {
   const snaps = party.snaps;
   if (!snaps.length) return;
@@ -265,6 +271,8 @@ function drawOthers(sim: BumperSim, now: number) {
   sim.t = lerp(a.snap.t, b.snap.t) / 1000;
   if (b.snap.spin !== undefined) sim.spinner.angle = lerp(a.snap.spin ?? b.snap.spin, b.snap.spin) / 1000;
   if (b.snap.tiles) unpackTiles(b.snap.tiles, sim.tiles, sim.t);
+  sim.pickups = unpackPickups(b.snap.pickups ?? [], sim.pickups, sim.t);
+  sim.patches = (b.snap.patches ?? []).map(([id, x, z]) => ({ id, x: x / 100, z: z / 100, owner: "", at: 0, until: Infinity }));
   sim.radius = sim.edgeAt(sim.t);
   sim.warning = sim.phase === "play" && sim.edgeAt(sim.t + sim.map.suddenDeath.warnSeconds) < sim.radius;
 }

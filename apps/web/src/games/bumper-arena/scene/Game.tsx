@@ -10,6 +10,7 @@ import { partyFrame } from "../net";
 import { emitBumperEvent, game, ME, onBumperEvent, syncHud, useBumper } from "../store";
 import { Arena, Clouds } from "./Arena";
 import { Decor } from "./Decor";
+import { Pickups } from "./Pickups";
 import { Puffs } from "./Puffs";
 import { Rider } from "./Rider";
 
@@ -93,6 +94,12 @@ function Sounds() {
         }
         if (e.type === "over") play(e.winner === ME ? "win" : "lose");
         if (e.type === "dash" && e.id === ME) play(map === "ice-floe" ? "iceSkid" : "jump");
+        // Pickups: yours loud, others' where they are.
+        if (e.type === "pickup") play(e.id === ME ? "powerup" : "coin", e.id === ME ? 1 : 0.6, e.id === ME ? undefined : heard(e.x, e.z));
+        if (e.type === "spawn") play("tick", 0.6, heard(e.x, e.z));
+        if (e.type === "shock") play("boom", 0.8, heard(e.x, e.z));
+        if (e.type === "pop") play("shield");
+        if (e.type === "slip") play("iceSkid");
       }),
     [],
   );
@@ -216,6 +223,7 @@ export default function Game() {
       <Arena />
       <Decor />
       <Clouds />
+      <Pickups />
       <Riders />
       <Puffs />
     </Canvas>

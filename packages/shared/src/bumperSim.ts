@@ -1,8 +1,9 @@
 // Bumper Arena's physics: rings are circles sliding on the arena floor (x, z), plus a simple
 // fall once they leave it. No physics engine: circle-vs-circle hits, a shrinking edge, the
-// maps' hazards (a sweeping bar, dropping tiles) and timers. Pure and framework-free, so the same code runs the solo game in the browser
+// maps' hazards (a sweeping bar, dropping tiles), pickups and timers. Pure and framework-free, so the same code runs the solo game in the browser
 // and the party rooms on the server. Units are metres and seconds; +y is up.
-import { arenaRadius, BUMPER_COUNTDOWN_SECONDS, BUMPER_TUNING, HEX, hexAt, hexTiles, outlineAt, SPINNER, spinnerSpeed, withGrip, type BumperMap, type BumperTuning } from "./bumper";
+import { arenaRadius, BUMPER_COUNTDOWN_SECONDS, BUMPER_TUNING, HEX, hexAt, hexTiles, outlineAt, PICKUP_KINDS, PICKUPS, SPINNER, spinnerSpeed, withGrip, type BumperMap, type BumperTuning, type PickupKind } from "./bumper";
+import { makeRng } from "./skyClimb";
 
 /** What a ring's driver wants this step. `x`/`z` is the stick on the floor plane, length ≤ 1. */
 export interface BumperInput {
@@ -47,7 +48,38 @@ export interface Ring {
   kos: number;
   /** Seconds its centre has been over a hole (Hex Hive). */
   overHole: number;
+  /** The pickup it's using, and seconds left of it. */
+  effect: PickupKind | null;
+  effectLeft: number;
+  /** Seconds left sliding on a banana patch. */
+  slip: number;
   input: BumperInput;
+}
+
+/** A pickup on the arena: it can be taken once round time passes `at` + PICKUPS.warn. */
+export interface Pickup {
+  id: number;
+  kind: PickupKind;
+  x: number;
+  z: number;
+  at: number;
+}
+
+/** A banana patch: slick until round time `until`. */
+export interface BananaPatch {
+  id: number;
+  x: number;
+  z: number;
+  owner: string;
+  at: number;
+  until: number;
+}
+
+export interface BumperSimOptions {
+  /** Pickups appear (off by default). */
+  pickups?: boolean;
+  /** Seeds where and which pickups appear. */
+  seed?: string;
 }
 
 export type BumperEvent =
@@ -61,6 +93,13 @@ export type BumperEvent =
   /** Hex Hive: a tile started to crack, or dropped. */
   | { type: "crack"; x: number; z: number }
   | { type: "tileDrop"; x: number; z: number }
+  /** A pickup appeared (pulsing), or a ring took one. */
+  | { type: "spawn"; kind: PickupKind; x: number; z: number }
+  | { type: "pickup"; id: string; kind: PickupKind; x: number; z: number }
+  /** A Shockwave dash went off; a Bubble took a hit; a ring hit a banana patch. */
+  | { type: "shock"; id: string; x: number; z: number }
+  | { type: "pop"; id: string }
+  | { type: "slip"; id: string }
   | { type: "over"; winner: string | null };
 
 export type BumperPhase = "countdown" | "play" | "over";
@@ -84,7 +123,8 @@ export interface BumperEntrant {
 
 const NO_INPUT: BumperInput = { x: 0, z: 0, dash: false, brace: false };
 
-export const ringMass = (r: Ring, tuning: BumperTuning) => (r.bracing ? tuning.braceMass : 1);
+export const ringMass = (r: Ring, tuning: BumperTuning) => (r.bracing ? tuning.braceMass : 1) * (r.effect === "heavy" ? PICKUPS.heavy.mass : 1);
+export const ringRadius = (r: Ring, tuning: BumperTuning) => tuning.radius * (r.effect === "heavy" ? PICKUPS.heavy.scale : 1);
 
 export class BumperSim {
   /** Seconds since the round started; negative during the countdown. */
@@ -105,14 +145,25 @@ export class BumperSim {
   spinner = { angle: 0, speed: 0 };
   /** Hex Hive: the floor. */
   tiles: HexTile[] = [];
+  pickups: Pickup[] = [];
+  patches: BananaPatch[] = [];
   private tileIndex = new Map<string, number>();
+  private readonly pickupsOn: boolean;
+  private readonly rng: () => number;
+  private nextPickupAt: number = PICKUPS.first;
+  private nextId = 1;
+  /** Rings that dashed this step (a Shockwave goes off after everyone has driven). */
+  private dashed: Ring[] = [];
 
   constructor(
     readonly map: BumperMap,
     entrants: BumperEntrant[],
     tuning: BumperTuning = BUMPER_TUNING,
+    options: BumperSimOptions = {},
   ) {
     this.tuning = withGrip(tuning, map.grip);
+    this.pickupsOn = options.pickups ?? false;
+    this.rng = makeRng(options.seed ?? `pickups:${map.id}`);
     this.startRadius = this.radius = arenaRadius(map, entrants.length);
     if (map.kind === "hex") {
       for (const tile of hexTiles(this.startRadius)) {
@@ -147,6 +198,9 @@ export class BumperSim {
         touchedAt: -Infinity,
         kos: 0,
         overHole: 0,
+        effect: null,
+        effectLeft: 0,
+        slip: 0,
         input: { ...NO_INPUT },
       };
     });
@@ -195,9 +249,11 @@ export class BumperSim {
     }
     this.updateEdge();
     for (const r of this.rings) this.drive(r, dt);
+    this.shockwaves();
     this.sweep(dt);
     this.crumble(dt);
     this.collide();
+    this.pickupStep();
     for (const r of this.rings) this.edge(r, dt);
     this.checkOver();
   }
@@ -214,6 +270,7 @@ export class BumperSim {
   /** One ring's driving for a step and nothing else (no hits, no edge): a client predicting its own ring between snapshots. */
   driveOnly(r: Ring, dt: number) {
     this.drive(r, dt);
+    this.dashed.length = 0;
   }
 
   private updateEdge() {
@@ -242,6 +299,13 @@ export class BumperSim {
     r.dashCooldown = Math.max(0, r.dashCooldown - dt);
     r.braceCooldown = Math.max(0, r.braceCooldown - dt);
     r.dashLeft = Math.max(0, r.dashLeft - dt);
+    r.slip = Math.max(0, r.slip - dt);
+    if (r.effect) {
+      r.effectLeft -= dt;
+      if (r.effectLeft <= 0) r.effect = null;
+    }
+    // On a banana patch: hardly any grip.
+    const grip = r.slip > 0 ? PICKUPS.banana.grip : 1;
 
     // Brace: heavier and slow, for a while, then a cooldown that grows with how long it was held.
     if (input.brace && k.braceMaxSeconds > 0 && r.dashLeft === 0 && r.braceCooldown === 0) {
@@ -266,24 +330,25 @@ export class BumperSim {
       r.vx = dx * k.dashSpeed;
       r.vz = dz * k.dashSpeed;
       r.dashLeft = k.dashSeconds;
-      r.dashCooldown = k.dashCooldown;
+      r.dashCooldown = r.effect === "turbo" ? PICKUPS.turbo.cooldown : k.dashCooldown;
+      this.dashed.push(r);
       this.events.push({ type: "dash", id: r.id });
     }
 
     const was = Math.hypot(r.vx, r.vz);
     if (r.dashLeft === 0) {
-      r.vx += ix * k.accel * dt;
-      r.vz += iz * k.accel * dt;
+      r.vx += ix * k.accel * grip * dt;
+      r.vz += iz * k.accel * grip * dt;
     }
-    const drag = Math.exp(-(k.drag + (len < 0.1 ? k.brakeDrag : 0)) * dt);
+    const drag = Math.exp(-(k.drag + (len < 0.1 ? k.brakeDrag : 0)) * grip * dt);
     r.vx *= drag;
     r.vz *= drag;
     // Over top speed (knocked, or a dash ending): slide back down to it, don't snap. Driving
     // can steer the slide but not stretch it.
-    const top = k.maxSpeed * (r.bracing ? k.braceSpeed : 1);
+    const top = k.maxSpeed * (r.bracing ? k.braceSpeed : 1) * (r.effect === "heavy" ? PICKUPS.heavy.speed : 1);
     const speed = Math.hypot(r.vx, r.vz);
     if (r.dashLeft === 0 && speed > top) {
-      const s = Math.max(top, Math.min(speed, was) - k.overspeedDecel * dt) / speed;
+      const s = Math.max(top, Math.min(speed, was) - k.overspeedDecel * grip * dt) / speed;
       r.vx *= s;
       r.vz *= s;
     }
@@ -306,10 +371,11 @@ export class BumperSim {
     const dz = Math.cos(angle);
     const tx = Math.cos(angle);
     const tz = -Math.sin(angle);
-    const reach = k.radius + SPINNER.halfWidth;
-    const hubReach = SPINNER.hubRadius + k.radius;
     for (const r of this.rings) {
       if (r.state !== "in") continue;
+      const radius = ringRadius(r, k);
+      const reach = radius + SPINNER.halfWidth;
+      const hubReach = SPINNER.hubRadius + radius;
       // The post: solid, a firm bounce.
       const d = Math.hypot(r.x, r.z);
       if (d < hubReach && d > 1e-6) {
@@ -340,8 +406,9 @@ export class BumperSim {
           r.vz += tz * (want - vt);
         }
         if (this.t - r.touchedAt > 0.5) {
-          r.wobble = Math.min(k.wobbleMax, r.wobble + SPINNER.wobble);
-          this.events.push({ type: "hit", a: "spinner", b: r.id, x: r.x - tx * side * k.radius, z: r.z - tz * side * k.radius, power: Math.abs(want) / k.maxSpeed, dash: false });
+          if (r.effect === "bubble") this.pop(r);
+          else r.wobble = Math.min(k.wobbleMax, r.wobble + SPINNER.wobble);
+          this.events.push({ type: "hit", a: "spinner", b: r.id, x: r.x - tx * side * radius, z: r.z - tz * side * radius, power: Math.abs(want) / k.maxSpeed, dash: false });
         }
         r.touchedAt = this.t;
       } else if (vt * side < 0) {
@@ -384,11 +451,12 @@ export class BumperSim {
   private collide() {
     const k = this.tuning;
     const rings = this.rings.filter((r) => r.state === "in");
-    const reach = k.radius * 2;
     for (let i = 0; i < rings.length; i++) {
       for (let j = i + 1; j < rings.length; j++) {
         const a = rings[i];
         const b = rings[j];
+        const ra = ringRadius(a, k);
+        const reach = ra + ringRadius(b, k);
         let nx = b.x - a.x;
         let nz = b.z - a.z;
         const d = Math.hypot(nx, nz);
@@ -427,7 +495,7 @@ export class BumperSim {
         a.touchedAt = b.touchedAt = this.t;
 
         const dash = a.dashLeft > 0 || b.dashLeft > 0;
-        this.events.push({ type: "hit", a: a.id, b: b.id, x: a.x + nx * k.radius, z: a.z + nz * k.radius, power: closing / k.maxSpeed, dash });
+        this.events.push({ type: "hit", a: a.id, b: b.id, x: a.x + nx * ra, z: a.z + nz * ra, power: closing / k.maxSpeed, dash });
       }
     }
   }
@@ -436,6 +504,8 @@ export class BumperSim {
   private shove(from: Ring, to: Ring, speed: number, nx: number, nz: number, mass: number) {
     const k = this.tuning;
     if (speed <= 0.5) return;
+    // A Bubble takes the hit instead: no shove, no wobble.
+    if (to.effect === "bubble") return this.pop(to);
     const dashing = from.dashLeft > 0;
     const push = (k.knockBase * Math.min(2, speed / k.maxSpeed) * (dashing ? k.dashKnock : 1) * (k.knockFloor + to.wobble / 100)) / mass;
     to.vx += nx * push;
@@ -446,6 +516,96 @@ export class BumperSim {
       to.lastHitBy = from.id;
       to.lastHitAt = this.t;
     }
+  }
+
+  private pop(r: Ring) {
+    r.effect = null;
+    r.effectLeft = 0;
+    this.events.push({ type: "pop", id: r.id });
+  }
+
+  /** Shockwave: a ring holding one that dashed this step blasts everyone close outward. */
+  private shockwaves() {
+    const k = this.tuning;
+    const { radius, push, wobble } = PICKUPS.shock;
+    for (const r of this.dashed) {
+      if (r.effect !== "shock") continue;
+      r.effect = null;
+      r.effectLeft = 0;
+      this.events.push({ type: "shock", id: r.id, x: r.x, z: r.z });
+      for (const o of this.rings) {
+        if (o === r || o.state !== "in") continue;
+        const dx = o.x - r.x;
+        const dz = o.z - r.z;
+        const d = Math.hypot(dx, dz);
+        if (d > radius + ringRadius(o, k) || d < 1e-6) continue;
+        if (o.effect === "bubble") {
+          this.pop(o);
+          continue;
+        }
+        const f = (push * (1 - (0.5 * d) / radius) * (k.knockFloor + o.wobble / 100 + 0.5)) / ringMass(o, k);
+        o.vx += (dx / d) * f;
+        o.vz += (dz / d) * f;
+        o.wobble = Math.min(k.wobbleMax, o.wobble + wobble / ringMass(o, k));
+        o.lastHitBy = r.id;
+        o.lastHitAt = o.touchedAt = this.t;
+      }
+    }
+    this.dashed.length = 0;
+  }
+
+  /** Pickups: a new one now and then, rings taking them, and banana patches catching rings. */
+  private pickupStep() {
+    if (!this.pickupsOn || this.phase !== "play") return;
+    const k = this.tuning;
+    if (this.t >= this.nextPickupAt) {
+      this.nextPickupAt += PICKUPS.every;
+      if (this.pickups.length < PICKUPS.max) this.spawnPickup();
+    }
+    for (const p of [...this.pickups]) {
+      if (this.t < p.at + PICKUPS.warn) continue;
+      const r = this.alive().find((r) => Math.hypot(r.x - p.x, r.z - p.z) < ringRadius(r, k) + PICKUPS.reach);
+      if (r) this.take(r, p);
+    }
+    const { radius, slip, ownerSafe } = PICKUPS.banana;
+    this.patches = this.patches.filter((b) => b.until > this.t);
+    for (const r of this.alive()) {
+      if (r.slip > 0) continue;
+      const on = this.patches.some((b) => (b.owner !== r.id || this.t - b.at > ownerSafe) && Math.hypot(r.x - b.x, r.z - b.z) < radius);
+      if (!on) continue;
+      r.slip = slip;
+      this.events.push({ type: "slip", id: r.id });
+    }
+  }
+
+  /** A pickup somewhere safe: on solid floor, away from the edge, the rings and the Spinner's post. */
+  private spawnPickup() {
+    const kind = PICKUP_KINDS[Math.floor(this.rng() * PICKUP_KINDS.length)];
+    for (let i = 0; i < 12; i++) {
+      const a = this.rng() * Math.PI * 2;
+      const d = Math.sqrt(this.rng()) * this.radius * 0.7;
+      const x = Math.sin(a) * d;
+      const z = Math.cos(a) * d;
+      if (!this.onFloor(x, z, true) || d > this.edgeRadius(x, z) - 1.5) continue;
+      if (this.map.kind === "spinner" && d < SPINNER.hubRadius + 1) continue;
+      if (this.alive().some((r) => Math.hypot(r.x - x, r.z - z) < 2)) continue;
+      if (this.pickups.some((p) => Math.hypot(p.x - x, p.z - z) < 3)) continue;
+      this.pickups.push({ id: this.nextId++, kind, x, z, at: this.t });
+      this.events.push({ type: "spawn", kind, x, z });
+      return;
+    }
+  }
+
+  private take(r: Ring, p: Pickup) {
+    this.pickups = this.pickups.filter((q) => q !== p);
+    this.events.push({ type: "pickup", id: r.id, kind: p.kind, x: p.x, z: p.z });
+    if (p.kind === "banana") {
+      const { behind, patchSeconds } = PICKUPS.banana;
+      this.patches.push({ id: this.nextId++, x: r.x - Math.sin(r.facing) * behind, z: r.z - Math.cos(r.facing) * behind, owner: r.id, at: this.t, until: this.t + patchSeconds });
+      return;
+    }
+    r.effect = p.kind;
+    r.effectLeft = PICKUPS[p.kind].seconds;
   }
 
   private edge(r: Ring, dt: number) {
@@ -462,6 +622,7 @@ export class BumperSim {
       if (inside && r.overHole < HEX.skimSeconds) return;
       r.state = "falling";
       r.bracing = false;
+      r.effect = null;
       r.fellAt = this.t;
       this.events.push({ type: "fall", id: r.id });
       return;

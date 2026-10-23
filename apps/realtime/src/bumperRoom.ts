@@ -22,6 +22,8 @@ import {
   BUMPER_STEP,
   BumperClientMessage,
   BumperSim,
+  packPatches,
+  packPickups,
   packRing,
   packTiles,
   placePoints,
@@ -105,7 +107,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       hostId: null,
       players: [],
       emptySince: Date.now(),
-      settings: { map: BUMPER_ROTATION, rounds: BUMPER_DEFAULT_ROUNDS },
+      settings: { map: BUMPER_ROTATION, rounds: BUMPER_DEFAULT_ROUNDS, pickups: true },
       round: 0,
       rounds: 0,
       maps: [],
@@ -211,6 +213,9 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     this.sim = new BumperSim(
       BUMPER_MAPS[room.map] ?? BUMPER_MAPS["picnic-plate"],
       room.entrants.map((id) => ({ id, name: this.player(id)?.name ?? "", bot: false })),
+      undefined,
+      // Rooms saved before pickups existed have them on.
+      { pickups: room.settings.pickups ?? true, seed: `${room.matchId ?? room.code}:${room.round}` },
     );
     this.startedAt = now;
     this.steps = 0;
@@ -280,6 +285,8 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     };
     if (sim.map.kind === "spinner") msg.spin = Math.round(sim.spinner.angle * 1000);
     if (sim.map.kind === "hex") msg.tiles = packTiles(sim.tiles);
+    if (sim.pickups.length) msg.pickups = packPickups(sim.pickups, sim.t);
+    if (sim.patches.length) msg.patches = packPatches(sim.patches);
     this.events = [];
     this.broadcast(msg);
   }
@@ -433,7 +440,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
 function tidy(e: BumperEvent): BumperEvent {
   const r = (v: number) => Math.round(v * 100) / 100;
   if (e.type === "hit") return { ...e, x: r(e.x), z: r(e.z), power: r(e.power) };
-  if (e.type === "crack" || e.type === "tileDrop") return { ...e, x: r(e.x), z: r(e.z) };
+  if (e.type === "crack" || e.type === "tileDrop" || e.type === "spawn" || e.type === "pickup" || e.type === "shock") return { ...e, x: r(e.x), z: r(e.z) };
   return e;
 }
 

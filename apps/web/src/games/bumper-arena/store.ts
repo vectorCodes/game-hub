@@ -21,6 +21,7 @@ import {
   makeRng,
   withModifier,
   type AvatarConfig,
+  type PickupKind,
   type BotLevel,
   type BumperDailyView,
   type BumperDay,
@@ -69,6 +70,7 @@ export interface PracticeSetup {
   map: string;
   bots: number;
   level: BotLevel;
+  pickups: boolean;
 }
 
 export interface GauntletRunResult {
@@ -161,6 +163,9 @@ interface State {
   dashReady: number;
   braceReady: number;
   myState: RingState;
+  /** The pickup you're using, and whole seconds left of it. */
+  effect: PickupKind | null;
+  effectLeft: number;
   winner: string | null;
   /** Practice: rounds won this session. */
   wins: Record<string, number>;
@@ -187,8 +192,8 @@ let feedId = 0;
 let epoch = 0;
 
 /** Puts a fresh round in `game`: these entrants on this map. */
-function stage(entrants: Entrant[], map: string, rules: BumperTuning, seed: string) {
-  game.sim = new BumperSim(BUMPER_MAPS[map] ?? BUMPER_MAPS["picnic-plate"], entrants, rules);
+function stage(entrants: Entrant[], map: string, rules: BumperTuning, seed: string, pickups = false) {
+  game.sim = new BumperSim(BUMPER_MAPS[map] ?? BUMPER_MAPS["picnic-plate"], entrants, rules, { pickups, seed });
   game.brains = entrants.filter((e) => e.bot).map((e) => new BotBrain(e.id, e.level ?? "easy", seed));
 }
 
@@ -205,7 +210,7 @@ export const useBumper = create<State>((set, get) => ({
   mode: "menu",
   backdrop: true,
   map: "picnic-plate",
-  practice: { map: "picnic-plate", bots: 3, level: "easy" },
+  practice: { map: "picnic-plate", bots: 3, level: "easy", pickups: true },
   gauntlet: null,
   daily: null,
   entrants: [],
@@ -218,6 +223,8 @@ export const useBumper = create<State>((set, get) => ({
   dashReady: 1,
   braceReady: 1,
   myState: "in",
+  effect: null,
+  effectLeft: 0,
   winner: null,
   wins: {},
   feed: [],
@@ -299,7 +306,7 @@ export const useBumper = create<State>((set, get) => ({
       ? Array.from({ length: 5 }, (_, i) => bot(i, "normal"))
       : [you(), ...Array.from({ length: practice.bots }, (_, i) => bot(i, practice.level))];
     const at = backdrop ? map : practice.map;
-    stage(entrants, at, tuning, `round:${round + 1}`);
+    stage(entrants, at, tuning, `round:${round + 1}`, backdrop || practice.pickups);
     set({ ...fresh, entrants, map: at, round: round + 1, alive: entrants.length });
   },
 
@@ -319,7 +326,7 @@ export const useBumper = create<State>((set, get) => ({
 /** Stages wave `g.wave` of a run: you (carrying some Wobble) against its bots. */
 function beginWave(g: GauntletState, carry: number) {
   const entrants = [you(), ...bumperWave(g.wave).map((level, i) => bot(i, level))];
-  stage(entrants, g.day.map, withModifier(tuning, g.day.modifier), `${g.day.date}:wave:${g.wave}`);
+  stage(entrants, g.day.map, withModifier(tuning, g.day.modifier), `${g.day.date}:wave:${g.wave}`, g.day.modifier === "pickup-party");
   const me = game.sim?.ring(ME);
   if (me) me.wobble = carry;
   useBumper.setState((s) => ({
@@ -465,6 +472,8 @@ export function syncHud(sim: BumperSim) {
     dashReady: me ? Math.round((1 - me.dashCooldown / k.dashCooldown) * 20) / 20 : 0,
     braceReady: me && k.braceMaxSeconds > 0 ? (me.bracing ? 0 : Math.round((1 - me.braceCooldown / k.braceCooldown) * 20) / 20) : 0,
     myState: me?.state ?? "out",
+    effect: me?.state === "in" ? me.effect : null,
+    effectLeft: me?.effect ? Math.ceil(me.effectLeft) : 0,
   };
   if ((Object.keys(next) as (keyof typeof next)[]).some((key) => next[key] !== s[key])) useBumper.setState(next);
   const g = s.gauntlet;

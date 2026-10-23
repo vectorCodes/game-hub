@@ -4,7 +4,7 @@
 // own cards (the lobby, round results) are in Party.tsx.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { BUMPER_MAPS, BUMPER_MODIFIERS, bumperWave, type BotLevel } from "@shadow/shared";
+import { BUMPER_MAPS, BUMPER_MODIFIERS, PICKUP_NAMES, bumperWave, type BotLevel } from "@shadow/shared";
 import { useAuth } from "../../../auth/store";
 import { formatDuration } from "../../../lib/format";
 import { useSound } from "../../../lib/sound";
@@ -115,6 +115,8 @@ function Status({ touch }: { touch: boolean }) {
   const myState = useBumper((s) => s.myState);
   const phase = useBumper((s) => s.phase);
   const mode = useBumper((s) => s.mode);
+  const effect = useBumper((s) => s.effect);
+  const effectLeft = useBumper((s) => s.effectLeft);
   if (myState !== "in" && phase === "play") {
     if (mode === "gauntlet") return null;
     return (
@@ -129,6 +131,14 @@ function Status({ touch }: { touch: boolean }) {
         <div className="label-mono text-stone-400">Wobble</div>
         <div className={`font-display text-3xl font-bold tabular-nums ${wobble >= 100 ? "text-ember-300" : ""}`}>{wobble}%</div>
       </div>
+      {effect && (
+        <div key={effect} className="glass animate-pop px-4 py-2 text-stone-100">
+          <div className="label-mono text-stone-400">{effect === "shock" ? "Next dash" : "Pickup"}</div>
+          <div className="font-display text-xl font-bold">
+            {PICKUP_NAMES[effect]} <span className="font-mono text-sm text-stone-400 tabular-nums">{effectLeft}s</span>
+          </div>
+        </div>
+      )}
       {/* Tablets see their cooldowns on the touch buttons instead. */}
       <div className={`glass hidden items-center gap-3 px-4 py-3 text-xs text-stone-300 ${touch ? "" : "sm:flex"}`}>
         <Ready value={dash} className="h-11 w-11">
@@ -236,7 +246,7 @@ function TouchControls() {
 
 const LEVELS: BotLevel[] = ["easy", "normal", "hard"];
 
-/** Practice settings: arena, how many bots, how good. */
+/** Practice settings: arena, how many bots, how good, pickups. */
 export function PracticeSettings() {
   const practice = useBumper((s) => s.practice);
   const setPractice = useBumper((s) => s.setPractice);
@@ -273,6 +283,10 @@ export function PracticeSettings() {
             </option>
           ))}
         </select>
+      </label>
+      <label className="col-span-2 flex items-center gap-2">
+        <input type="checkbox" className="h-4 w-4 accent-[var(--color-gold)]" checked={practice.pickups} onChange={(e) => setPractice({ pickups: e.target.checked })} />
+        <span>Pickups</span>
       </label>
     </div>
   );

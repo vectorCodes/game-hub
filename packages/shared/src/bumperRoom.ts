@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { AvatarConfig } from "./avatar";
-import { BUMPER_MAPS, HEX } from "./bumper";
+import { BUMPER_MAPS, HEX, PICKUP_KINDS, PICKUPS } from "./bumper";
 import type { BumperXpGain } from "./bumperProgress";
-import type { BumperEvent, BumperSim, HexTile, Ring } from "./bumperSim";
+import type { BananaPatch, BumperEvent, BumperSim, HexTile, Pickup, Ring } from "./bumperSim";
 import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf } from "./rooms";
 
 // Bumper Arena party rooms: 2–4 friends, every ring for itself, a match of rounds. A room lives
@@ -11,7 +11,7 @@ import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf
 // (predicting their own ring in between). See Bumper-arena-plan.md.
 
 /** Bumped on any incompatible message change: older tabs are told to reload. */
-export const BUMPER_PROTOCOL_VERSION = 2;
+export const BUMPER_PROTOCOL_VERSION = 3;
 export const BUMPER_MIN_PLAYERS = 2;
 export const BUMPER_MAX_PLAYERS = 4;
 
@@ -41,6 +41,7 @@ const MapChoice = z.string().refine((m) => m === BUMPER_ROTATION || m in BUMPER_
 export const BumperSettings = z.object({
   map: MapChoice,
   rounds: z.literal(BUMPER_ROUND_CHOICES),
+  pickups: z.boolean(),
 });
 export type BumperSettings = z.infer<typeof BumperSettings>;
 
@@ -125,10 +126,15 @@ export interface BumperStanding {
 /**
  * One ring in a snapshot: x, z, y, vx, vz (cm, cm/s), facing (1/256 turns), wobble (%), flags
  * (bit 0 braced, bits 1–2 the state), dash left, dash cooldown, brace cooldown, brace held
- * (all 1/100 s), and the player's input echo: the step count of the last input applied, and
- * how many steps the room has run it since.
+ * (all 1/100 s), the player's input echo (the step count of the last input applied, and how
+ * many steps the room has run it since), then the pickup in use (0 none, else its index in
+ * PICKUP_KINDS + 1), its time left and the banana slide left (1/100 s).
  */
-export type BumperSnapRing = [number, number, number, number, number, number, number, number, number, number, number, number, number, number];
+export type BumperSnapRing = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
+/** A pickup: id, kind (index in PICKUP_KINDS), x, z (cm), whether it can be taken yet. */
+export type BumperSnapPickup = [number, number, number, number, 0 | 1];
+/** A banana patch: id, x, z (cm). */
+export type BumperSnapPatch = [number, number, number];
 
 export interface BumperSnap {
   type: "snap";
@@ -142,6 +148,8 @@ export interface BumperSnap {
   spin?: number;
   /** Hex Hive: one character a tile (packTiles). */
   tiles?: string;
+  pickups?: BumperSnapPickup[];
+  patches?: BumperSnapPatch[];
   rings: BumperSnapRing[];
   /** What happened since the last snapshot. */
   events: BumperEvent[];
@@ -165,7 +173,8 @@ const cs = (s: number) => Math.round(s * 100);
 export function packRing(r: Ring, ack: number, since: number): BumperSnapRing {
   const turn = Math.round(((((r.facing % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2)) * 256) % 256;
   const flags = (r.bracing ? 1 : 0) | (STATES.indexOf(r.state) << 1);
-  return [cm(r.x), cm(r.z), cm(Math.max(-100, r.y)), cm(r.vx), cm(r.vz), turn, Math.round(r.wobble), flags, cs(r.dashLeft), cs(r.dashCooldown), cs(r.braceCooldown), cs(r.braceHeld), ack, since];
+  const effect = r.effect ? PICKUP_KINDS.indexOf(r.effect) + 1 : 0;
+  return [cm(r.x), cm(r.z), cm(Math.max(-100, r.y)), cm(r.vx), cm(r.vz), turn, Math.round(r.wobble), flags, cs(r.dashLeft), cs(r.dashCooldown), cs(r.braceCooldown), cs(r.braceHeld), ack, since, effect, cs(r.effectLeft), cs(r.slip)];
 }
 
 /** Puts a snapshot's ring into `r` (positions and timers; the input echo is the caller's). */
@@ -183,7 +192,25 @@ export function unpackRing(s: BumperSnapRing, r: Ring) {
   r.dashCooldown = s[9] / 100;
   r.braceCooldown = s[10] / 100;
   r.braceHeld = s[11] / 100;
+  r.effect = PICKUP_KINDS[s[14] - 1] ?? null;
+  r.effectLeft = s[15] / 100;
+  r.slip = s[16] / 100;
 }
+
+export function packPickups(pickups: Pickup[], t: number): BumperSnapPickup[] {
+  return pickups.map((p) => [p.id, PICKUP_KINDS.indexOf(p.kind), cm(p.x), cm(p.z), t >= p.at + PICKUPS.warn ? 1 : 0]);
+}
+
+/** Pickups as a snapshot has them, timed against round time `t` (a pickup still pulsing keeps its start). */
+export function unpackPickups(snap: BumperSnapPickup[], before: Pickup[], t: number): Pickup[] {
+  return snap.map(([id, kind, x, z, live]) => {
+    const had = before.find((p) => p.id === id);
+    const at = had && (!live || t >= had.at + PICKUPS.warn) ? had.at : live ? t - PICKUPS.warn : t;
+    return { id, kind: PICKUP_KINDS[kind] ?? "bubble", x: x / 100, z: z / 100, at };
+  });
+}
+
+export const packPatches = (patches: BananaPatch[]): BumperSnapPatch[] => patches.map((b) => [b.id, cm(b.x), cm(b.z)]);
 
 /** A tile a character: its wear in tenths ("0"–"9") while up, "c" cracking, "d" dropped. */
 export function packTiles(tiles: HexTile[]): string {
