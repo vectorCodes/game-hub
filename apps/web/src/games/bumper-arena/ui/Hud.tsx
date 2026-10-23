@@ -482,7 +482,7 @@ function Corner() {
   const openMenu = useBumper((s) => s.openMenu);
   const leaveRoom = useLeaveRoom();
   return (
-    <div className="absolute top-4 left-4 z-10 flex gap-2 text-xs">
+    <div className="absolute top-4 left-4 z-30 flex gap-2 text-xs">
       {backdrop ? (
         <Link to="/games/bumper-arena" className="glass px-3 py-2 text-stone-100">
           ← Back
