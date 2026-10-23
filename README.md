@@ -116,3 +116,5 @@ pnpm typecheck
 ## Status
 
 Milestones 1–6 are done (sign-in is Google only). Remaining: milestone 7, deployment (Vercel + Railway + Supabase).
+
+<!-- ruleset test -->
