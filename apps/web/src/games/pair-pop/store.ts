@@ -80,6 +80,8 @@ interface PairPopState {
   result: PairPopResult | null;
   /** How far the HUD's top bar reaches down the screen (px), so the camera frames the board below it. */
   hudTop: number;
+  /** A demo round: the landing page's board, played by itself, silent and kept nowhere. */
+  demo: boolean;
 
   setMode: (mode: PairPopMode) => void;
   /** Deals a fresh board in the current mode. */
@@ -87,6 +89,10 @@ interface PairPopState {
   /** The scene says the deal-in has landed. */
   dealt: () => void;
   flip: (i: number) => void;
+  /** Deals a demo round (a small board, offline, no sounds), and another each time it's cleared. */
+  startDemo: () => void;
+  /** Ends a demo round, if one is on. */
+  stopDemo: () => void;
 }
 
 let missTimer: ReturnType<typeof setTimeout> | null = null;
@@ -101,6 +107,10 @@ const clearTimers = () => {
   missTimer = phaseTimer = null;
 };
 
+/** The demo round's board, and the pause before it deals again once cleared. */
+const DEMO_LEVEL = PAIR_POP_LEVELS[1];
+const DEMO_REDEAL_MS = 2400;
+
 const levelOf = (mode: PairPopMode) => (mode.kind === "daily" ? PAIR_POP_DAILY_LEVEL : PAIR_POP_LEVELS[mode.level]);
 const randomSeed = () => Math.random().toString(36).slice(2);
 
@@ -108,6 +118,11 @@ export const elapsedSeconds = (s: Pick<PairPopState, "startedAt" | "endedAt">, n
   s.startedAt ? ((s.endedAt ?? now) - s.startedAt) / 1000 : 0;
 
 export const usePairPop = create<PairPopState>((set, get) => {
+  /** Sounds, except in a demo round. */
+  const sfx: typeof play = (...args) => {
+    if (!get().demo) play(...args);
+  };
+
   /** Turns a wrong pair back over. */
   const hideMiss = () => {
     if (missTimer) clearTimeout(missTimer);
@@ -199,6 +214,7 @@ export const usePairPop = create<PairPopState>((set, get) => {
     comboPop: null,
     result: null,
     hudTop: 120,
+    demo: false,
 
     setMode: (mode) => set({ mode }),
 
@@ -220,6 +236,7 @@ export const usePairPop = create<PairPopState>((set, get) => {
       const seed = game?.seed ?? (mode.kind === "daily" ? pairPopDailySeed(today()) : `level-${mode.level}:${randomSeed()}`);
       const tiles = dealPairPop(level, seed, game?.layoutSeed ?? randomSeed());
       set((s) => ({
+        demo: false,
         level,
         game,
         tiles,
@@ -247,11 +264,11 @@ export const usePairPop = create<PairPopState>((set, get) => {
       const { phase, tiles, level, round } = get();
       if (phase !== "deal") return;
       set({ phase: "peek", up: tiles.map(() => true) });
-      play("turn");
+      sfx("turn");
       phaseTimer = setTimeout(() => {
         if (get().round !== round) return;
         set({ phase: "play", up: tiles.map(() => false) });
-        play("turn");
+        sfx("turn");
       }, level.peek * 1000);
     },
 
@@ -265,7 +282,7 @@ export const usePairPop = create<PairPopState>((set, get) => {
       nextUp[i] = true;
       const nextOpen = [...open, i];
       set({ up: nextUp, open: nextOpen, flips: [...flips, i], startedAt: s.startedAt ?? Date.now() });
-      play("flip");
+      sfx("flip");
       if (nextOpen.length < 2) return;
 
       const [a, b] = nextOpen;
@@ -289,8 +306,10 @@ export const usePairPop = create<PairPopState>((set, get) => {
             endedAt: done ? Date.now() : null,
             comboPop: combo >= 2 ? { id: ++popId, combo, points } : now.comboPop,
           });
-          play(combo >= 2 ? "combo" : "pair", Math.min(1, combo / 5));
-          if (done) phaseTimer = setTimeout(() => get().round === round && finish(), TIMING.winDelay);
+          sfx(combo >= 2 ? "combo" : "pair", Math.min(1, combo / 5));
+          // A cleared demo board deals the next; a real one is scored.
+          if (done && now.demo) phaseTimer = setTimeout(() => get().round === round && get().startDemo(), DEMO_REDEAL_MS);
+          else if (done) phaseTimer = setTimeout(() => get().round === round && finish(), TIMING.winDelay);
         }, TIMING.matchDelay);
       } else {
         const shakes = s.shakes.slice();
@@ -298,8 +317,46 @@ export const usePairPop = create<PairPopState>((set, get) => {
         shakes[b]++;
         set({ moves, combo: 0, shakes });
         missTimer = setTimeout(hideMiss, TIMING.missHold);
-        setTimeout(() => play("nomatch"), 180);
+        setTimeout(() => sfx("nomatch"), 180);
       }
+    },
+
+    startDemo: () => {
+      clearTimers();
+      starting++;
+      const level = DEMO_LEVEL;
+      const tiles = dealPairPop(level, `demo:${randomSeed()}`, randomSeed());
+      set((s) => ({
+        demo: true,
+        level,
+        game: null,
+        tiles,
+        up: tiles.map(() => false),
+        matched: tiles.map(() => false),
+        shakes: tiles.map(() => 0),
+        open: [],
+        flips: [],
+        phase: "deal",
+        round: s.round + 1,
+        moves: 0,
+        matches: 0,
+        combo: 0,
+        bestCombo: 0,
+        score: 0,
+        startedAt: null,
+        endedAt: null,
+        comboPop: null,
+        result: null,
+        // No HUD over the landing page's board.
+        hudTop: 0,
+      }));
+    },
+
+    stopDemo: () => {
+      if (!get().demo) return;
+      clearTimers();
+      starting++;
+      set({ demo: false, tiles: [], up: [], matched: [], shakes: [], open: [] });
     },
   };
 });

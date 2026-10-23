@@ -1,7 +1,7 @@
-// /games/pair-pop: the landing page, on night. A little board on the hero's screen with its
-// tiles flipping in a wave, today's board, the level map and how to play. The board itself
-// is on /play.
-import { useEffect } from "react";
+// /games/pair-pop: the landing page, on night. A live board on the hero's screen, playing a
+// demo round by itself (phones get a drawn board, its tiles flipping in a wave), today's
+// board, the level map and how to play. The board itself is on /play.
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../../auth/store";
 import { GameHero, LastCall, lastCallButton, LivePill, MetaLink, SectionHead, StatTiles, StepCards, TodayPanel } from "../../components/landing";
@@ -11,6 +11,58 @@ import { LEVELS, PAIR_POP_PATH } from "./config";
 import { dailyNumber, pairsOf } from "./deck";
 import { levelUnlocked, savedDaily, savedStars } from "./guest";
 import { usePairPopProgress } from "./progress";
+import { usePairPop } from "./store";
+
+const Game = lazy(() => import("./scene/Game"));
+
+/** How often the demo player turns a tile (ms), and how often it remembers where the twin is. */
+const DEMO_PACE = 900;
+const DEMO_MEMORY = 0.55;
+
+/** One turn of the demo player: a tile at random, or, with one up, often its twin. */
+function demoTurn() {
+  const s = usePairPop.getState();
+  // A wrong pair is still showing: let it turn back first.
+  if (!s.demo || s.phase !== "play" || s.open.length >= 2) return;
+  const hidden = s.tiles.map((_, i) => i).filter((i) => !s.up[i] && !s.matched[i]);
+  if (!hidden.length) return;
+  const any = hidden[Math.floor(Math.random() * hidden.length)];
+  if (s.open.length === 1) {
+    const twin = hidden.find((i) => s.tiles[i].pal === s.tiles[s.open[0]].pal);
+    s.flip(twin !== undefined && Math.random() < DEMO_MEMORY ? twin : any);
+  } else s.flip(any);
+}
+
+/** The real board on a demo round, playing itself while it's on screen. You can flip tiles too. */
+function LiveBoard() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [onscreen, setOnscreen] = useState(true);
+
+  useEffect(() => {
+    usePairPop.getState().startDemo();
+    return () => usePairPop.getState().stopDemo();
+  }, []);
+
+  useEffect(() => {
+    const io = new IntersectionObserver(([entry]) => setOnscreen(entry.isIntersecting));
+    io.observe(ref.current!);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!onscreen) return;
+    const id = window.setInterval(demoTurn, DEMO_PACE);
+    return () => window.clearInterval(id);
+  }, [onscreen]);
+
+  return (
+    <div ref={ref} className="absolute inset-0">
+      <Suspense fallback={<BoardArt />}>
+        <Game preview paused={!onscreen} />
+      </Suspense>
+    </div>
+  );
+}
 
 /** The hero board, 4 × 3: [face, colour]. Two of each, like a real board. */
 const BOARD: [string, string][] = [
@@ -88,6 +140,8 @@ export default function PairPopHome() {
   const nextLevel = LEVELS.findIndex((_, i) => !(stars[i] > 0));
   const cleared = stars.filter((n) => n > 0).length;
   const cta = daily ? "Replay today's board" : "Play today's board";
+  // Phones get the drawing: the live board is a whole game's worth of GPU.
+  const [still] = useState(() => window.matchMedia("(max-width: 768px), (pointer: coarse), (prefers-reduced-motion: reduce)").matches);
 
   return (
     <div className="relative overflow-x-clip pb-24">
@@ -120,10 +174,11 @@ export default function PairPopHome() {
             <MetaLink to="/leaderboard?game=pair-pop">See the leaderboard →</MetaLink>
           </>
         }
-        screen={<BoardArt />}
+        screen={still ? <BoardArt /> : <LiveBoard />}
         screenGround="linear-gradient(160deg, #ffd9e8, #e0d6ff 60%, #cfeee4)"
+        live={still ? undefined : "Live · playing itself"}
         corner={`Daily #${dailyNumber()}`}
-        caption="Find the twins"
+        caption={still ? "Find the twins" : "Go on, flip one"}
       />
 
       {/* ---------- Today's board ---------- */}

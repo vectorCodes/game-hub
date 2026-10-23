@@ -1,8 +1,9 @@
-// /games/prop-hunt: the landing page, on night. A dollhouse cut open on the hero's screen,
-// with a seeker's flashlight sweeping the rooms and eyes blinking open on the furniture; a
-// shelf of mugs to try the zap on (one of them is a hider); the two sides; and a round, to
-// scale. The house itself is on /play.
-import { useMemo, useState, type ReactNode } from "react";
+// /games/prop-hunt: the landing page, on night. The real Big House on the hero's screen,
+// its upper floor lifted off like a dollhouse and three twitchy hiders inside (touch screens
+// and reduced motion get the drawn dollhouse, a seeker's torch sweeping its rooms); a shelf of
+// mugs to try the zap on (one of them is a hider); the two sides; and a round, to scale. The
+// house itself is on /play.
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { HUNT_FORCED_TAUNT, HUNT_HIDE_SECONDS, HUNT_MAX_PLAYERS, HUNT_MIN_PLAYERS, HUNT_MISS_DAMAGE, HUNT_POINTS, HUNT_ROUND_RESULTS_MS, HUNT_SEEK_SECONDS } from "@shadow/shared";
 import { GameHero, LastCall, lastCallButton, LivePill, SectionHead } from "../../components/landing";
@@ -11,6 +12,8 @@ import { play } from "../../lib/sound";
 import { PROP_HUNT_PATH } from "./config";
 import { isTouch } from "./input";
 import { DesktopOnlyNote } from "./ui/DesktopOnly";
+
+const Preview = lazy(() => import("./scene/Preview"));
 
 // Fixed print colours, like the hub covers: the drawing looks the same on any scheme.
 const INK = "#2a2216";
@@ -124,6 +127,32 @@ function Dollhouse() {
       <rect x="290" y="370" width="5" height="24" fill={INK} />
       <rect x="272" y="350" width="12" height="5" rx="2" fill={INK} />
     </svg>
+  );
+}
+
+/** The live house, drawing only while it's on screen; the drawing stands in while it loads. */
+function LiveHouse() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [onscreen, setOnscreen] = useState(true);
+  useEffect(() => {
+    const io = new IntersectionObserver(([entry]) => setOnscreen(entry.isIntersecting));
+    io.observe(ref.current!);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="absolute inset-0">
+      <Suspense fallback={<DrawnHouse />}>
+        <Preview paused={!onscreen} />
+      </Suspense>
+    </div>
+  );
+}
+
+function DrawnHouse() {
+  return (
+    <div className="absolute inset-0 px-6 pt-14 pb-4">
+      <Dollhouse />
+    </div>
   );
 }
 
@@ -255,6 +284,7 @@ export default function PropHuntHome() {
   const total = ROUND.reduce((n, p) => n + p.seconds, 0);
   // Keyboard and mouse only: phones and tablets see a note instead of the way in.
   const touch = useMemo(isTouch, []);
+  const [still] = useState(() => touch || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   return (
     <div className="relative overflow-x-clip pb-24">
       <GameHero
@@ -289,14 +319,11 @@ export default function PropHuntHome() {
             <span className="font-display text-lg font-bold text-stone-50 tabular-nums">{n}</span> {what}
           </span>
         ))}
-        screen={
-          <div className="absolute inset-0 px-6 pt-14 pb-4">
-            <Dollhouse />
-          </div>
-        }
-        screenGround="radial-gradient(ellipse at 50% 30%, #fbf3e0, #e8dcc2)"
+        screen={still ? <DrawnHouse /> : <LiveHouse />}
+        screenGround={still ? "radial-gradient(ellipse at 50% 30%, #fbf3e0, #e8dcc2)" : "#cfe3f0"}
+        live={still ? undefined : "Live · first floor lifted"}
         corner="The Big House"
-        caption="Count the eyes"
+        caption={still ? "Count the eyes" : "Three of these props are players"}
       />
 
       {/* ---------- Try the zap ---------- */}

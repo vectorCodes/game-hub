@@ -256,11 +256,13 @@ function Scene() {
   );
 }
 
-export default function Game() {
+/** The board, or with `preview` the landing page's window onto a demo round: a little lighter, and no frames while `paused`. */
+export default function Game({ preview = false, paused = false }: { preview?: boolean; paused?: boolean }) {
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={preview ? [1, 1.5] : [1, 2]}
+      frameloop={paused ? "never" : "always"}
       camera={{ fov: FOV, near: 0.1, far: 100, position: [0, 14, 7] }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       onPointerMissed={() => (document.body.style.cursor = "")}
