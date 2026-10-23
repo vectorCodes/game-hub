@@ -15,7 +15,7 @@ export function SkyClimbProfileSection() {
   const done = profile.achievements.filter((a) => a.unlocked).length;
 
   return (
-    <section className="animate-rise [animation-delay:200ms]">
+    <section data-game="sky-climb" className="animate-rise [animation-delay:200ms]">
       <ChapterHeader number="02" title="Sky Climb" note={`One tower a day, ${TOP} floors.`} link={{ to: SKY_CLIMB_HOME, label: "Today's tower" }} />
       <StatStrip
         stats={[
@@ -27,7 +27,7 @@ export function SkyClimbProfileSection() {
       />
       <div className="pt-6">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <span className="font-display text-lg font-light uppercase">Achievements</span>
+          <span className="font-display text-xl font-bold tracking-tight">Achievements</span>
           <span className="label-mono text-stone-500">
             {done} of {profile.achievements.length}
           </span>
@@ -39,12 +39,12 @@ export function SkyClimbProfileSection() {
               <li key={def.id} title={`${def.name}: ${def.description}`} className="flex flex-col items-center text-center">
                 <span
                   className={`grid h-14 w-14 place-items-center rounded-full text-2xl sm:h-16 sm:w-16 ${
-                    unlocked ? "bg-gold/20 ring-2 ring-gold" : "border border-dashed border-white/25 opacity-50 grayscale"
+                    unlocked ? "bg-accent/15 shadow-glow-sm ring-2 ring-accent" : "border border-dashed border-white/25 opacity-50 grayscale"
                   }`}
                 >
                   {def.emoji}
                 </span>
-                <span className={`mt-2 line-clamp-2 font-serif text-xs leading-tight ${unlocked ? "text-stone-200" : "text-stone-500"}`}>{def.name}</span>
+                <span className={`mt-2 line-clamp-2 text-xs leading-tight ${unlocked ? "text-stone-200" : "text-stone-500"}`}>{def.name}</span>
               </li>
             );
           })}

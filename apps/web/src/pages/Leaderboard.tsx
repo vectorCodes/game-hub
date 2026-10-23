@@ -1,5 +1,6 @@
-// /leaderboard: the standings, set like a printed results sheet. A masthead, an index of the
-// games, the top three as ticket cards, the player's own standing, then the full ledger.
+// /leaderboard: the standings, on night in the colour of the game on show. A masthead, an
+// index of the games, the top three as a podium of lit cards, the player's own standing, then
+// the full ledger.
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { type LeaderboardEntry, type LeaderboardPeriod, type LeaderboardView } from "@shadow/shared";
@@ -52,11 +53,11 @@ const BLURBS: Record<Game, Record<LeaderboardPeriod, string>> = {
 /** What the score column counts, per game. */
 const SCORE_LABEL: Record<Game, string> = { "shadow-guess": "Points", "sky-climb": "Floors", "pair-pop": "Points", "bumper-arena": "Points" };
 
-/** The top three's ticket colours: gold, ink, sun. Fixed colours, as on a printed sheet. */
+/** The podium's metals: the champion in the game's accent, then silver and bronze. */
 const PLACES = [
-  { label: "Champion", rule: "bg-gold", seal: "bg-gold text-ink", numeral: "text-gold" },
-  { label: "Second", rule: "bg-ink", seal: "bg-ink text-rice", numeral: "text-ink/70" },
-  { label: "Third", rule: "bg-sun", seal: "bg-sun text-rice", numeral: "text-sun" },
+  { label: "Champion", rule: "bg-accent", seal: "bg-accent text-accent-ink", numeral: "text-accent-text", glow: "shadow-glow-lg" },
+  { label: "Second", rule: "bg-[#c9ccd6]", seal: "bg-[#c9ccd6] text-[#1d2230]", numeral: "text-[#c9ccd6]", glow: "" },
+  { label: "Third", rule: "bg-[#c98a5a]", seal: "bg-[#c98a5a] text-[#2a1708]", numeral: "text-[#d9a07a]", glow: "" },
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -100,31 +101,32 @@ function PlayerAvatar({ entry, size }: { entry: LeaderboardEntry; size: "sm" | "
   return entry.avatar ? <AvatarImage config={entry.avatar} size={size} /> : <Avatar src={entry.avatarUrl} name={entry.name} size={size} />;
 }
 
-/** One of the top three, as a ticket: a coloured rule, a big numeral, the player and their score. */
+/** One of the top three: a coloured rule, a big numeral, the player and their score. */
 function Ticket({ entry, place, game, period, tall }: { entry: LeaderboardEntry; place: number; game: Game; period: LeaderboardPeriod; tall: boolean }) {
   const p = PLACES[place];
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-xs bg-paper-soft text-ink shadow-[0_24px_60px_-34px_rgba(60,45,20,0.6)] ${entry.isMe ? "ring-2 ring-gold" : "ring-1 ring-ink/12"} ${tall ? "sm:-translate-y-4" : ""}`}
+      className={`surface relative flex flex-col overflow-hidden ${p.glow} ${entry.isMe ? "ring-2 ring-accent" : ""} ${tall ? "sm:-translate-y-6" : ""}`}
     >
+      {tall && <div aria-hidden className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-accent/20 blur-3xl" />}
       <span aria-hidden className={`h-1.5 w-full ${p.rule}`} />
-      <div className="flex items-start justify-between px-5 pt-4">
-        <span className={`font-display text-6xl leading-none font-light tabular-nums sm:text-7xl ${p.numeral}`}>{pad(entry.rank)}</span>
+      <div className="relative flex items-start justify-between px-5 pt-4">
+        <span className={`font-display text-6xl leading-none font-extrabold tracking-tight tabular-nums sm:text-7xl ${p.numeral}`}>{pad(entry.rank)}</span>
         <span className={`rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.14em] uppercase ${p.seal}`}>{p.label}</span>
       </div>
-      <div className="mt-5 flex items-center gap-3 px-5">
+      <div className="relative mt-5 flex items-center gap-3 px-5">
         <PlayerAvatar entry={entry} size="lg" />
         <div className="min-w-0">
-          <div className="truncate font-serif text-lg font-semibold">{entry.name}</div>
-          {entry.isMe && <div className="font-mono text-[10px] tracking-[0.14em] text-sun uppercase">That's you</div>}
+          <div className="truncate font-display text-xl font-bold tracking-tight">{entry.name}</div>
+          {entry.isMe && <div className="label-mono text-accent-text">That's you</div>}
         </div>
       </div>
-      <div className="mt-5 flex items-end justify-between gap-3 border-t border-dashed border-ink/20 px-5 pt-3 pb-4">
+      <div className="relative mt-5 flex items-end justify-between gap-3 border-t border-dashed border-stone-100/15 px-5 pt-3 pb-4">
         <div className="min-w-0">
-          <div className="font-mono text-[10px] tracking-[0.14em] text-ink/50 uppercase">{SCORE_LABEL[game]}</div>
-          <div className="font-display text-4xl leading-none font-light tabular-nums">{entry.score}</div>
+          <div className="label-mono text-stone-500">{SCORE_LABEL[game]}</div>
+          <div className="font-display text-4xl leading-none font-extrabold tracking-tight tabular-nums">{entry.score}</div>
         </div>
-        <div className="truncate text-right font-mono text-[11px] text-ink/60">{detail(entry, period, game)}</div>
+        <div className="truncate text-right font-mono text-[11px] text-stone-400">{detail(entry, period, game)}</div>
       </div>
     </article>
   );
@@ -133,10 +135,10 @@ function Ticket({ entry, place, game, period, tall }: { entry: LeaderboardEntry;
 /** A podium place nobody holds yet. */
 function OpenSpot({ place, cta }: { place: number; cta: string }) {
   return (
-    <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-xs border border-dashed border-white/25 p-6 text-center">
-      <span className="font-display text-5xl font-light text-stone-600 tabular-nums">{pad(place + 1)}</span>
+    <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-(--radius-ui) border border-dashed border-white/20 p-6 text-center">
+      <span className="font-display text-5xl font-extrabold tracking-tight text-stone-700 tabular-nums">{pad(place + 1)}</span>
       <span className="label-mono text-stone-500">Open spot</span>
-      <Link to={cta} className="font-serif text-sm text-ember-400 underline underline-offset-4 hover:text-ember-300">
+      <Link to={cta} className="font-display text-sm font-bold text-accent-text">
         Play to claim it →
       </Link>
     </div>
@@ -170,22 +172,22 @@ function LedgerRow({ entry, game, period }: { entry: LeaderboardEntry; game: Gam
   return (
     <li
       className={`grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 border-b hairline py-3 pr-2 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_minmax(0,12rem)_6rem] sm:gap-4 ${
-        entry.isMe ? "border-l-4 border-l-gold bg-lamp-400/10 pl-2" : "pl-3 hover:bg-white/[0.04]"
+        entry.isMe ? "rounded-lg border-l-4 border-l-accent bg-accent/10 pl-2" : "pl-3 hover:bg-white/[0.04]"
       }`}
     >
-      <span className="font-display text-2xl font-light text-stone-400 tabular-nums sm:text-3xl">{pad(entry.rank)}</span>
+      <span className="font-display text-2xl font-extrabold tracking-tight text-stone-500 tabular-nums sm:text-3xl">{pad(entry.rank)}</span>
       <span className="flex min-w-0 items-center gap-3">
         <PlayerAvatar entry={entry} size="sm" />
         <span className="min-w-0">
-          <span className={`block truncate font-serif ${entry.isMe ? "font-semibold text-stone-50" : "text-stone-200"}`}>
+          <span className={`block truncate ${entry.isMe ? "font-semibold text-stone-50" : "text-stone-200"}`}>
             {entry.name}
-            {entry.isMe && <span className="ml-2 label-mono text-ember-400">You</span>}
+            {entry.isMe && <span className="ml-2 label-mono text-accent-text">You</span>}
           </span>
           <span className="block truncate label-mono text-stone-500 sm:hidden">{detail(entry, period, game)}</span>
         </span>
       </span>
       <span className="hidden truncate label-mono text-stone-500 sm:block">{detail(entry, period, game)}</span>
-      <span className="text-right font-display text-2xl font-light tabular-nums">{entry.score}</span>
+      <span className="text-right font-display text-2xl font-bold tracking-tight tabular-nums">{entry.score}</span>
     </li>
   );
 }
@@ -258,18 +260,19 @@ export default function Leaderboard() {
   return (
     <div className="space-y-10 sm:space-y-12">
       {/* ---------- Masthead ---------- */}
-      <header className="relative border-b hairline pb-8">
+      <header className="relative pb-2">
+        <div aria-hidden className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-glow/15 blur-3xl" />
         <p className="eyebrow">The standings{board ? ` · ${dateRange(board.from, board.to)}` : ""}</p>
-        <div className="mt-3 flex items-end justify-between gap-6">
+        <div className="relative mt-3 flex items-end justify-between gap-6">
           <h1 className="text-display">Leaderboard</h1>
-          <span aria-hidden className="mb-2 hidden h-16 w-16 shrink-0 rounded-full bg-sun sm:block lg:h-20 lg:w-20" />
+          <span aria-hidden className="mb-3 hidden h-16 w-16 shrink-0 rounded-full bg-accent shadow-glow-lg sm:block lg:h-20 lg:w-20" />
         </div>
         <p className="mt-4 max-w-xl text-lead">{BLURBS[game][period]}</p>
       </header>
 
       {/* ---------- Game index ---------- */}
-      <nav aria-label="Game" role="tablist" className="grid grid-cols-4 border-y hairline">
-        {GAMES.map((g, i) => {
+      <nav aria-label="Game" role="tablist" className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        {GAMES.map((g) => {
           const active = g.value === game;
           return (
             <button
@@ -277,13 +280,15 @@ export default function Leaderboard() {
               type="button"
               role="tab"
               aria-selected={active}
+              data-game={g.value}
               onClick={() => setGame(g.value)}
-              className={`relative px-2 py-4 text-left transition-colors sm:px-5 sm:py-5 ${i > 0 ? "border-l hairline" : ""} ${active ? "bg-white/[0.04]" : "hover:bg-white/[0.03]"}`}
+              className={`surface relative overflow-hidden px-4 py-4 text-left transition-[box-shadow,transform] duration-300 ease-mirai sm:px-5 sm:py-5 ${
+                active ? "shadow-[inset_0_0_0_2px_var(--accent)]" : "hover:-translate-y-0.5"
+              }`}
             >
-              <span aria-hidden className={`absolute inset-x-0 -top-px h-1 transition-colors ${active ? "bg-gold" : "bg-transparent"}`} />
-              <span className={`label-mono ${active ? "text-ember-400" : "text-stone-500"}`}>{g.number}</span>
-              <span className={`mt-1 block font-display text-base leading-tight font-light uppercase sm:text-2xl ${active ? "text-stone-50" : "text-stone-400"}`}>{g.label}</span>
-              <span className="mt-1 hidden font-serif text-sm text-stone-500 md:block">{g.ranks}</span>
+              <span className={`label-mono ${active ? "text-accent" : "text-stone-500"}`}>{g.number}</span>
+              <span className={`mt-1 block font-display text-lg leading-tight font-bold tracking-tight sm:text-2xl ${active ? "text-stone-50" : "text-stone-400"}`}>{g.label}</span>
+              <span className="mt-1 hidden text-sm text-stone-500 md:block">{g.ranks}</span>
             </button>
           );
         })}
@@ -306,9 +311,9 @@ export default function Leaderboard() {
       </div>
 
       {enabled && synced && !user && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-y hairline py-4">
-          <p className="flex items-center gap-3 font-serif text-stone-300">
-            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-sun" />
+        <div className="surface flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="flex items-center gap-3 text-stone-300">
+            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-accent" />
             Only signed-in players are ranked. Your scores are waiting to count.
           </p>
           <button onClick={() => void signIn()} className="btn btn-primary">
@@ -318,12 +323,12 @@ export default function Leaderboard() {
       )}
 
       {error ? (
-        <p className="font-serif text-stone-400">Couldn't load the leaderboard. Try again in a moment.</p>
+        <p className="text-stone-400">Couldn't load the leaderboard. Try again in a moment.</p>
       ) : !board ? (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-56 animate-pulse rounded-xs bg-white/[0.04]" />
+              <div key={i} className="h-56 animate-pulse rounded-(--radius-ui) bg-white/[0.04]" />
             ))}
           </div>
           {Array.from({ length: 4 }, (_, i) => (
@@ -331,8 +336,8 @@ export default function Leaderboard() {
           ))}
         </div>
       ) : board.entries.length === 0 ? (
-        <div className="grid place-items-center border-y hairline py-20 text-center">
-          <span aria-hidden className="h-14 w-14 rounded-full ring-1 ring-ember-400" />
+        <div className="surface grid place-items-center py-20 text-center">
+          <span aria-hidden className="h-14 w-14 rounded-full ring-2 ring-accent" />
           <h2 className="mt-6 text-section">Nobody yet</h2>
           <p className="mt-3 max-w-sm text-lead">
             {period === "daily" ? "The board is blank today. Finish first and the top spot is yours." : "No finished dailies in this stretch yet."}
@@ -352,12 +357,12 @@ export default function Leaderboard() {
 
           {/* Your standing, when you're ranked but not on the podium. */}
           {me && me.rank > 3 && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xs bg-paper-soft px-5 py-4 text-ink ring-1 ring-ink/12">
+            <div className="surface flex flex-wrap items-center justify-between gap-4 px-5 py-4 shadow-[inset_0_0_0_1.5px_var(--accent)]">
               <div className="flex items-center gap-4">
-                <span className="font-display text-4xl font-light text-sun tabular-nums">{pad(me.rank)}</span>
+                <span className="font-display text-4xl font-extrabold tracking-tight text-accent-text tabular-nums">{pad(me.rank)}</span>
                 <div>
-                  <div className="font-mono text-[10px] tracking-[0.14em] text-ink/50 uppercase">Your standing</div>
-                  <div className="font-serif">
+                  <div className="label-mono text-stone-500">Your standing</div>
+                  <div>
                     {me.score} {SCORE_LABEL[view.game].toLowerCase()} · {me.rank - 1} ahead of you
                   </div>
                 </div>

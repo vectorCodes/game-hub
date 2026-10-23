@@ -115,17 +115,21 @@ export default function App() {
   const init = useAuth((s) => s.init);
   useEffect(() => init(), [init]);
   useAvatarSync();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   // Games get the full viewport (no header or footer); landing pages (the hub's and each game's) lay out their
   // own sections; other pages sit in a centered column.
   const game = games.some((g) => pathname === playPath(g));
   const landingOf = games.find((g) => pathname === g.path);
   const landing = pathname === "/" || !!landingOf;
-  // The game whose page this is (its landing or its screen): its accent and night tint.
-  const current = landingOf ?? games.find((g) => pathname === playPath(g));
-  // The hub and the game landings are night (unless the game says paper); game screens and the
-  // other pages are paper.
-  const scheme = pathname === "/" ? "night" : (landingOf?.scheme ?? "paper");
+  // The game whose page this is (its landing or its screen): its accent and night tint. The
+  // leaderboard takes the game on show, the album is Shadow Guess's.
+  const current =
+    landingOf ??
+    games.find((g) => pathname === playPath(g)) ??
+    (pathname === "/leaderboard" ? games.find((g) => g.id === (new URLSearchParams(search).get("game") ?? "shadow-guess")) : undefined) ??
+    (pathname === "/album" ? games.find((g) => g.id === "shadow-guess") : undefined);
+  // Game screens are paper, and so is a game landing that asks for it; everything else is night.
+  const scheme = game || landingOf?.scheme === "paper" ? "paper" : "night";
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const { classList } = document.body;

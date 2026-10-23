@@ -64,20 +64,20 @@ function howToGet(item: ClimbItem): string {
   return `${item.price} coins`;
 }
 
-/** A labelled group of options: a mono title, the current choice on the right, a hairline. */
+/** A labelled group of options: a mono title and the current choice on the right. */
 function Section({ title, current, children }: { title: string; current?: string; children: ReactNode }) {
   return (
     <div className="mb-7 last:mb-0">
       <div className="mb-3 flex items-baseline justify-between gap-3 border-b hairline pb-2">
         <h3 className="label-mono text-stone-500">{title}</h3>
-        {current && <span className="truncate font-serif text-sm text-stone-200">{current}</span>}
+        {current && <span className="truncate font-display text-sm font-bold text-stone-100">{current}</span>}
       </div>
       {children}
     </div>
   );
 }
 
-/** Colour chips: square, like ink samples, with a tick on the chosen one. */
+/** Colour chips, with a tick and an accent ring on the chosen one. */
 function Swatches({ swatches, value, onChange }: { swatches: Swatch[]; value: string; onChange: (id: string) => void }) {
   return (
     <div className="grid grid-cols-6 gap-2 min-[420px]:grid-cols-8 sm:grid-cols-10 md:grid-cols-8 lg:grid-cols-10">
@@ -90,8 +90,8 @@ function Swatches({ swatches, value, onChange }: { swatches: Swatch[]; value: st
             aria-label={s.name}
             title={s.name}
             aria-pressed={on}
-            className={`relative grid aspect-square place-items-center rounded-xs transition-transform duration-200 ease-mirai hover:-translate-y-0.5 ${
-              on ? "ring-2 ring-stone-100 ring-offset-2 ring-offset-stone-950" : "ring-1 ring-black/15"
+            className={`relative grid aspect-square place-items-center rounded-lg transition-transform duration-200 ease-mirai hover:-translate-y-0.5 ${
+              on ? "scale-105 ring-2 ring-accent ring-offset-2 ring-offset-stone-950" : "ring-1 ring-white/10"
             }`}
             style={{ background: s.hex }}
           >
@@ -103,7 +103,7 @@ function Swatches({ swatches, value, onChange }: { swatches: Swatch[]; value: st
   );
 }
 
-/** A style or item card: gold rule when chosen, dashed with its unlock route when locked. */
+/** A style or item card: lit in the accent when chosen, dashed with its unlock route when locked. */
 function Tile({
   selected,
   locked,
@@ -123,15 +123,14 @@ function Tile({
     <button
       onClick={onClick}
       aria-pressed={selected}
-      className={`relative flex flex-col items-center overflow-hidden rounded-xs pb-2.5 text-center transition duration-200 ease-mirai hover:-translate-y-0.5 ${
-        locked ? "border border-dashed border-white/25" : selected ? "bg-paper-soft text-ink ring-2 ring-gold" : "surface"
+      className={`relative flex flex-col items-center overflow-hidden rounded-(--radius-ui) pt-1 pb-2.5 text-center transition duration-200 ease-mirai hover:-translate-y-0.5 ${
+        locked ? "border border-dashed border-white/20" : selected ? "bg-accent/15 shadow-glow ring-2 ring-accent" : "surface"
       }`}
     >
-      <span aria-hidden className={`h-1 w-full ${selected ? "bg-gold" : "bg-transparent"}`} />
       <span className={`mt-2 ${locked ? "opacity-40 grayscale" : ""}`}>{children}</span>
-      <span className="mt-1 max-w-full truncate px-1.5 font-serif text-xs font-semibold">{label}</span>
-      {note && <span className="mt-0.5 line-clamp-2 px-1.5 font-mono text-[9px] leading-tight tracking-wide text-ember-400 uppercase">{note}</span>}
-      {locked && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-sun" title="Locked" />}
+      <span className="mt-1 max-w-full truncate px-1.5 text-xs font-semibold">{label}</span>
+      {note && <span className="mt-0.5 line-clamp-2 px-1.5 font-mono text-[9px] leading-tight tracking-wide text-accent-text uppercase">{note}</span>}
+      {locked && <span className="absolute top-2 right-2 text-[10px]" title="Locked">🔒</span>}
     </button>
   );
 }
@@ -256,8 +255,8 @@ export default function AvatarPage() {
           Unlock for {cost} coins
         </button>
       ) : (
-        <p className="flex items-start gap-3 font-serif text-sm text-stone-300">
-          <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sun" />
+        <p className="flex items-start gap-3 text-sm text-stone-300">
+          <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
           <span>
             Locked: {lockedItems.map((i) => `${i.name} (${howToGet(i)})`).join(", ")}. Earn it, then come back.
           </span>
@@ -272,7 +271,7 @@ export default function AvatarPage() {
   return (
     <div className="space-y-10 pb-28 md:pb-0">
       {/* ---------- Masthead ---------- */}
-      <header className="flex animate-rise flex-col gap-6 border-b hairline pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex animate-rise flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="eyebrow">Player file · Fitting room</p>
           <h1 className="mt-3 text-display">Avatar</h1>
@@ -280,14 +279,14 @@ export default function AvatarPage() {
         </div>
         <div className="flex items-center gap-4">
           {back && (
-            <Link to={back.to} className="label-mono text-stone-300 underline decoration-stone-600 underline-offset-4 hover:text-stone-50">
+            <Link to={back.to} className="font-display font-bold text-accent-text">
               ← {back.label}
             </Link>
           )}
-          {/* Coins, as a gold seal. */}
-          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-gold text-ink sm:h-24 sm:w-24">
+          {/* Coins, as a glowing gold seal. */}
+          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-gold text-ink shadow-[0_0_60px_-10px_var(--color-gold)] sm:h-28 sm:w-28">
             <div className="text-center">
-              <div className="font-display text-2xl leading-none font-light tabular-nums sm:text-3xl">{coins}</div>
+              <div className="font-display text-2xl leading-none font-extrabold tracking-tight tabular-nums sm:text-4xl">{coins}</div>
               <div className="mt-1 font-mono text-[9px] font-semibold tracking-[0.16em] uppercase">Coins</div>
             </div>
           </div>
@@ -296,16 +295,20 @@ export default function AvatarPage() {
 
       <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10">
         {/* ---------- The stage ---------- */}
-        <div className="md:sticky md:top-20 md:self-start">
-          <div className="relative aspect-square overflow-hidden rounded-xs bg-[radial-gradient(ellipse_70%_60%_at_50%_45%,#fbf4e6,#e8d9bd_80%)] ring-1 ring-ink/12">
+        <div className="relative isolate md:sticky md:top-20 md:self-start">
+          <div aria-hidden className="pointer-events-none absolute -inset-6 -z-10 rounded-full bg-glow/20 blur-3xl" />
+          <div className="relative aspect-square overflow-hidden rounded-[1.75rem] bg-[radial-gradient(ellipse_70%_60%_at_50%_45%,#fbf4e6,#e8d9bd_80%)] shadow-glow-lg ring-1 ring-white/15">
             {/* A red sun behind the figure, a floor line beneath it. */}
             <span aria-hidden className="absolute top-[14%] left-1/2 h-[46%] w-[46%] -translate-x-1/2 rounded-full bg-sun/85" />
             <span aria-hidden className="absolute inset-x-[12%] bottom-[18%] h-px bg-ink/20" />
-            <span className="absolute top-3 left-3 font-mono text-[10px] tracking-[0.14em] text-ink/55 uppercase">Fitting · Live preview</span>
+            <span className="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 label-mono text-white backdrop-blur-md">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ember-400" />
+              Live preview
+            </span>
             <Suspense fallback={<div className="absolute inset-0 animate-pulse bg-ink/[0.03]" />}>
               <AvatarStage config={draft} />
             </Suspense>
-            <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.14em] text-ink/55 uppercase">
+            <span className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1.5 label-mono text-white backdrop-blur-md">
               Drag to turn
             </span>
           </div>
@@ -321,8 +324,8 @@ export default function AvatarPage() {
 
         {/* ---------- The options ---------- */}
         <div className="min-w-0">
-          <nav role="tablist" aria-label="Avatar part" className="-mx-4 flex overflow-x-auto border-y hairline px-4 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:px-0 [&::-webkit-scrollbar]:hidden">
-            {TABS.map((t, i) => {
+          <nav role="tablist" aria-label="Avatar part" className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => {
               const active = t.value === tab;
               return (
                 <button
@@ -331,11 +334,12 @@ export default function AvatarPage() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setTab(t.value)}
-                  className={`relative min-w-20 shrink-0 px-3 py-3 text-left transition-colors sm:min-w-0 ${i > 0 ? "border-l hairline" : ""} ${active ? "bg-white/[0.04]" : "hover:bg-white/[0.03]"}`}
+                  className={`surface relative min-w-20 shrink-0 px-3 py-3 text-left transition-[box-shadow,transform] duration-300 ease-mirai sm:min-w-0 ${
+                    active ? "shadow-[inset_0_0_0_2px_var(--accent)]" : "hover:-translate-y-0.5"
+                  }`}
                 >
-                  <span aria-hidden className={`absolute inset-x-0 -top-px h-1 ${active ? "bg-gold" : "bg-transparent"}`} />
-                  <span className={`label-mono ${active ? "text-ember-400" : "text-stone-500"}`}>{t.number}</span>
-                  <span className={`block font-display text-lg leading-tight font-light uppercase ${active ? "text-stone-50" : "text-stone-400"}`}>{t.label}</span>
+                  <span className={`label-mono ${active ? "text-accent-text" : "text-stone-500"}`}>{t.number}</span>
+                  <span className={`block font-display text-lg leading-tight font-bold tracking-tight ${active ? "text-stone-50" : "text-stone-400"}`}>{t.label}</span>
                 </button>
               );
             })}
@@ -388,7 +392,7 @@ export default function AvatarPage() {
           {/* Save / unlock: inline on wide screens, pinned to the bottom on phones. */}
           <div className="fixed inset-x-0 bottom-0 z-30 border-t hairline bg-stone-950/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md md:static md:mt-6 md:border-t md:bg-transparent md:px-0 md:pt-5 md:pb-0 md:backdrop-blur-none">
             {message && (
-              <p className={`mb-2 font-serif text-sm ${message.tone === "ok" ? "text-moss-400" : "text-ember-400"}`} role="status">
+              <p className={`mb-2 text-sm font-semibold ${message.tone === "ok" ? "text-moss-400" : "text-ember-400"}`} role="status">
                 {message.text}
               </p>
             )}
@@ -396,9 +400,9 @@ export default function AvatarPage() {
           </div>
 
           {enabled && !user && (
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y hairline py-4">
-              <p className="flex items-center gap-3 font-serif text-sm text-stone-300">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-sun" />
+            <div className="surface mt-6 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+              <p className="flex items-center gap-3 text-sm text-stone-300">
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-accent" />
                 Sign in to keep your avatar on every device.
               </p>
               <button onClick={() => void signIn()} className="btn btn-secondary">

@@ -17,7 +17,7 @@ export function BumperProfileSection() {
   const best = progress.bestGauntlet;
 
   return (
-    <section className="animate-rise [animation-delay:360ms]">
+    <section data-game="bumper-arena" className="animate-rise [animation-delay:360ms]">
       <ChapterHeader number="04" title="Bumper Arena" note="Bump them off the edge. Last ring rolling wins." link={{ to: "/games/bumper-arena", label: "Play" }} />
       <StatStrip
         stats={[
@@ -29,15 +29,15 @@ export function BumperProfileSection() {
       />
       <div className="pt-6">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <span className="font-display text-lg font-light uppercase">Level {progress.level}</span>
+          <span className="font-display text-xl font-bold tracking-tight">Level {progress.level}</span>
           <span className="label-mono text-stone-500 tabular-nums">
             {progress.nextLevelXp - progress.xp} XP to level {progress.level + 1}
           </span>
         </div>
-        <div className="h-3 border-b hairline">
-          <div className="h-full bg-gold transition-[width] duration-700 ease-mirai" style={{ width: `${share * 100}%` }} />
+        <div className="h-3 overflow-hidden rounded-full bg-stone-100/[0.06]">
+          <div className="h-full rounded-full bg-accent shadow-glow-sm transition-[width] duration-700 ease-mirai" style={{ width: `${share * 100}%` }} />
         </div>
-        <p className="mt-4 font-serif text-sm text-stone-400">
+        <p className="mt-4 text-sm text-stone-400">
           {progress.roundsWon} {progress.roundsWon === 1 ? "round" : "rounds"} won · {progress.coins} coins earned in party matches
           {best ? ` · best Gauntlet score ${best.score}` : ""}
         </p>

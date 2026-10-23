@@ -207,7 +207,9 @@
 
 /*
  * Games. Each game's accent, in both schemes, and the tint of its night. On night the
- * accent's text tone is a lighter step of the accent, so it reads on the dark.
+ * accent's text tone is a lighter step of the accent, so it reads on the dark. A section can
+ * carry its own game's accent inside another page (the profile's chapters); only the night
+ * tint needs `data-game` on the scheme's own element.
  */
 [data-game="shadow-guess"] {
   --accent: oklch(0.79 0.14 75);
@@ -247,12 +249,12 @@
   --tint-h: 250;
   --tint-c: 0.022;
 }
-.theme-night[data-game="shadow-guess"] { --accent-text: oklch(0.85 0.12 80); }
-.theme-night[data-game="sky-climb"] { --accent-text: oklch(0.88 0.1 215); }
-.theme-night[data-game="pair-pop"] { --accent-text: oklch(0.82 0.13 355); }
-.theme-night[data-game="prop-hunt"] { --accent-text: oklch(0.88 0.14 90); }
-.theme-night[data-game="bumper-arena"] { --accent-text: oklch(0.76 0.17 42); }
-.theme-paper[data-game] { --accent-text: var(--accent-deep); }
+:is(.theme-night[data-game="shadow-guess"], .theme-night [data-game="shadow-guess"]) { --accent-text: oklch(0.85 0.12 80); }
+:is(.theme-night[data-game="sky-climb"], .theme-night [data-game="sky-climb"]) { --accent-text: oklch(0.88 0.1 215); }
+:is(.theme-night[data-game="pair-pop"], .theme-night [data-game="pair-pop"]) { --accent-text: oklch(0.82 0.13 355); }
+:is(.theme-night[data-game="prop-hunt"], .theme-night [data-game="prop-hunt"]) { --accent-text: oklch(0.88 0.14 90); }
+:is(.theme-night[data-game="bumper-arena"], .theme-night [data-game="bumper-arena"]) { --accent-text: oklch(0.76 0.17 42); }
+:is(.theme-paper[data-game], .theme-paper [data-game]) { --accent-text: var(--accent-deep); }
 
 @theme {
   --animate-shake: shake 0.4s ease-in-out;
