@@ -95,6 +95,11 @@ export interface BumperMap {
   radius: number;
   /** Grip, as a share of normal: under 1 is slippery (acceleration, drag and braking all scale). */
   grip: number;
+  /**
+   * The outline: the edge's distance from the middle, as a share of `radius`, is 1 plus the
+   * sum of these waves (amplitude, how many times round, phase). Empty: a circle.
+   */
+  outline: [number, number, number][];
   /** Sudden death: from `at` seconds into the round, the edge drops `step` metres every `every` seconds, down to `minRadius`. */
   suddenDeath: { at: number; every: number; step: number; minRadius: number; warnSeconds: number };
 }
@@ -109,6 +114,8 @@ export const BUMPER_MAPS: Record<string, BumperMap> = {
     kind: "plate",
     radius: 16,
     grip: 1,
+    // A fluted plate rim.
+    outline: [[0.018, 28, 0]],
     suddenDeath: SUDDEN_DEATH,
   },
   "ice-floe": {
@@ -118,6 +125,13 @@ export const BUMPER_MAPS: Record<string, BumperMap> = {
     kind: "plate",
     radius: 15,
     grip: 0.42,
+    // A floe that cracked off something bigger: lumpy, never round.
+    outline: [
+      [0.06, 3, 0.4],
+      [0.045, 5, 2.1],
+      [0.03, 8, 4.4],
+      [0.018, 13, 1.3],
+    ],
     suddenDeath: SUDDEN_DEATH,
   },
   spinner: {
@@ -127,6 +141,8 @@ export const BUMPER_MAPS: Record<string, BumperMap> = {
     kind: "spinner",
     radius: 14,
     grip: 1,
+    // A carousel's petals.
+    outline: [[0.05, 10, 0]],
     suddenDeath: SUDDEN_DEATH,
   },
   "hex-hive": {
@@ -136,9 +152,17 @@ export const BUMPER_MAPS: Record<string, BumperMap> = {
     kind: "hex",
     radius: 13,
     grip: 1,
+    outline: [],
     suddenDeath: { ...SUDDEN_DEATH, at: 50 },
   },
 };
+
+/** The edge's distance at heading `a` (radians, 0 = +z, as atan2(x, z)), as a share of the radius. */
+export function outlineAt(map: BumperMap, a: number): number {
+  let f = 1;
+  for (const [amp, n, phase] of map.outline) f += amp * Math.sin(n * a + phase);
+  return f;
+}
 
 /** The ring tuning on a map: slippery maps scale down everything that grips. */
 export function withGrip(base: BumperTuning, grip: number): BumperTuning {

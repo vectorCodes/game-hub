@@ -60,7 +60,15 @@ export type Sound =
   | "tick"
   | "sonar"
   | "scan"
-  | "scanWarn";
+  | "scanWarn"
+  // Bumper Arena: each map's own hazards
+  | "barSwoosh"
+  | "barClang"
+  | "iceCrack"
+  | "iceSkid"
+  | "tileCrack"
+  | "tileDrop"
+  | "plateCrumble";
 
 const STORAGE_KEY = "sound:muted";
 
@@ -209,6 +217,26 @@ function whoosh(ac: AudioContext, out: AudioNode) {
   src.connect(filter).connect(env).connect(out);
   src.start(t);
   src.stop(t + 0.75);
+}
+
+/** Noise through a band-pass swept from `from` to `to` Hz: swooshes, scrapes, crackles. */
+function band(ac: AudioContext, out: AudioNode, { at = 0, dur, from, to, q = 1, gain, attack = 0.01 }: { at?: number; dur: number; from: number; to: number; q?: number; gain: number; attack?: number }) {
+  const t = ac.currentTime + at;
+  const src = ac.createBufferSource();
+  const filter = ac.createBiquadFilter();
+  const env = ac.createGain();
+  src.buffer = noiseBuffer(ac);
+  src.loop = true;
+  filter.type = "bandpass";
+  filter.Q.value = q;
+  filter.frequency.setValueAtTime(from, t);
+  filter.frequency.exponentialRampToValueAtTime(to, t + dur);
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(gain, t + attack);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(filter).connect(env).connect(out);
+  src.start(t);
+  src.stop(t + dur + 0.05);
 }
 
 const C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.5;
@@ -428,6 +456,35 @@ export function play(sound: Sound, level = 1, from?: { volume: number; pan: numb
       // A rising electronic sweep.
       tone(ac, out, { freq: 300, to: 2400, dur: 0.5, type: "sawtooth", gain: 0.05 });
       return tone(ac, out, { freq: 1200, at: 0.45, dur: 0.4, gain: 0.08 });
+    case "barSwoosh":
+      // The Spinner's bar sweeping past: a deep rush of air.
+      return band(ac, out, { dur: 0.6, from: 160, to: 900, q: 0.9, gain: 0.32 * level, attack: 0.2 });
+    case "barClang":
+      // The bar catching a car: a metal clang with a ring to it.
+      tone(ac, out, { freq: 680, dur: 0.35, type: "square", gain: 0.05 * level });
+      tone(ac, out, { freq: 1020, dur: 0.5, type: "triangle", gain: 0.07 * level });
+      return tone(ac, out, { freq: 340, to: 300, dur: 0.6, type: "triangle", gain: 0.1 * level });
+    case "iceCrack":
+      // A floe splitting: a sharp crack, then the splinters.
+      band(ac, out, { dur: 0.12, from: 4000, to: 1200, q: 0.7, gain: 0.35 });
+      [0.07, 0.15, 0.26, 0.4].forEach((at, i) => band(ac, out, { at, dur: 0.05, from: 3000 - i * 400, to: 1500, q: 2, gain: 0.16 }));
+      return rumble(ac, out, { dur: 0.8, cutoff: 600, to: 60, gain: 0.18, attack: 0.05 });
+    case "iceSkid":
+      // Skates on ice.
+      return band(ac, out, { dur: 0.35, from: 5200, to: 2600, q: 3, gain: 0.12 });
+    case "tileCrack":
+      // A hive tile giving way: three dry ticks.
+      [0, 0.07, 0.15].forEach((at, i) => tone(ac, out, { freq: 1900 - i * 300, at, dur: 0.035, type: "square", gain: 0.035 * level }));
+      return;
+    case "tileDrop":
+      // ...and down it goes.
+      tone(ac, out, { freq: 260, to: 70, dur: 0.4, type: "triangle", gain: 0.14 * level });
+      return band(ac, out, { dur: 0.3, from: 900, to: 200, gain: 0.08 * level });
+    case "plateCrumble":
+      // A plate's rim breaking off: a ceramic crunch and a little tinkle.
+      rumble(ac, out, { dur: 0.6, cutoff: 2600, to: 220, gain: 0.25, attack: 0.01 });
+      [2640, 3135, 2350].forEach((freq, i) => tone(ac, out, { freq, at: 0.06 + i * 0.07, dur: 0.18, gain: 0.03 }));
+      return;
     case "scanWarn":
       // Bzzt bzzt: a scan just swept over you.
       [0, 0.16].forEach((at) => tone(ac, out, { freq: 160, at, dur: 0.12, type: "square", gain: 0.08 }));

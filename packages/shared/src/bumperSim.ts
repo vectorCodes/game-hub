@@ -2,7 +2,7 @@
 // fall once they leave it. No physics engine: circle-vs-circle hits, a shrinking edge, the
 // maps' hazards (a sweeping bar, dropping tiles) and timers. Pure and framework-free, so the same code can run the solo game in the browser
 // and, later, a room on the server. Units are metres and seconds; +y is up.
-import { arenaRadius, BUMPER_COUNTDOWN_SECONDS, BUMPER_TUNING, HEX, hexAt, hexTiles, SPINNER, spinnerSpeed, withGrip, type BumperMap, type BumperTuning } from "./bumper";
+import { arenaRadius, BUMPER_COUNTDOWN_SECONDS, BUMPER_TUNING, HEX, hexAt, hexTiles, outlineAt, SPINNER, spinnerSpeed, withGrip, type BumperMap, type BumperTuning } from "./bumper";
 
 /** What a ring's driver wants this step. `x`/`z` is the stick on the floor plane, length ≤ 1. */
 export interface BumperInput {
@@ -58,6 +58,9 @@ export type BumperEvent =
   | { type: "out"; id: string; by: string | null }
   | { type: "warn" }
   | { type: "drop"; radius: number }
+  /** Hex Hive: a tile started to crack, or dropped. */
+  | { type: "crack"; x: number; z: number }
+  | { type: "tileDrop"; x: number; z: number }
   | { type: "over"; winner: string | null };
 
 export type BumperPhase = "countdown" | "play" | "over";
@@ -163,9 +166,14 @@ export class BumperSim {
     return this.tileIndex.get(`${q},${r}`) ?? -1;
   }
 
+  /** How far the edge is from the middle in the direction of (x, z). */
+  edgeRadius(x: number, z: number): number {
+    return this.radius * outlineAt(this.map, Math.atan2(x, z));
+  }
+
   /** Whether (x, z) is floor: inside the edge, or on a tile that hasn't dropped (`firm`: nor started to crack). */
   onFloor(x: number, z: number, firm = false): boolean {
-    if (this.map.kind !== "hex") return Math.hypot(x, z) <= this.radius;
+    if (this.map.kind !== "hex") return Math.hypot(x, z) <= this.edgeRadius(x, z);
     const i = this.tileAt(x, z);
     return i >= 0 && (firm ? this.tiles[i].state === "up" : this.tiles[i].state !== "down");
   }
@@ -341,10 +349,14 @@ export class BumperSim {
       if (tile.wear >= HEX.wearSeconds) {
         tile.state = "cracking";
         tile.at = this.t;
+        this.events.push({ type: "crack", x: tile.x, z: tile.z });
       }
     }
     for (const tile of this.tiles) {
-      if (tile.state === "cracking" && this.t - tile.at >= HEX.crackSeconds) tile.state = "down";
+      if (tile.state === "cracking" && this.t - tile.at >= HEX.crackSeconds) {
+        tile.state = "down";
+        this.events.push({ type: "tileDrop", x: tile.x, z: tile.z });
+      }
     }
   }
 

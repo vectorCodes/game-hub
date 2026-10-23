@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { MathUtils, type PerspectiveCamera } from "three";
+import { SPINNER } from "@shadow/shared";
 import { play } from "../../../lib/sound";
 import { input } from "../input";
 import { emitBumperEvent, game, ME, onBumperEvent, syncHud, useBumper } from "../store";
 import { Arena, Clouds } from "./Arena";
+import { Decor } from "./Decor";
 import { Puffs } from "./Puffs";
 import { Rider } from "./Rider";
 
@@ -55,20 +57,58 @@ function Loop() {
   return null;
 }
 
-/** Sounds for what happens in the arena. */
+/** Where a sound is, heard from your car (or the middle, once you're out): quieter far off, panned to its side. */
+function heard(x: number, z: number) {
+  const me = game.sim?.ring(ME);
+  const [cx, cz] = me && me.state === "in" ? [me.x, me.z] : [0, 0];
+  const d = Math.hypot(x - cx, z - cz);
+  return { volume: Math.max(0.12, 1 - d / 18), pan: (x - cx) / 12 };
+}
+
+/** Sounds for what happens in the arena, and each map's own: the Spinner's bar, ice, hive tiles, the plate's rim. */
 function Sounds() {
+  const lastTile = useRef(0);
+  const barSide = useRef(0);
+
   useEffect(
     () =>
-      onBumperEvent((e) => {
-        if (e.type === "hit" && e.power > 0.35) play("boing", Math.min(1, e.power / 2));
+      onBumperEvent((e, sim) => {
+        const map = sim.map.id;
+        if (e.type === "hit" && e.a === "spinner") play("barClang", Math.min(1, 0.5 + e.power / 3), heard(e.x, e.z));
+        else if (e.type === "hit" && e.power > 0.35) play("boing", Math.min(1, e.power / 2));
         if (e.type === "fall") play("whistle");
         if (e.type === "warn") play("alarm");
-        if (e.type === "drop") play("thunder", 0.5);
+        if (e.type === "drop") {
+          if (map === "ice-floe") play("iceCrack");
+          else if (map === "hex-hive") play("tileDrop");
+          else play("plateCrumble");
+        }
+        // Hive tiles: one at a time, so a burst doesn't turn into a roar.
+        if ((e.type === "crack" || e.type === "tileDrop") && performance.now() - lastTile.current > 90) {
+          lastTile.current = performance.now();
+          play(e.type === "crack" ? "tileCrack" : "tileDrop", 1, heard(e.x, e.z));
+        }
         if (e.type === "over") play(e.winner === ME ? "win" : "lose");
-        if (e.type === "dash" && e.id === ME) play("jump");
+        if (e.type === "dash" && e.id === ME) play(map === "ice-floe" ? "iceSkid" : "jump");
       }),
     [],
   );
+
+  // The Spinner's bar: a swoosh each time it sweeps past your car.
+  useFrame(() => {
+    const sim = game.sim;
+    const me = sim?.ring(ME);
+    if (!sim || sim.map.kind !== "spinner" || sim.phase !== "play" || !me || me.state !== "in") {
+      barSide.current = 0;
+      return;
+    }
+    const { angle } = sim.spinner;
+    const along = me.x * Math.sin(angle) + me.z * Math.cos(angle);
+    const across = me.x * Math.cos(angle) - me.z * Math.sin(angle);
+    const side = Math.sign(across);
+    if (barSide.current && side && side !== barSide.current && Math.abs(along) > SPINNER.hubRadius) play("barSwoosh", 1);
+    if (side) barSide.current = side;
+  });
   return null;
 }
 
@@ -120,6 +160,12 @@ function CameraRig() {
     };
     // Framing the whole plate: centre it.
     if (want.hw >= whole && want.hd >= whole) want.x = want.z = 0;
+    // The countdown and the menu's backdrop: the whole arena and what's around it, before
+    // the camera moves in on the action.
+    if (sim.phase === "countdown" || useBumper.getState().mode === "menu") {
+      want.x = want.z = 0;
+      want.hw = want.hd = sim.startRadius + 5;
+    }
     const v = (view.current ??= { ...want });
     const k = 1 - Math.exp(-dt * 1.6);
     v.x = MathUtils.lerp(v.x, want.x, k);
@@ -165,6 +211,7 @@ export default function Game() {
       <Sounds />
       <CameraRig />
       <Arena />
+      <Decor />
       <Clouds />
       <Riders />
       <Puffs />

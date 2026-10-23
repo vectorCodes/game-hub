@@ -76,7 +76,7 @@ export class BotBrain {
     if (this.reflex) {
       const ax = me.x + me.vx * 0.5;
       const az = me.z + me.vz * 0.5;
-      if (!sim.onFloor(ax, az, true) || Math.hypot(ax, az) > sim.radius - 0.3) {
+      if (!sim.onFloor(ax, az, true) || Math.hypot(ax, az) > sim.edgeRadius(ax, az) - 0.3) {
         const [x, z] = safeHeading(sim, me);
         return { x, z, dash: false, brace: false };
       }
@@ -93,8 +93,10 @@ export class BotBrain {
     const s = this.skill;
     const rng = this.rng;
     // Where it's heading, not just where it is.
-    const fromMiddle = Math.hypot(me.x + me.vx * 0.35, me.z + me.vz * 0.35);
-    const margin = sim.radius - fromMiddle;
+    const hx = me.x + me.vx * 0.35;
+    const hz = me.z + me.vz * 0.35;
+    const fromMiddle = Math.hypot(hx, hz);
+    const margin = sim.edgeRadius(hx, hz) - fromMiddle;
     const others = sim.alive().filter((r) => r.id !== me.id);
 
     // Is someone coming at me?
@@ -146,7 +148,7 @@ export class BotBrain {
       const overrun = pd + s.overrun;
       const ex = me.x + (px / pd) * overrun;
       const ez = me.z + (pz / pd) * overrun;
-      const safe = Math.hypot(ex, ez) < sim.radius && sim.onFloor(ex, ez, true);
+      const safe = Math.hypot(ex, ez) < sim.edgeRadius(ex, ez) && sim.onFloor(ex, ez, true);
       if (safe) return this.aim(px / pd, pz / pd, true, false, 0.5);
     }
     if (lined > 0.3) return this.aim(dx / d, dz / d, false, false);

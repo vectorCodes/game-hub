@@ -1,4 +1,4 @@
-// One rider: a GameHub avatar sitting in a bumper ring, drawn from the sim every frame. It
+// One rider: a GameHub avatar sitting in a bumper car, drawn from the sim every frame. It
 // leans into its speed, squashes on hits, wobbles as its Wobble climbs (stars over its head
 // past 100%), tumbles when it goes over the edge, and cheers when it wins.
 import { useEffect, useRef } from "react";
@@ -8,11 +8,12 @@ import { LoopRepeat, MathUtils, type AnimationAction, type Group, type Mesh, typ
 import { animateAccessories } from "../../../avatar/build";
 import { useAvatar } from "../../../avatar/store";
 import { useAvatarModel } from "../../../avatar/useAvatarModel";
+import { BumperCar } from "./BumperCar";
 import { angleDelta } from "../../sky-climb/ghosts";
 import { game, ME, onBumperEvent, useBumper, type Entrant } from "../store";
 
 /** Mini Characters are 0.67 units tall: big riders, so they read from the high camera. */
-const CHARACTER_SCALE = 1.7;
+const CHARACTER_SCALE = 1.5;
 const FADE = 0.15;
 
 function clipFor(id: string): string {
@@ -31,7 +32,8 @@ export function Rider({ entrant }: { entrant: Entrant }) {
   const tilt = useRef<Group>(null);
   const yaw = useRef<Group>(null);
   const body = useRef<Group>(null);
-  const ring = useRef<Mesh>(null);
+  const paint = useRef<MeshStandardMaterial>(null);
+  const lights = useRef<MeshStandardMaterial>(null);
   const stars = useRef<Group>(null);
   const marker = useRef<Mesh>(null);
   const label = useRef<HTMLSpanElement>(null);
@@ -90,11 +92,13 @@ export function Rider({ entrant }: { entrant: Entrant }) {
     const brace = r.bracing ? 1 : 0;
     tilt.current.scale.set(1 + squash * 0.18 + brace * 0.06, 1 - squash * 0.22 - brace * 0.12, 1 + squash * 0.18 + brace * 0.06);
 
-    const mat = ring.current?.material as MeshStandardMaterial | undefined;
+    // Dashing: the paint flashes and the headlights flare. Braced: the paint goes dark.
+    const mat = paint.current;
     if (mat) {
       mat.emissive.set(r.dashLeft > 0 ? "#ffffff" : r.bracing ? "#2a2a2a" : "#000000");
       mat.emissiveIntensity = r.dashLeft > 0 ? 0.35 : r.bracing ? 0.6 : 0;
     }
+    if (lights.current) lights.current.emissiveIntensity = r.dashLeft > 0 ? 2.5 : 0.3;
     if (stars.current) {
       stars.current.visible = r.state === "in" && r.wobble >= 100;
       stars.current.rotation.y += dt * 5;
@@ -131,20 +135,8 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       </mesh>
       <group ref={tilt}>
         <group ref={yaw}>
-          <mesh ref={ring} position-y={0.26} rotation-x={Math.PI / 2} castShadow>
-            <torusGeometry args={[0.43, 0.17, 14, 32]} />
-            <meshStandardMaterial color={entrant.color} roughness={0.45} />
-          </mesh>
-          {/* The rubber bumper band round its middle. */}
-          <mesh position-y={0.26} rotation-x={Math.PI / 2}>
-            <torusGeometry args={[0.6, 0.035, 8, 40]} />
-            <meshStandardMaterial color="#2d2a26" roughness={0.8} />
-          </mesh>
-          <mesh position-y={0.1} castShadow receiveShadow>
-            <cylinderGeometry args={[0.46, 0.5, 0.16, 28]} />
-            <meshStandardMaterial color="#3a3632" roughness={0.7} />
-          </mesh>
-          <group ref={body} position-y={0.12} scale={CHARACTER_SCALE}>
+          <BumperCar color={entrant.color} bodyRef={paint} glowRef={lights} />
+          <group ref={body} position={[0, 0.14, -0.08]} scale={CHARACTER_SCALE}>
             <primitive object={model} />
           </group>
           <group ref={stars} position-y={1.3} visible={false}>
