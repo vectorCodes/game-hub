@@ -28,7 +28,7 @@ import {
 } from "@shadow/shared";
 import type { Db, Executor } from "../../db/client";
 import { queryRows } from "../../db/rows";
-import { climbGhosts, climbLoadouts, climbRuns, climbUnlocks, userStats } from "../../db/schema";
+import { bumperProgress, climbGhosts, climbLoadouts, climbRuns, climbUnlocks, userStats } from "../../db/schema";
 import { shortName } from "../leaderboard/service";
 import { NotFoundError } from "../shadow-guess/service";
 import { getStats } from "../stats/service";
@@ -460,6 +460,9 @@ export class SkyClimbService {
     };
     const unlocks = await db.select().from(climbUnlocks).where(eq(climbUnlocks.userId, userId)).orderBy(asc(climbUnlocks.createdAt));
     const spent = unlocks.reduce((n, u) => n + u.cost, 0);
+    // One coin balance for the hub: Sky Climb's coins and Bumper Arena's party matches.
+    const [bumper] = await db.select({ coins: bumperProgress.coins }).from(bumperProgress).where(eq(bumperProgress.userId, userId));
+    const earned = metrics.coinsTotal + (bumper?.coins ?? 0);
     const achievements = evaluateAchievements(metrics);
     const owned = ownedItems(
       unlocks.map((u) => u.itemId),
@@ -473,7 +476,7 @@ export class SkyClimbService {
       trail: saved && owned.includes(saved.trail) ? saved.trail : DEFAULT_LOADOUT.trail,
     };
     return {
-      coins: { earned: metrics.coinsTotal, spent, balance: metrics.coinsTotal - spent },
+      coins: { earned, spent, balance: earned - spent },
       owned,
       loadout,
       achievements,

@@ -13,6 +13,7 @@ import { NotFoundError, ShadowGuessService } from "./modules/shadow-guess/servic
 import { avatarRoutes } from "./modules/avatar/routes";
 import { skyClimbRoutes } from "./modules/sky-climb/routes";
 import { SkyClimbService, TooFastError } from "./modules/sky-climb/service";
+import { bumperProgressRoutes } from "./modules/bumper-arena/progress";
 import { bumperRoutes } from "./modules/bumper-arena/routes";
 import { BumperService } from "./modules/bumper-arena/service";
 import { pairPopRoutes } from "./modules/pair-pop/routes";
@@ -69,6 +70,8 @@ export async function buildApp(db: Db, config: AppConfig, opts: { logger?: boole
   skyClimbRoutes(app, skyClimb);
   pairPopRoutes(app, pairPop);
   bumperRoutes(app, bumper);
+  // Party results come from the room with the same secret Prop Hunt's room uses.
+  bumperProgressRoutes(app, db, config.huntResultsSecret);
   avatarRoutes(app, db, skyClimb);
   propHuntRoutes(app, db, config.huntResultsSecret);
   if (!config.isProd) devRoutes(app, db, config.modelsBaseUrl);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AvatarConfig } from "./avatar";
 import { BUMPER_MAPS, HEX } from "./bumper";
+import type { BumperXpGain } from "./bumperProgress";
 import type { BumperEvent, BumperSim, HexTile, Ring } from "./bumperSim";
 import { RoomHello, RoomLeave, RoomPing, type CoreServerMessage, type RoomPeekOf } from "./rooms";
 
@@ -146,7 +147,12 @@ export interface BumperSnap {
   events: BumperEvent[];
 }
 
-export type BumperServerMessage = CoreServerMessage<BumperView> | BumperSnap | { type: "results"; standings: BumperStanding[] };
+export type BumperServerMessage =
+  | CoreServerMessage<BumperView>
+  | BumperSnap
+  | { type: "results"; standings: BumperStanding[] }
+  /** Only to a signed-in player, once the API has saved the match: their XP and coins (null if it couldn't be saved). */
+  | { type: "xp"; gain: BumperXpGain | null };
 
 export type BumperPeek = RoomPeekOf<BumperStatus>;
 

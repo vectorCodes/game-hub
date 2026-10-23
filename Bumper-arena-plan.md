@@ -483,9 +483,9 @@ Phase 3 made party rooms playable; phase 4 makes them worth coming back to. Seve
 each one shippable on its own, in this order: rewards first (everything else builds on
 them), then the things that change how a round plays, then the things you collect.
 
-Status: ⬜ planned for every step.
+Status: 4.1 built; the rest ⬜ planned.
 
-### 4.1 Results → XP and coins ⬜
+### 4.1 Results → XP and coins ✅ built
 
 The room reports a finished match to the API, the way Prop Hunt does, so signed-in players
 level up and earn coins. Nobody can award themselves anything: only the room can report.

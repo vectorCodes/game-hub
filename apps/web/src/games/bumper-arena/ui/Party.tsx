@@ -18,6 +18,7 @@ import {
   type BumperPlayerView,
   type BumperStanding,
 } from "@shadow/shared";
+import { useAuth } from "../../../auth/store";
 import { AvatarImage } from "../../../avatar/AvatarImage";
 import { RING_COLORS } from "../store";
 import {
@@ -238,6 +239,45 @@ function Podium({ standings, you }: { standings: BumperStanding[]; you: string |
   );
 }
 
+/** What the match earned you: XP towards your Bumper level, and coins for the avatar shop. */
+function Rewards() {
+  const signedIn = useAuth((s) => s.user !== null);
+  const authEnabled = useAuth((s) => s.enabled);
+  const signIn = useAuth((s) => s.signIn);
+  const gain = useBumperRoom().xp;
+  if (!signedIn) {
+    if (!authEnabled) return null;
+    return (
+      <div className="surface mt-4 flex items-center justify-between gap-3 px-3 py-2 text-sm">
+        <span className="text-stone-300">Sign in to earn XP and coins from your matches.</span>
+        <button onClick={() => void signIn()} className="btn btn-secondary h-8! shrink-0 px-3! text-xs">
+          Sign in
+        </button>
+      </div>
+    );
+  }
+  if (gain === undefined) return <p className="mt-4 text-center text-sm text-stone-400">Saving your XP…</p>;
+  if (gain === null) return <p className="mt-4 text-center text-sm text-stone-400">Your XP couldn't be saved this time.</p>;
+  const levelled = gain.level > gain.levelBefore;
+  const share = Math.max(0, Math.min(1, (gain.xp - gain.levelXp) / (gain.nextLevelXp - gain.levelXp || 1)));
+  return (
+    <div className={`surface mt-4 animate-rise px-3 py-2.5 ${levelled ? "ring-2 ring-gold/60" : ""}`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-display text-xl">{levelled ? `Level ${gain.level}!` : `Level ${gain.level}`}</span>
+        <span className="font-mono text-sm tabular-nums">
+          +{gain.gained} XP · <span className="text-gold">+{gain.coins} coins</span>
+        </span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100/10">
+        <div className="h-full rounded-full bg-gold transition-[width] duration-700" style={{ width: `${share * 100}%` }} />
+      </div>
+      <p className="mt-1 text-xs text-stone-400 tabular-nums">
+        {gain.nextLevelXp - gain.xp} XP to level {gain.level + 1} · coins buy avatar items
+      </p>
+    </div>
+  );
+}
+
 /** The room between matches: its code to share, who's in, the settings and ready/start, or the last match's podium. */
 export function Lobby() {
   const { code, connection, you, room, standings, error } = useBumperRoom();
@@ -299,6 +339,7 @@ export function Lobby() {
       {room.status === "results" && standings ? (
         <>
           <Podium standings={standings} you={you} />
+          <Rewards />
           <ol className="mt-4 divide-y divide-stone-100/10 text-sm">
             {standings.map((s) => (
               <li key={s.id} className={`flex items-center gap-2 py-1.5 ${s.id === you ? "font-semibold" : ""}`}>

@@ -1,8 +1,9 @@
 // One Bumper Arena party room: 2–4 friends, every ring for itself, a match of rounds on the
 // floating arenas. The room runs the physics (bumperSim.ts, 60 steps a second while a round is
 // on) and is the only judge of hits, falls, knockouts and points; clients send their stick and
-// buttons and draw the snapshots it sends back, 15 a second. Joining, reconnecting, the host
-// and saving are RoomCore's (roomCore.ts). See Bumper-arena-plan.md.
+// buttons and draw the snapshots it sends back, 15 a second. A finished match is reported to
+// the API, so signed-in players earn XP and coins. Joining, reconnecting, the host and saving
+// are RoomCore's (roomCore.ts). See Bumper-arena-plan.md.
 //
 // The sim lives only in memory (a running round keeps the object awake): a room woken
 // mid-round, after a deploy say, plays that round again from the countdown.
@@ -13,6 +14,7 @@ import {
   BUMPER_MAX_PLAYERS,
   BUMPER_MIN_PLAYERS,
   BUMPER_PROTOCOL_VERSION,
+  BUMPER_RESULTS_SECRET_HEADER,
   BUMPER_ROTATION,
   BUMPER_ROUND_MAX_SECONDS,
   BUMPER_ROUND_RESULTS_MS,
@@ -26,6 +28,7 @@ import {
   rankBumper,
   roundPlaces,
   type BumperEvent,
+  type BumperResultsBody,
   type BumperRoundResult,
   type BumperServerMessage,
   type BumperSettings,
@@ -33,8 +36,9 @@ import {
   type BumperStanding,
   type BumperStatus,
   type BumperView,
+  type BumperXpGain,
 } from "@shadow/shared";
-import { RoomCore, type CorePlayer, type CoreRoom } from "./roomCore";
+import { RoomCore, randomId, type CorePlayer, type CoreRoom } from "./roomCore";
 
 /** Once a round is won, the sim runs on this long so the last fall finishes on screen. */
 const RUN_ON_MS = 2000;
@@ -56,6 +60,8 @@ interface Player extends CorePlayer {
   /** Echoed in snapshots, for prediction: the player's step count at their last input, and steps run with it since. */
   ack: number;
   since: number;
+  /** The last match's XP and coins, once the API has saved them (null: it couldn't). */
+  xp?: BumperXpGain | null;
 }
 
 interface Room extends CoreRoom<Player, BumperStatus> {
@@ -69,6 +75,8 @@ interface Room extends CoreRoom<Player, BumperStatus> {
   phaseEndsAt: number | null;
   lastRound: BumperRoundResult | null;
   standings: BumperStanding[] | null;
+  /** This match, as reported to the API (a retried report counts once). */
+  matchId?: string;
 }
 
 type Msg = BumperServerMessage;
@@ -159,7 +167,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
         if (seated.length < BUMPER_MIN_PLAYERS || seated.some((p) => p.id !== me.id && (!p.ready || !p.connected))) {
           return this.send(ws, { type: "error", code: "not_ready" });
         }
-        for (const p of seated) Object.assign(p, { score: 0, roundWins: 0, kos: 0 });
+        for (const p of seated) Object.assign(p, { score: 0, roundWins: 0, kos: 0, xp: undefined });
         const { map, rounds } = room.settings;
         Object.assign(room, {
           round: 0,
@@ -167,6 +175,7 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
           maps: map === BUMPER_ROTATION ? shuffle(Object.keys(BUMPER_MAPS)) : [map],
           lastRound: null,
           standings: null,
+          matchId: `${room.code}-${randomId()}`,
         });
         this.startRound(now);
         break;
@@ -308,6 +317,49 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
       room.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, color: p.color, score: p.score, roundWins: p.roundWins, kos: p.kos, dnf: p.dnf })),
     );
     this.broadcast({ type: "results", standings: room.standings });
+    this.ctx.waitUntil(this.reportResults(room.matchId ?? `${room.code}-${Date.now()}`, room.standings));
+  }
+
+  /**
+   * Tells the API how the match went, so signed-in players earn XP and coins, then tells each of
+   * them what they got. The API may be asleep (it wakes in under a minute), so it gets a few tries.
+   */
+  private async reportResults(matchId: string, standings: BumperStanding[]) {
+    const room = this.room!;
+    const signedIn = standings.flatMap((s) => {
+      const p = room.players.find((q) => q.id === s.id);
+      return p?.key.startsWith("u:") ? [{ p, row: { userId: p.key.slice(2), place: s.place, score: s.score, roundWins: s.roundWins, kos: s.kos, dnf: s.dnf } }] : [];
+    });
+    if (!signedIn.length) return;
+    const { API_URL, HUNT_RESULTS_SECRET } = this.env;
+    let gains: BumperXpGain[] | null = null;
+    if (API_URL && HUNT_RESULTS_SECRET) {
+      const body: BumperResultsBody = { matchId, players: signedIn.map((s) => s.row) };
+      for (const wait of [0, 10_000, 30_000]) {
+        if (wait) await new Promise((r) => setTimeout(r, wait));
+        try {
+          const res = await fetch(`${API_URL.replace(/\/$/, "")}/api/bumper-arena/results`, {
+            method: "POST",
+            headers: { "content-type": "application/json", [BUMPER_RESULTS_SECRET_HEADER]: HUNT_RESULTS_SECRET },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(60_000),
+          });
+          if (res.ok) {
+            gains = ((await res.json()) as { players: BumperXpGain[] }).players;
+            break;
+          }
+          // A bad secret or a bad report won't get better by trying again.
+          if (res.status < 500) break;
+        } catch {
+          // Unreachable, or timed out while it woke: try again.
+        }
+      }
+    }
+    for (const { p, row } of signedIn) {
+      p.xp = gains?.find((g) => g.userId === row.userId) ?? null;
+      this.broadcastEach((pid) => (pid === p.id ? { type: "xp", gain: p.xp ?? null } : null));
+    }
+    await this.commit();
   }
 
   /** Moves the match along: a round's results ending, and a round lost to a restart. */
@@ -342,9 +394,10 @@ export class BumperRoom extends RoomCore<Player, BumperStatus, Room, BumperClien
     p.input = { ...STILL };
   }
 
-  protected afterWelcome(ws: WebSocket) {
+  protected afterWelcome(ws: WebSocket, me: Player) {
     const room = this.room!;
     if (room.status === "results" && room.standings) this.send(ws, { type: "results", standings: room.standings });
+    if (room.status === "results" && me.xp !== undefined) this.send(ws, { type: "xp", gain: me.xp });
   }
 
   protected view(): BumperView {

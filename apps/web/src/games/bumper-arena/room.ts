@@ -1,13 +1,14 @@
 // Bumper Arena party rooms: 2–4 friends over a WebSocket to the room server (apps/realtime,
 // BumperRoom). The connection itself is lib/realtimeRoom.ts; this adds the match: its messages
 // and results. The room runs the physics; net.ts draws its snapshots.
-import { BUMPER_PROTOCOL_VERSION, type BumperClientMessage, type BumperPeek, type BumperServerMessage, type BumperSettings, type BumperStanding, type BumperView } from "@shadow/shared";
+import { BUMPER_PROTOCOL_VERSION, type BumperClientMessage, type BumperPeek, type BumperServerMessage, type BumperSettings, type BumperStanding, type BumperView, type BumperXpGain } from "@shadow/shared";
 import { track } from "../../lib/analytics";
 import { createRoomClient, type CoreRoomState, type Who } from "../../lib/realtimeRoom";
 
 export { roomsAvailable, type RoomError } from "../../lib/realtimeRoom";
 
-export type BumperRoomState = CoreRoomState<BumperView> & { standings: BumperStanding[] | null };
+/** `xp`: what the last match earned us (undefined until the room hears from the API; null if it couldn't be saved). */
+export type BumperRoomState = CoreRoomState<BumperView> & { standings: BumperStanding[] | null; xp: BumperXpGain | null | undefined };
 
 type Listener = (msg: BumperServerMessage) => void;
 const listeners = new Set<Listener>();
@@ -15,17 +16,17 @@ const listeners = new Set<Listener>();
 /** The room's status when we last heard, to spot a match starting (for analytics). */
 let lastStatus: BumperView["status"] | null = null;
 
-const client = createRoomClient<BumperView, { standings: BumperStanding[] | null }, BumperServerMessage>({
+const client = createRoomClient<BumperView, { standings: BumperStanding[] | null; xp: BumperXpGain | null | undefined }, BumperServerMessage>({
   path: "/bumper/rooms",
   protocolVersion: BUMPER_PROTOCOL_VERSION,
   clientKey: "bumper-arena:room-client",
-  extra: { standings: null },
+  extra: { standings: null, xp: undefined },
   onMessage(msg, room) {
     switch (msg.type) {
       // Results stay on screen only while the room is showing them.
       case "welcome":
       case "room":
-        room.update({ standings: msg.room.status === "results" ? room.state().standings : null });
+        room.update(msg.room.status === "results" ? {} : { standings: null, xp: undefined });
         if (lastStatus === "lobby" && msg.room.status === "round") {
           track("game_started", { game: "bumper-arena", mode: "party", players: msg.room.entrants.length, rounds: msg.room.rounds, map: msg.room.settings.map });
         }
@@ -37,6 +38,9 @@ const client = createRoomClient<BumperView, { standings: BumperStanding[] | null
         track("game_finished", { game: "bumper-arena", mode: "party", players: msg.standings.length, place: mine?.place ?? null, score: mine?.score ?? 0 });
         break;
       }
+      case "xp":
+        room.update({ xp: msg.gain });
+        break;
     }
     for (const l of listeners) l(msg);
   },

@@ -232,6 +232,36 @@ export const bumperRuns = pgTable(
   (t) => [index().on(t.runDate), index().on(t.userId)],
 ).enableRLS();
 
+/** Each signed-in player's Bumper Arena party record: XP (levels follow from it) and the coins it has paid. */
+export const bumperProgress = pgTable("bumper_progress", {
+  userId: uuid().primaryKey(),
+  xp: integer().notNull().default(0),
+  matches: integer().notNull().default(0),
+  wins: integer().notNull().default(0),
+  roundsWon: integer().notNull().default(0),
+  kos: integer().notNull().default(0),
+  /** Coins earned in party matches; spent from the hub balance with Sky Climb's. */
+  coins: integer().notNull().default(0),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+/** Every party match a player was credited for, as the room reported it: a retried report counts once. */
+export const bumperResults = pgTable(
+  "bumper_results",
+  {
+    matchId: text().notNull(),
+    userId: uuid().notNull(),
+    place: integer().notNull(),
+    score: integer().notNull(),
+    xp: integer().notNull(),
+    coins: integer().notNull(),
+    /** Their XP before this match. */
+    xpBefore: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.matchId, t.userId] })],
+).enableRLS();
+
 /** Each signed-in player's Prop Hunt XP (levels follow from it) and the taunts they've picked. */
 export const huntProgress = pgTable("hunt_progress", {
   userId: uuid().primaryKey(),
