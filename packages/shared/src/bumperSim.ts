@@ -1,7 +1,7 @@
 // Bumper Arena's physics: rings are circles sliding on the arena floor (x, z), plus a simple
 // fall once they leave it. No physics engine: circle-vs-circle hits, a shrinking edge, the
-// maps' hazards (a sweeping bar, dropping tiles) and timers. Pure and framework-free, so the same code can run the solo game in the browser
-// and, later, a room on the server. Units are metres and seconds; +y is up.
+// maps' hazards (a sweeping bar, dropping tiles) and timers. Pure and framework-free, so the same code runs the solo game in the browser
+// and the party rooms on the server. Units are metres and seconds; +y is up.
 import { arenaRadius, BUMPER_COUNTDOWN_SECONDS, BUMPER_TUNING, HEX, hexAt, hexTiles, outlineAt, SPINNER, spinnerSpeed, withGrip, type BumperMap, type BumperTuning } from "./bumper";
 
 /** What a ring's driver wants this step. `x`/`z` is the stick on the floor plane, length ≤ 1. */
@@ -200,6 +200,20 @@ export class BumperSim {
     this.collide();
     for (const r of this.rings) this.edge(r, dt);
     this.checkOver();
+  }
+
+  /** Time's up with rings still on (a room's limit on a round): they share it. */
+  timeUp() {
+    if (this.phase !== "play") return;
+    this.phase = "over";
+    const alive = this.alive();
+    this.winner = alive.length === 1 ? alive[0].id : null;
+    this.events.push({ type: "over", winner: this.winner });
+  }
+
+  /** One ring's driving for a step and nothing else (no hits, no edge): a client predicting its own ring between snapshots. */
+  driveOnly(r: Ring, dt: number) {
+    this.drive(r, dt);
   }
 
   private updateEdge() {

@@ -13,8 +13,6 @@ import type { Env } from "./env";
 /** Nobody connected for this long: the room is deleted and its code freed. */
 const IDLE_MS = 30 * 60_000;
 const MAX_MESSAGE_CHARS = 8192;
-/** Per socket; positions come at 10 a second, so this leaves room for the rest. */
-const MAX_MESSAGES_PER_SECOND = 20;
 
 export interface CorePlayer {
   id: string;
@@ -66,6 +64,8 @@ export abstract class RoomCore<
 
   protected abstract readonly maxPlayers: number;
   protected abstract readonly protocolVersion: number;
+  /** Per socket, a second; the rest are dropped. Positions come at 10 a second, so 20 leaves room for the rest. */
+  protected readonly maxMessagesPerSecond: number = 20;
   /** A fresh room in its lobby. */
   protected abstract newRoom(code: string): R;
   /** A new player, with the game's own fields at their starting values. */
@@ -331,7 +331,7 @@ export abstract class RoomCore<
     }
   }
 
-  /** At most MAX_MESSAGES_PER_SECOND per socket; the rest are dropped. */
+  /** At most `maxMessagesPerSecond` per socket; the rest are dropped. */
   private allow(ws: WebSocket) {
     const second = Math.floor(Date.now() / 1000);
     const rate = this.rates.get(ws);
@@ -339,7 +339,7 @@ export abstract class RoomCore<
       this.rates.set(ws, { second, count: 1 });
       return true;
     }
-    return ++rate.count <= MAX_MESSAGES_PER_SECOND;
+    return ++rate.count <= this.maxMessagesPerSecond;
   }
 }
 

@@ -104,8 +104,8 @@ export function Rider({ entrant }: { entrant: Entrant }) {
       stars.current.rotation.y += dt * 5;
     }
     if (marker.current) marker.current.visible = r.state === "in";
-    // No tags on the menu's backdrop, nor once a ring is out.
-    if (tag.current) tag.current.style.visibility = r.state === "out" || useBumper.getState().mode === "menu" ? "hidden" : "";
+    // No tags on a backdrop, nor once a ring is out.
+    if (tag.current) tag.current.style.visibility = r.state === "out" || useBumper.getState().backdrop ? "hidden" : "";
 
     const name = clipFor(entrant.id);
     if (name !== current.current.name) {

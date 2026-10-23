@@ -1,11 +1,12 @@
 // The Bumper Arena canvas: the fixed-step loop that drives the sim (player input, bots,
-// events), the camera that frames the whole arena, the light, and the world.
+// events; in a party room, net.ts draws what the room says instead), the camera that frames the whole arena, the light, and the world.
 import { useEffect, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { MathUtils, type PerspectiveCamera } from "three";
 import { SPINNER } from "@shadow/shared";
 import { play } from "../../../lib/sound";
 import { input } from "../input";
+import { partyFrame } from "../net";
 import { emitBumperEvent, game, ME, onBumperEvent, syncHud, useBumper } from "../store";
 import { Arena, Clouds } from "./Arena";
 import { Decor } from "./Decor";
@@ -33,6 +34,8 @@ function Loop() {
     const sim = game.sim;
     if (!sim) return;
     const dt = Math.min(frame, 0.1);
+    const { mode, backdrop } = useBumper.getState();
+    if (mode === "party" && !backdrop) return partyFrame(dt);
     if (freeze.current > 0) {
       freeze.current -= dt;
       return;
@@ -160,9 +163,9 @@ function CameraRig() {
     };
     // Framing the whole plate: centre it.
     if (want.hw >= whole && want.hd >= whole) want.x = want.z = 0;
-    // The countdown and the menu's backdrop: the whole arena and what's around it, before
-    // the camera moves in on the action.
-    if (sim.phase === "countdown" || useBumper.getState().mode === "menu") {
+    // The countdown and a backdrop: the whole arena and what's around it, before the camera
+    // moves in on the action.
+    if (sim.phase === "countdown" || useBumper.getState().backdrop) {
       want.x = want.z = 0;
       want.hw = want.hd = sim.startRadius + 5;
     }

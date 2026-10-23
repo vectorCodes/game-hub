@@ -1,4 +1,5 @@
-// Game rooms: Sky Climb (see Multiplayer.md) and Prop Hunt (Prop-hunt-plan.md). Config values
+// Game rooms: Sky Climb (see Multiplayer.md), Prop Hunt (Prop-hunt-plan.md) and Bumper Arena
+// (Bumper-arena-plan.md). Config values
 // (ALLOWED_ORIGINS, SUPABASE_URL…) are secrets, set with `wrangler secret put`; locally they
 // come from .dev.vars.
 {
@@ -10,14 +11,17 @@
   "durable_objects": {
     "bindings": [
       { "name": "CLIMB_ROOM", "class_name": "ClimbRoom" },
-      { "name": "HUNT_ROOM", "class_name": "HuntRoom" }
+      { "name": "HUNT_ROOM", "class_name": "HuntRoom" },
+      { "name": "BUMPER_ROOM", "class_name": "BumperRoom" }
     ]
   },
   // SQLite-backed Durable Objects: the kind the Workers Free plan offers.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ClimbRoom"] },
     // Prop Hunt rooms (see Prop-hunt-plan.md).
-    { "tag": "v2", "new_sqlite_classes": ["HuntRoom"] }
+    { "tag": "v2", "new_sqlite_classes": ["HuntRoom"] },
+    // Bumper Arena party rooms.
+    { "tag": "v3", "new_sqlite_classes": ["BumperRoom"] }
   ],
   // Room creation: 10 a minute per IP.
   "ratelimits": [{ "name": "ROOM_CREATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }]

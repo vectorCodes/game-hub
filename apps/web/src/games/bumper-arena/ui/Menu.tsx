@@ -1,9 +1,10 @@
 // The start menu, over a bots-only round on Picnic Plate: today's Daily Gauntlet (arena,
-// twist, how today is going) and Practice (arena, bots, level).
+// twist, how today is going), Practice (arena, bots, level), and a party room with friends.
 import { useEffect, type ReactNode } from "react";
-import { BUMPER_MAPS, BUMPER_MODIFIERS, bumperDay } from "@shadow/shared";
+import { BUMPER_MAPS, BUMPER_MAX_PLAYERS, BUMPER_MIN_PLAYERS, BUMPER_MODIFIERS, bumperDay } from "@shadow/shared";
 import { useAuth } from "../../../auth/store";
 import { savedDaily, today } from "../guest";
+import { roomsAvailable } from "../room";
 import { useBumper } from "../store";
 import { PracticeSettings } from "./Hud";
 
@@ -11,7 +12,7 @@ function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="mx-0.5 rounded-xs bg-stone-100 px-1.5 py-0.5 font-mono text-[11px] text-stone-950">{children}</kbd>;
 }
 
-export function Menu({ touch }: { touch: boolean }) {
+export function Menu({ touch, onFriends }: { touch: boolean; onFriends: () => void }) {
   const daily = useBumper((s) => s.daily);
   const loadDaily = useBumper((s) => s.loadDaily);
   const startGauntlet = useBumper((s) => s.startGauntlet);
@@ -70,6 +71,21 @@ export function Menu({ touch }: { touch: boolean }) {
             </button>
           </section>
         </div>
+
+        {roomsAvailable && (
+          <section className="glass mt-4 flex flex-col items-start gap-4 p-6 text-stone-100 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <div className="label-mono text-stone-400">
+                Party · {BUMPER_MIN_PLAYERS}–{BUMPER_MAX_PLAYERS} players
+              </div>
+              <h2 className="mt-1 font-display text-3xl">With friends</h2>
+              <p className="mt-1 text-sm text-stone-300">Make a room, send the link, and bump each other off for a few rounds.</p>
+            </div>
+            <button className="btn btn-primary w-full sm:w-auto" onClick={onFriends}>
+              Play with friends
+            </button>
+          </section>
+        )}
 
         {!touch && (
           <p className="mt-6 text-center text-sm text-stone-300">

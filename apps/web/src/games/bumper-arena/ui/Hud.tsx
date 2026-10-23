@@ -1,6 +1,7 @@
 // The in-game HUD: the countdown, round clock and rings left (and the wave, in the Gauntlet),
 // the kill feed, your Wobble and cooldowns, the tablet touch controls, the wave-cleared
-// banner, and the cards at the end of a Practice round or a Gauntlet run.
+// banner, and the cards at the end of a Practice round or a Gauntlet run. A party room's
+// own cards (the lobby, round results) are in Party.tsx.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { BUMPER_MAPS, BUMPER_MODIFIERS, bumperWave, type BotLevel } from "@shadow/shared";
@@ -9,6 +10,7 @@ import { formatDuration } from "../../../lib/format";
 import { useSound } from "../../../lib/sound";
 import { holdBrace, pressDash, setStick } from "../input";
 import { ME, useBumper } from "../store";
+import { Scores, useLeaveRoom } from "./Party";
 
 function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="mx-0.5 rounded-xs bg-stone-100 px-1.5 py-0.5 font-mono text-[11px] text-stone-950">{children}</kbd>;
@@ -19,12 +21,10 @@ function clock(t: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** The map being played: the Gauntlet's of the day, or Practice's pick. */
+/** The map being played. */
 function useMap() {
-  const mode = useBumper((s) => s.mode);
-  const gauntletMap = useBumper((s) => s.gauntlet?.day.map);
-  const practiceMap = useBumper((s) => s.practice.map);
-  return BUMPER_MAPS[(mode === "gauntlet" ? gauntletMap : practiceMap) ?? "picnic-plate"] ?? BUMPER_MAPS["picnic-plate"];
+  const map = useBumper((s) => s.map);
+  return BUMPER_MAPS[map] ?? BUMPER_MAPS["picnic-plate"];
 }
 
 function TopBar() {
@@ -437,13 +437,19 @@ function Corner() {
   const { muted, toggle } = useSound();
   const toggleTuning = useBumper((s) => s.toggleTuning);
   const mode = useBumper((s) => s.mode);
+  const backdrop = useBumper((s) => s.backdrop);
   const openMenu = useBumper((s) => s.openMenu);
+  const leaveRoom = useLeaveRoom();
   return (
     <div className="absolute top-4 left-4 z-10 flex gap-2 text-xs">
-      {mode === "menu" ? (
+      {backdrop ? (
         <Link to="/games/bumper-arena" className="glass px-3 py-2 text-stone-100">
           ← Back
         </Link>
+      ) : mode === "party" ? (
+        <button className="glass px-3 py-2 text-stone-100" onClick={leaveRoom}>
+          ← Leave room
+        </button>
       ) : (
         <button className="glass px-3 py-2 text-stone-100" onClick={openMenu}>
           ← Menu
@@ -464,9 +470,10 @@ function Corner() {
 export function Hud({ touch }: { touch: boolean }) {
   const phase = useBumper((s) => s.phase);
   const mode = useBumper((s) => s.mode);
+  const backdrop = useBumper((s) => s.backdrop);
   const gStatus = useBumper((s) => s.gauntlet?.status);
-  // A beat after the last ring falls (or you do), so you see it go.
-  const over = mode === "practice" ? phase === "over" : gStatus === "out";
+  // A beat after the last ring falls (or you do), so you see it go. A party's round card is the room's.
+  const over = mode === "practice" ? phase === "over" : mode === "gauntlet" && gStatus === "out";
   const [showOver, setShowOver] = useState(false);
   useEffect(() => {
     if (!over) return setShowOver(false);
@@ -474,17 +481,18 @@ export function Hud({ touch }: { touch: boolean }) {
     return () => clearTimeout(id);
   }, [over]);
 
-  if (mode === "menu") return <Corner />;
+  if (backdrop) return <Corner />;
   return (
     <>
       <TopBar />
       <Corner />
+      {mode === "party" && <Scores />}
       <Feed />
       <Countdown />
       <WaveCleared />
       {!over && phase !== "over" && <Status touch={touch} />}
       {touch && !over && <TouchControls />}
-      {showOver && (mode === "practice" ? <PracticeOver /> : <GauntletOver />)}
+      {showOver && (mode === "practice" ? <PracticeOver /> : mode === "gauntlet" ? <GauntletOver /> : null)}
     </>
   );
 }

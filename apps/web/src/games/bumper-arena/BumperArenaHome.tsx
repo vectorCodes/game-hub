@@ -1,11 +1,12 @@
 // /games/bumper-arena: the landing page. Bumper rings bobbing on the paper, today's
-// Gauntlet, and how to play. The game itself is on /play (computers and tablets only).
+// Gauntlet, playing with friends, and how to play. The game itself is on /play (computers and tablets only).
 import { useState } from "react";
 import { Link } from "react-router";
-import { BUMPER_MAPS, BUMPER_MODIFIERS, bumperDay } from "@shadow/shared";
+import { BUMPER_MAPS, BUMPER_MAX_PLAYERS, BUMPER_MIN_PLAYERS, BUMPER_MODIFIERS, bumperDay } from "@shadow/shared";
 import { Reveal } from "../../components/Reveal";
 import { savedBest, savedDaily, today } from "./guest";
 import { useBumperDaily } from "./HubCard";
+import { roomsAvailable } from "./room";
 import { isPhone } from "./ui/NoPhones";
 
 const PLAY_PATH = "/games/bumper-arena/play";
@@ -66,7 +67,7 @@ export default function BumperArenaHome() {
             Bumper <span className="text-ember-400">Arena</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl animate-rise text-lead [animation-delay:160ms]">
-            Sumo in bumper rings. Drive, dash and shove the bots off a floating arena. The last ring rolling wins.
+            Sumo in bumper rings. Drive, dash and shove the bots, or {BUMPER_MIN_PLAYERS}–{BUMPER_MAX_PLAYERS} friends, off a floating arena. The last ring rolling wins.
           </p>
 
           <div className="mx-auto mt-9 flex max-w-xs animate-rise flex-col items-stretch justify-center gap-3 [animation-delay:240ms] sm:max-w-none sm:flex-row sm:items-center">
@@ -76,9 +77,16 @@ export default function BumperArenaHome() {
                 Bumper Arena is played on a computer or a tablet. Open it there to play.
               </p>
             ) : (
-              <Link to={PLAY_PATH} className="btn btn-primary">
-                {mine ? "Play again" : "Run today's Gauntlet"} <span aria-hidden>→</span>
-              </Link>
+              <>
+                <Link to={PLAY_PATH} className="btn btn-primary">
+                  {mine ? "Play again" : "Run today's Gauntlet"} <span aria-hidden>→</span>
+                </Link>
+                {roomsAvailable && (
+                  <Link to={`${PLAY_PATH}?friends=1`} className="btn btn-secondary">
+                    Play with friends
+                  </Link>
+                )}
+              </>
             )}
           </div>
 
@@ -126,7 +134,9 @@ export default function BumperArenaHome() {
         <Reveal>
           <p className="eyebrow">How to play</p>
           <h2 className="mt-3 text-section">Drive, dash, brace, bump</h2>
-          <p className="mt-4 max-w-2xl text-lead">Practice is always open too: any arena, up to seven bots, easy to hard.</p>
+          <p className="mt-4 max-w-2xl text-lead">
+            Play a party room with {BUMPER_MIN_PLAYERS}–{BUMPER_MAX_PLAYERS} friends: a few rounds, points for lasting and for every knockout. Practice is always open too: any arena, up to seven bots, easy to hard.
+          </p>
         </Reveal>
         <div className="mt-8 grid gap-8 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (

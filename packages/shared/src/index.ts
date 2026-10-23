@@ -16,3 +16,4 @@ export * from "./bumper";
 export * from "./bumperSim";
 export * from "./bumperBots";
 export * from "./bumperGauntlet";
+export * from "./bumperRoom";

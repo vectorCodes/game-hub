@@ -1,5 +1,5 @@
 // Bumper Arena's state: the mode (the menu, with bots playing behind it; Practice; the Daily
-// Gauntlet), who's in the round, the round's sim and bot brains (outside React, in `game`),
+// Gauntlet; a party room, whose rounds the room runs: net.ts), who's in the round, the round's sim and bot brains (outside React, in `game`),
 // and the bits of it the HUD shows. A Gauntlet run is opened on the server, which says what
 // today's arena and twist are, and finished there with how far it got; offline, it still
 // plays and the result is kept in this browser.
@@ -63,7 +63,7 @@ export const game: { sim: BumperSim | null; brains: BotBrain[] } = {
   brains: [],
 };
 
-export type BumperMode = "menu" | "practice" | "gauntlet";
+export type BumperMode = "menu" | "practice" | "gauntlet" | "party";
 
 export interface PracticeSetup {
   map: string;
@@ -141,6 +141,10 @@ export interface FeedLine {
 
 interface State {
   mode: BumperMode;
+  /** Bots playing on their own behind a card: the menu, or a party room's lobby. */
+  backdrop: boolean;
+  /** The arena being played. */
+  map: string;
   practice: PracticeSetup;
   gauntlet: GauntletState | null;
   /** Today's Gauntlet as the server sees it (players, my run), for the menu. */
@@ -165,9 +169,13 @@ interface State {
 
   /** The menu, with a bots-only round playing behind it. */
   openMenu: () => void;
+  /** A party room between matches: bots playing on `map` behind the lobby. */
+  partyBackdrop: (map: string) => void;
+  /** A party room's round, as the room sees it (net.ts keeps it in step). */
+  stageParty: (entrants: Entrant[], map: string) => void;
   startPractice: (setup?: Partial<PracticeSetup>) => void;
   startGauntlet: () => void;
-  /** Practice: the next round. The menu: the next bots-only round. */
+  /** Practice: the next round. A backdrop: the next bots-only round. */
   next: () => void;
   setPractice: (setup: Partial<PracticeSetup>) => void;
   loadDaily: () => Promise<void>;
@@ -195,6 +203,8 @@ const fresh = {
 
 export const useBumper = create<State>((set, get) => ({
   mode: "menu",
+  backdrop: true,
+  map: "picnic-plate",
   practice: { map: "picnic-plate", bots: 3, level: "easy" },
   gauntlet: null,
   daily: null,
@@ -215,14 +225,29 @@ export const useBumper = create<State>((set, get) => ({
 
   openMenu: () => {
     epoch++;
-    set({ mode: "menu", gauntlet: null, wins: {} });
+    set({ mode: "menu", backdrop: true, map: "picnic-plate", gauntlet: null, wins: {} });
     get().next();
+  },
+
+  partyBackdrop: (map) => {
+    const s = get();
+    if (s.mode === "party" && s.backdrop && s.map === map) return;
+    epoch++;
+    set({ mode: "party", backdrop: true, map, gauntlet: null, wins: {} });
+    get().next();
+  },
+
+  stageParty: (entrants, map) => {
+    epoch++;
+    // The room's own tuning, so our prediction drives the way the room does.
+    stage(entrants, map, BUMPER_TUNING, `party:${map}`);
+    set((s) => ({ ...fresh, mode: "party", backdrop: false, map, gauntlet: null, wins: {}, entrants, round: s.round + 1, alive: entrants.length }));
   },
 
   startPractice: (setup) => {
     epoch++;
     const practice = { ...get().practice, ...setup };
-    set({ mode: "practice", practice, gauntlet: null, wins: {} });
+    set({ mode: "practice", backdrop: false, practice, gauntlet: null, wins: {} });
     get().next();
     track("game_started", {
       game: "bumper-arena",
@@ -246,7 +271,7 @@ export const useBumper = create<State>((set, get) => ({
       status: "fighting",
       result: null,
     };
-    set({ mode: "gauntlet", wins: {} });
+    set({ mode: "gauntlet", backdrop: false, map: g.day.map, wins: {} });
     beginWave(g, 0);
     track("game_started", {
       game: "bumper-arena",
@@ -267,15 +292,15 @@ export const useBumper = create<State>((set, get) => ({
   },
 
   next: () => {
-    const { mode, practice, round } = get();
-    if (mode === "gauntlet") return;
-    // The menu's backdrop: a bots-only round on Picnic Plate.
-    const entrants =
-      mode === "practice"
-        ? [you(), ...Array.from({ length: practice.bots }, (_, i) => bot(i, practice.level))]
-        : Array.from({ length: 5 }, (_, i) => bot(i, "normal"));
-    stage(entrants, mode === "practice" ? practice.map : "picnic-plate", tuning, `round:${round + 1}`);
-    set({ ...fresh, entrants, round: round + 1, alive: entrants.length });
+    const { mode, practice, round, backdrop, map } = get();
+    // The Gauntlet's waves and a party's rounds are staged on their own.
+    if (!backdrop && mode !== "practice") return;
+    const entrants = backdrop
+      ? Array.from({ length: 5 }, (_, i) => bot(i, "normal"))
+      : [you(), ...Array.from({ length: practice.bots }, (_, i) => bot(i, practice.level))];
+    const at = backdrop ? map : practice.map;
+    stage(entrants, at, tuning, `round:${round + 1}`);
+    set({ ...fresh, entrants, map: at, round: round + 1, alive: entrants.length });
   },
 
   setPractice: (setup) => set((s) => ({ practice: { ...s.practice, ...setup }, wins: {} })),
@@ -410,17 +435,17 @@ function gauntletEvent(e: BumperEvent) {
   }
 }
 
-/** Practice and menu reactions: the winner, the score, the menu's endless backdrop. */
+/** Practice and backdrop reactions: the winner, the score, the backdrop's endless rounds. */
 function roundEvent(e: BumperEvent) {
   if (e.type !== "over") return;
-  const { mode } = useBumper.getState();
+  const { mode, backdrop } = useBumper.getState();
   useBumper.setState((s) => ({
     winner: e.winner,
     wins: mode === "practice" && e.winner ? { ...s.wins, [e.winner]: (s.wins[e.winner] ?? 0) + 1 } : s.wins,
   }));
-  if (mode === "menu") {
+  if (backdrop) {
     const mine = epoch;
-    setTimeout(() => epoch === mine && useBumper.getState().mode === "menu" && useBumper.getState().next(), 2500);
+    setTimeout(() => epoch === mine && useBumper.getState().backdrop && useBumper.getState().next(), 2500);
   }
 }
 
@@ -452,7 +477,7 @@ function hudEvent(e: BumperEvent) {
     useBumper.setState((s) => ({
       feed: [...s.feed.slice(-3), { id: ++feedId, text }],
     }));
-  if (e.type === "out" && useBumper.getState().mode !== "menu")
+  if (e.type === "out" && !useBumper.getState().backdrop)
     push(e.by ? `${nameOf(e.by)} bumped ${nameOf(e.id)} out` : `${nameOf(e.id)} fell off`);
   roundEvent(e);
   gauntletEvent(e);

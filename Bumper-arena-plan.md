@@ -2,7 +2,7 @@
 
 Sumo in bumper rings. Every player is their own GameHub avatar sitting in a round, squishy
 bumper ring on a floating arena. Drive, dash and shove your friends off the edge; the last
-ring on the arena wins the round. Rooms of 2–8 friends, rounds of about a minute, a match of
+ring on the arena wins the round. Rooms of 2–4 friends, rounds of about a minute, a match of
 5 rounds, an instant rematch. It is played on **computers and tablets, not phones**: a
 phone's screen is too small to follow a whole arena of rings with room left for the thumbs.
 Tablets get one stick and two buttons; the fixed camera shows the whole arena.
@@ -48,10 +48,9 @@ Status: ✅ done · ⏳ next · ⬜ planned
 
 | Mode | Players | What it is |
 |---|---|---|
-| **Party** (rooms) | 2–8 friends | The main mode. Code or link, host picks the map and rules, a match of rounds. |
+| **Party** (rooms) | 2–4 friends | The main mode, every ring for itself. Code or link, host picks the map and rules, a match of rounds. |
 | **Daily Gauntlet** | Solo | Same seeded arena + modifier for everyone. Survive waves of bots. One life, one scored run a day (practice runs unlimited). |
 | **Practice** | Solo + 1–7 bots | Any unlocked map, any bot level, nothing at stake. Also the tutorial. |
-| **Teams** ⬜ later | 6–10 | **Red vs Blue**, 3–5 players a side (3v3 up to 5v5). Teammates can't knock each other out; a team wins the round when the other team is all out. See §Teams. |
 
 ### A party match
 
@@ -75,79 +74,6 @@ lobby ──▶ countdown (3 s) ──▶ round (~60–90 s) ──▶ round res
 6. **Podium** after the last round: top 3 on a little podium with their avatars cheering,
    plus fun titles (§Scoring). **Play again** returns everyone to the lobby with the same
    settings.
-
-### Teams: Red vs Blue ⬜ later
-
-Two teams, **3 to 5 players each**, playing together. The room holds up to **10** in Teams
-mode (Free-for-all stays at 2–8).
-
-**Lobby**
-
-- The host switches the room to **Teams**. Players pick a side by tapping Red or Blue; a side
-  is full at 5.
-- Sides may differ by **at most one player** (3v3, 3v4, 4v4, 4v5, 5v5). Start needs at least
-  3 on each side.
-- **Shuffle** (host) deals everyone into two balanced teams at random; **Balance** moves the
-  fewest players needed to make it legal.
-- A player who joins while teams are unequal is put on the smaller side.
-- Teams stay the same for the whole match; **Play again** keeps them (the host can shuffle).
-
-**A team round**
-
-```
-countdown (3 s) ──▶ round (~75–100 s) ──▶ round results (6 s) ──▶ … first team to 3 round wins
-```
-
-- **Spawns:** Red on one half of the arena, Blue on the other, facing each other.
-- **Win the round:** the team with at least one ring left when the other team is all out.
-  If both teams' last rings fall together, it's a draw (no point; the round is replayed).
-- **Match:** first team to **3 round wins** (best of 5). Maps rotate each round, as in
-  Free-for-all.
-- **Sudden death** starts at 75 s instead of 60 s (more rings, more time needed).
-
-**Playing as a team**
-
-| Rule | What it does |
-|---|---|
-| **No friendly knockouts** | Bumping a teammate is a soft bounce: no Wobble added, half the push. You can't knock your own teammate off. |
-| **Team shove** | Two teammates who hit the same enemy within 1 s add a **combo**: the second hit gets +50% knockback and a "COMBO!" pop. Rewards ganging up together. |
-| **Save** | Dash into a teammate who is right at the edge (their centre within 0.5 m of it) and you pull them back toward the middle instead of pushing them. Gives +1 Save stat. |
-| **Brace wall** | A braced ring is a wall for its teammates too: they can bounce off it to stop at the edge. |
-| **Uneven sides** | The smaller side (e.g. 3 vs 4) gets +10% mass for each missing player, so 3v4 is still a fair fight. |
-| **Pickups** | Same as Free-for-all, but **Bubble** shields the nearest teammate too, and **Shockwave** only pushes enemies. |
-
-**Talking without voice:** a **quick-chat** wheel (keys 5–8 / a button on tablets), seen only
-by your team, with a ping on the arena where you are:
-"Help!", "Together, on me!", "Go for that one!" (pings the nearest enemy), "Nice save!".
-
-**Look**
-
-- Every ring takes its **team colour** (red or blue body, the skin's shape stays: a rubber
-  duck stays a duck, just red). Avatars keep their own outfits.
-- Teammates' names are shown in team colour; your team's outlines are always visible.
-- The HUD shows each side as a row of little ring icons that grey out when a player is out,
-  and the round score (Red 2 · 1 Blue) at the top.
-
-**Scoring and stats**
-
-- The match winner is the team with 3 round wins; everyone on it gets the win (XP, coins,
-  and it counts toward "Win 10 party matches" for the Crash Helmet).
-- Personal stats still count for XP and the podium: KOs, combos, saves, rounds survived.
-- **Team podium:** the winning team on the podium together; **MVP** is the winning player
-  with the most KOs + combos + saves. Extra titles: **Guardian** (most saves) and
-  **Tag Team** (most combos).
-- **Share text:**
-
-  ```
-  Bumper Arena · Teams 4v4
-  🔴 3 – 1 🔵  Red wins!
-  me: 4 KOs · 2 combos · 1 save · MVP 🏆
-  ```
-
-**Team maps:** all 8 maps work in Teams. Two later, Teams-only extras ⬜:
-- **Bridge Brawl:** two islands joined by a narrow bridge; each team starts on its own island.
-- **Push Ball:** a giant beach ball in the middle; push it off the other team's side to win
-  the round (an alternative goal to "last team standing").
 
 ### Controls
 
@@ -395,9 +321,7 @@ your own ring), and solo modes (Practice / Gauntlet, where it's the whole game).
 
 - `BumperRoom extends RoomCore` in `apps/realtime/src/bumperRoom.ts`, new binding
   `BUMPER_ROOM` and migration tag `v3` in `wrangler.jsonc`, routing in `index.ts`.
-- 2–8 players in Free-for-all, up to 10 in Teams (`maxPlayers` is 10; Free-for-all can't
-  start with more than 8). Each player has a `team: "red" | "blue" | null`; the sim reads it
-  for friendly bounces, combos and saves. No joining while a match is on (RoomCore's `playing()`); a player who drops
+- 2–4 players (`maxPlayers` is 4), free-for-all only: every ring for itself. No joining while a match is on (RoomCore's `playing()`); a player who drops
   mid-round has their ring keep coasting (no input) until reconnect or grace runs out, so
   they can still be bumped out.
 - RoomCore's `MAX_MESSAGES_PER_SECOND` (20) becomes a per-game setting; Bumper needs ~25.
@@ -490,7 +414,8 @@ with `game: "bumper-arena"` and mode.
      the bar and step off cracking tiles. Landing page, hub tile (05), nav entry.
    - Still to do here ⬜: a modelled ring GLB and skins (today's ring is built from simple
      shapes), map-specific sounds, a profile section.
-3. **Party rooms.**
+3. **Party rooms ✅ built** (2–4 players). The room steps the sim 60 times a second and sends
+   snapshots 15 a second; the client predicts its own ring and replays unacknowledged inputs.
    - `bumperRoom.ts` protocol, `BumperRoom` DO with the 30 Hz loop, prediction and
      interpolation on the client.
    - Lobby (map / rounds / pickups), rounds, sudden death, scores, podium, rematch.
@@ -500,10 +425,7 @@ with `game: "bumper-arena"` and mode.
    - Profile stats, share text for party matches.
 5. **Later ⬜.**
    - The other four maps (Birthday Cake, Conveyor Factory, Seesaw, Moon Base).
-   - **Teams mode (Red vs Blue, 3v3 to 5v5):** team lobby (pick side, shuffle, balance),
-     team spawns, friendly bounces, combos, saves, the uneven-sides bonus, quick-chat,
-     team colours, team HUD, team podium and share text. Then Bridge Brawl and Push Ball.
-   - Bots filling empty room seats (and, in Teams, filling a short side up to 3).
+   - Bots filling empty room seats.
    - Public quick-match.
 
 ---
@@ -515,10 +437,9 @@ with `game: "bumper-arena"` and mode.
   sometimes correct a little after the fact. Mitigations: interpolation delay ~100 ms,
   smooth corrections, slightly generous hit radius for dashes. Test this early (phase 3).
 - **Cost on the Workers Free plan.** Incoming WebSocket messages to a DO count as requests
-  (20 messages = 1 request) and an awake DO uses duration (GB-s). 8 players sending at 30 Hz
-  would be ~12 requests/s per room: only a couple of hours of play a day on the free 100k.
-  Hence inputs at 15 Hz, **only on change**, which in practice cuts it by 3–5×. A 5v5
-  Teams room is the heaviest case (10 players): check it on its own before shipping Teams. Outgoing
+  (20 messages = 1 request) and an awake DO uses duration (GB-s). 4 players sending at 30 Hz
+  would be ~6 requests/s per room: only a couple of hours of play a day on the free 100k.
+  Hence inputs at 15 Hz, **only on change**, which in practice cuts it by 3–5×. Outgoing
   snapshots aren't billed as requests. Watch the dashboard after launch; the Workers Paid
   plan ($5/mo) removes the worry.
 - **Float determinism.** Prediction doesn't need bit-exact sims (the server corrects), and
@@ -527,7 +448,7 @@ with `game: "bumper-arena"` and mode.
   (already low-poly), share materials, instance tiles, cap DPR at 2.
 - **Griefing / camping.** Sudden death and the Wobble drain stop anyone hiding at the edge
   forever; teaming up is fine (it's part of the fun).
-- **Clarity.** With 8 colourful riders, the player must always find themselves: the outline,
+- **Clarity.** With up to 8 rings in Practice, the player must always find themselves: the outline,
   the arrow, and their name in bold.
 
 ---
@@ -538,8 +459,8 @@ with `game: "bumper-arena"` and mode.
 2. **Order:** solo first (Practice + Daily Gauntlet), then party rooms, as in §8.
 3. **Free-for-all match:** 5 rounds by default, most points wins.
 4. **Ring skins:** each one can be earned through its challenge **or** bought with coins.
-5. **Teams:** uneven sides (differing by one) are allowed, with the +10% mass bonus per
-   missing player.
+5. **Party rooms are 2–4 players, free-for-all only** (changed from 2–8 on 2026-10-23).
+   There is no Teams mode: no 2v2 or 3v3.
 
 ---
 

@@ -8,6 +8,7 @@ import type { Env } from "./env";
 
 export { ClimbRoom } from "./room";
 export { HuntRoom } from "./huntRoom";
+export { BumperRoom } from "./bumperRoom";
 
 /** What the Worker asks of any game's room (RoomCore provides all three). */
 interface RoomStub {
@@ -21,6 +22,7 @@ const GAMES: { prefix: string; room: (env: Env, code: string) => RoomStub }[] = 
   // Sky Climb came first, so its rooms are at the bare /rooms.
   { prefix: "/rooms", room: (env, code) => env.CLIMB_ROOM.get(env.CLIMB_ROOM.idFromName(code)) },
   { prefix: "/hunt/rooms", room: (env, code) => env.HUNT_ROOM.get(env.HUNT_ROOM.idFromName(code)) },
+  { prefix: "/bumper/rooms", room: (env, code) => env.BUMPER_ROOM.get(env.BUMPER_ROOM.idFromName(code)) },
 ];
 
 export default {
