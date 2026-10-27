@@ -1,45 +1,91 @@
-// Bumper Arena's tile on the GameHub page: a gingham plate seen from above with rings on it
-// and one flying off the edge, drawn as a print (SVG, no three.js, so the hub stays light),
-// and a line of status.
+// Bumper Arena's tile on the GameHub page: a neon arena with bumpers colliding and one knocked
+// off the edge, drawn in SVG (no three.js, so the hub stays light), and a line of status.
 import { useEffect, useState } from "react";
 import { BUMPER_MAPS, BUMPER_MODIFIERS, bumperDay, type BumperDailyView } from "@shadow/shared";
 import { api } from "../../api/client";
 import { CoverFrame } from "../../components/CoverFrame";
 import { savedDaily, today } from "./guest";
 
-const RINGS: [number, number, string][] = [
-  [160, 118, "#d9582c"],
-  [228, 140, "#2f8a73"],
-  [196, 92, "#cc922f"],
-];
-
-export function BumperArenaCover() {
-  const day = bumperDay(today());
+/** A bumper seen from above and in front: skirt, shell, a shine, and the seat. */
+function Bumper({ x, y, body, skirt }: { x: number; y: number; body: string; skirt: string }) {
   return (
-    <CoverFrame number="05" title="Bumper Arena" meta={`Gauntlet #${day.number}`} caption="Party · bump them off">
-      <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet" className="h-full w-full" aria-hidden="true">
+    <g>
+      <ellipse cx={x} cy={y + 11} rx="24" ry="8" fill="#000" fillOpacity="0.35" />
+      <ellipse cx={x} cy={y + 4} rx="23" ry="11" fill={skirt} />
+      <ellipse cx={x} cy={y} rx="22" ry="11" fill={body} />
+      <ellipse cx={x - 4} cy={y - 4} rx="11" ry="3.5" fill="#fff" fillOpacity="0.38" />
+      <ellipse cx={x + 4} cy={y - 1} rx="8" ry="5" fill="#0a0e18" fillOpacity="0.55" />
+    </g>
+  );
+}
+
+/**
+ * Key art for the party game: a neon arena floating over the dark, two bumpers meeting in
+ * a burst of sparks, and a third knocked clean off the edge.
+ */
+export function BumperArenaCover() {
+  return (
+    <CoverFrame label="Bumpers collide on a glowing arena floating in the dark; one is knocked off the edge.">
+      <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
-          <pattern id="ba-gingham" width="24" height="24" patternUnits="userSpaceOnUse">
-            <rect width="24" height="24" fill="#f3ead9" />
-            <rect width="12" height="24" fill="#d9582c" fillOpacity="0.35" />
-            <rect width="24" height="12" fill="#d9582c" fillOpacity="0.35" />
-          </pattern>
+          <radialGradient id="ba-bg" cx="0.5" cy="0.75" r="0.85">
+            <stop offset="0" stopColor="#14304a" />
+            <stop offset="0.6" stopColor="#0a1426" />
+            <stop offset="1" stopColor="#04070f" />
+          </radialGradient>
+          <radialGradient id="ba-floor" cx="0.5" cy="0.45">
+            <stop offset="0" stopColor="#2b3a5c" />
+            <stop offset="1" stopColor="#141c30" />
+          </radialGradient>
+          <linearGradient id="ba-side" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#1b2540" />
+            <stop offset="1" stopColor="#070b16" />
+          </linearGradient>
+          <filter id="ba-glow" x="-20%" y="-50%" width="140%" height="200%">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+          <filter id="ba-rim" x="-5%" y="-10%" width="110%" height="120%">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
         </defs>
-        <ellipse cx="200" cy="138" rx="150" ry="70" fill="#2a2216" fillOpacity="0.12" />
-        <ellipse cx="200" cy="128" rx="150" ry="70" fill="url(#ba-gingham)" stroke="#2a2216" strokeOpacity="0.35" />
-        {RINGS.map(([x, y, c], i) => (
-          <g key={i}>
-            <ellipse cx={x} cy={y + 5} rx="22" ry="11" fill="#2a2216" fillOpacity="0.18" />
-            <ellipse cx={x} cy={y} rx="22" ry="12" fill={c} />
-            <ellipse cx={x} cy={y - 1} rx="10" ry="5" fill="#2a2216" fillOpacity="0.55" />
-          </g>
+
+        <rect width="400" height="260" fill="url(#ba-bg)" />
+        {[
+          [40, 40], [92, 22], [356, 30], [376, 118], [24, 128], [70, 226], [338, 232], [150, 30],
+        ].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i % 3 ? 0.8 : 1.3} fill="#9fe9ff" fillOpacity={0.25 + (i % 4) * 0.1} />
         ))}
-        {/* The one going over the edge, with a little bonk. */}
-        <g className="cover-fling">
-          <ellipse cx="330" cy="70" rx="20" ry="11" fill="#3d6f8f" transform="rotate(-24 330 70)" />
-          <ellipse cx="330" cy="69" rx="9" ry="4.5" fill="#2a2216" fillOpacity="0.55" transform="rotate(-24 330 70)" />
+
+        {/* Light spilling out under the arena. */}
+        <ellipse cx="200" cy="196" rx="170" ry="34" fill="#45d6ee" fillOpacity="0.32" filter="url(#ba-glow)" />
+
+        {/* The arena: side band, floor, markings, and the lit rim. */}
+        <path d="M50 150 V168 A150 60 0 0 0 350 168 V150 Z" fill="url(#ba-side)" />
+        <ellipse cx="200" cy="168" rx="150" ry="60" fill="none" stroke="#45d6ee" strokeOpacity="0.25" />
+        <ellipse cx="200" cy="150" rx="150" ry="60" fill="url(#ba-floor)" />
+        <ellipse cx="200" cy="150" rx="102" ry="40" fill="none" stroke="#6fe3f2" strokeOpacity="0.18" />
+        <ellipse cx="200" cy="150" rx="30" ry="12" fill="none" stroke="#6fe3f2" strokeOpacity="0.28" />
+        <path d="M200 90 V210 M50 150 H350" stroke="#6fe3f2" strokeOpacity="0.07" />
+        <ellipse cx="200" cy="150" rx="150" ry="60" fill="none" stroke="#6fe3f2" strokeWidth="3" filter="url(#ba-rim)" />
+        <ellipse cx="200" cy="150" rx="150" ry="60" fill="none" stroke="#c9f7ff" strokeWidth="1.2" />
+
+        <Bumper x={126} y={176} body="#f2c063" skirt="#9a6a1f" />
+        <Bumper x={174} y={150} body="#ff6a3d" skirt="#a3341a" />
+        <Bumper x={226} y={140} body="#45d6ee" skirt="#1d7c91" />
+
+        {/* The hit. */}
+        <g stroke="#fff3c4" strokeWidth="2.2" strokeLinecap="round">
+          <path d="M200 128 l0 -12 M207 131 l9 -8 M193 131 l-9 -8 M211 140 l11 0 M189 140 l-10 2" />
         </g>
-        <path d="M262 112 l14 -6 M266 124 l16 0 M262 136 l14 6" stroke="#cc922f" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="200" cy="138" r="5" fill="#fff8de" />
+        <circle cx="200" cy="138" r="14" fill="#ffd27a" fillOpacity="0.35" filter="url(#ba-rim)" />
+
+        {/* The one going over the edge. */}
+        <g className="cover-fling">
+          <g transform="rotate(-28 330 72)">
+            <Bumper x={330} y={72} body="#ff7fae" skirt="#a23766" />
+          </g>
+        </g>
       </svg>
     </CoverFrame>
   );
