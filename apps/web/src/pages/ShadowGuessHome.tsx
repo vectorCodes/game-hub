@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { Link, Navigate, useSearchParams } from "react-router";
 import { ShadowGuessHubCard } from "../games/shadow-guess/HubCard";
 import { ClockIcon, FlameIcon, PodiumIcon } from "../components/animated/icons";
@@ -40,114 +40,6 @@ function ChapterLabel({ n, children, center = false }: { n: string; children: Re
       <span className="h-px w-8 bg-lamp-300/50" />
       {children}
     </p>
-  );
-}
-
-/**
- * The Shadow Guess promo, rendered from the Remotion project in /video (≈6 MB). Nothing is
- * downloaded until it's about to scroll into view; it plays (muted) only while visible and
- * pauses when it leaves. "Sound on" restarts it with audio. Reduced-motion users press play.
- */
-function PromoVideo() {
-  const frame = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
-  const [reducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const [near, setNear] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
-  // The visitor paused it themselves: don't restart it when it scrolls back into view.
-  const userPaused = useRef(false);
-
-  // Attach the source once the player is within ~one screen of the viewport.
-  useEffect(() => {
-    const el = frame.current;
-    if (!el || near) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), { rootMargin: "400px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [near]);
-
-  // Play while at least 40% visible; pause when scrolled away.
-  useEffect(() => {
-    const el = frame.current;
-    if (!el || !near || reducedMotion) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        const v = video.current;
-        if (!v) return;
-        if (e.intersectionRatio >= 0.4) {
-          if (!userPaused.current) void v.play().catch(() => { });
-        } else if (!v.paused) v.pause();
-      },
-      { threshold: [0, 0.4] },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [near, reducedMotion]);
-  const toggle = () => {
-    const v = video.current;
-    if (!v) return;
-    userPaused.current = !v.paused;
-    if (v.paused) void v.play();
-    else v.pause();
-  };
-  // React doesn't keep the `muted` attribute in sync, so it's set on the element directly.
-  const toggleSound = () => {
-    const v = video.current;
-    if (!v) return;
-    v.muted = !muted;
-    if (muted) {
-      v.currentTime = 0;
-      userPaused.current = false;
-      void v.play();
-    }
-    setMuted(!muted);
-  };
-  return (
-    <div ref={frame} className="relative">
-      <div className="overflow-hidden rounded-sm bg-stone-950 p-1.5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] ring-1 ring-white/15 sm:p-2">
-        <video
-          ref={video}
-          src={near ? "/promo.mp4" : undefined}
-          poster={near ? "/promo-poster.jpg" : undefined}
-          muted
-          loop
-          playsInline
-          preload={near ? "metadata" : "none"}
-          aria-label="Shadow Guess trailer"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          className="block aspect-video w-full rounded-xs bg-stone-950"
-        />
-      </div>
-      <button
-        onClick={toggle}
-        aria-label={playing ? "Pause trailer" : "Play trailer"}
-        className="glass absolute bottom-5 left-5 grid h-11 w-11 place-items-center rounded-full text-white transition hover:bg-stone-900 sm:bottom-7 sm:left-7"
-      >
-        {playing ? (
-          <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-            <rect x="3" y="2.5" width="3.5" height="11" rx="1" />
-            <rect x="9.5" y="2.5" width="3.5" height="11" rx="1" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 16 16" className="ml-0.5 h-4 w-4" fill="currentColor" aria-hidden="true">
-            <path d="M4 2.8v10.4a.8.8 0 0 0 1.2.7l8.4-5.2a.8.8 0 0 0 0-1.4L5.2 2.1a.8.8 0 0 0-1.2.7z" />
-          </svg>
-        )}
-      </button>
-      <button
-        onClick={toggleSound}
-        aria-label={muted ? "Play trailer with sound" : "Mute trailer"}
-        className="glass absolute right-5 bottom-5 flex h-11 items-center gap-2 rounded-full px-4 label-mono text-white transition hover:bg-stone-900 sm:right-7 sm:bottom-7"
-      >
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M3 8v4h3l4 3.5v-11L6 8H3z" fill="currentColor" />
-          {muted ? <path d="M13.5 7.5l4 5m0-5l-4 5" /> : <path d="M13.5 7a4 4 0 0 1 0 6M15.5 5a7 7 0 0 1 0 10" />}
-        </svg>
-        <span className="hidden sm:inline">{muted ? "Sound on" : "Mute"}</span>
-      </button>
-    </div>
   );
 }
 
@@ -262,28 +154,12 @@ function GuessChapter() {
   );
 }
 
-function TrailerChapter() {
-  return (
-    <Chapter>
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <ChapterLabel n="03" center>
-          Watch
-        </ChapterLabel>
-        <h2 className="mt-5 text-section text-legible">Forty-five seconds of shadows.</h2>
-      </Reveal>
-      <Reveal className="mx-auto mt-10 max-w-4xl" delay={120}>
-        <PromoVideo />
-      </Reveal>
-    </Chapter>
-  );
-}
-
 function GladeChapter() {
   return (
     <Chapter className="items-stretch">
       <div className="flex h-full min-h-[calc(100svh-12rem)] flex-col justify-between">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <ChapterLabel n="04" center>
+          <ChapterLabel n="03" center>
             Collect
           </ChapterLabel>
           <h2 className="mt-5 text-section text-legible">150+ objects. One a day.</h2>
@@ -312,7 +188,7 @@ function FinaleChapter() {
   return (
     <Chapter className="pt-[30svh]">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <ChapterLabel n="05" center>
+        <ChapterLabel n="04" center>
           Play
         </ChapterLabel>
         <h2 className="mt-5 text-display text-legible">Tonight&rsquo;s shadow is waiting.</h2>
@@ -374,7 +250,6 @@ function Landing() {
       <Hero />
       <StudyChapter />
       <GuessChapter />
-      <TrailerChapter />
       <GladeChapter />
       <FinaleChapter />
     </div>

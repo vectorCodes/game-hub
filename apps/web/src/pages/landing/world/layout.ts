@@ -28,7 +28,6 @@ export const STOPS: { position: V3; target: V3 }[] = [
   { position: [0, 1.7, 12], target: [0, 3.4, -10] }, // hero: the clearing
   { position: [-1.2, 2.3, -6], target: [0.2, 2.5, -24] }, // study the shadow
   { position: [7.4, 3.0, -12.6], target: [-3.6, 2.5, -21.5] }, // behind the scenes
-  { position: [2.6, 2.4, -32], target: [0, 2.2, -56] }, // trailer: down the path
   { position: [0, 4.2, -46.5], target: [0, 1.8, -60] }, // the glade
   { position: [0, 3, -56], target: [8, 26, -110] }, // up to the moon
 ];
