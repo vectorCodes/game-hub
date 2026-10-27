@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, ViewTransition, type ReactNode } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router";
 import HubHome from "./pages/hub/HubHome";
 import Profile from "./pages/Profile";
@@ -148,27 +148,27 @@ export default function App() {
     >
       {/* Games take the whole screen; each has its own way back. */}
       {!game && <Header />}
-      <main
-        key={game ? "game" : pathname}
-        className={game || landing ? "flex-1" : "mx-auto w-full max-w-5xl flex-1 animate-rise px-4 py-8 sm:px-6 sm:py-12"}
-      >
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<HubHome />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/album" element={<Album />} />
-            <Route path="/avatar" element={<AvatarPage />} />
-            {games.map((g) => (
-              <Route key={g.id} path={g.path} element={<g.Landing />} />
-            ))}
-            {games.map((g) => (
-              <Route key={`${g.id}-play`} path={playPath(g)} element={<g.Component />} />
-            ))}
-            {AnglePicker && <Route path="/dev/angles" element={<AnglePicker />} />}
-          </Routes>
-        </Suspense>
-      </main>
+      {/* BrowserRouter commits navigations in a transition, so each new page animates in over the old one. */}
+      <ViewTransition key={game ? "game" : pathname} enter="route-in" exit="route-out" default="none">
+        <main className={game || landing ? "flex-1" : "mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12"}>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<HubHome />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/album" element={<Album />} />
+              <Route path="/avatar" element={<AvatarPage />} />
+              {games.map((g) => (
+                <Route key={g.id} path={g.path} element={<g.Landing />} />
+              ))}
+              {games.map((g) => (
+                <Route key={`${g.id}-play`} path={playPath(g)} element={<g.Component />} />
+              ))}
+              {AnglePicker && <Route path="/dev/angles" element={<AnglePicker />} />}
+            </Routes>
+          </Suspense>
+        </main>
+      </ViewTransition>
       {!game && <Footer />}
     </div>
   );
