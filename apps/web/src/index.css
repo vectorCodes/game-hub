@@ -724,3 +724,29 @@ body,
     transition-delay: 0s !important;
   }
 }
+
+/* Route transitions (React <ViewTransition> in App.tsx): the old page sinks away, the new one rises in. */
+@keyframes route-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes route-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+::view-transition-old(.route-out) {
+  animation: route-out 0.18s ease-in both;
+}
+::view-transition-new(.route-in) {
+  animation: route-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both;
+}
+/* Everything outside the page (header, footer, the night/paper ground) cross-fades quickly. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
